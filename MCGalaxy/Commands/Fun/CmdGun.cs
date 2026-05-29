@@ -27,7 +27,7 @@ namespace MCGalaxy.Commands.Fun {
         
         public override void Use(Player p, string message, CommandData data) {
             if (!p.level.Config.Guns) {
-                p.Message("Guns cannot be used on this map!"); return;
+                p.Message(Locale.Get("gun.no_guns", p)); return;
             }
             if (p.weapon != null && message.Length == 0) {
                 p.weapon.Disable(); return;
@@ -47,9 +47,9 @@ namespace MCGalaxy.Commands.Fun {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Gun [at end]");
-            p.Message("&HAllows you to fire bullets at people");
-            p.Message("&HAvailable [at end] types: &Sexplode, destroy, laser, tp");
+            p.Message(Locale.Get("gun.help1", p));
+            p.Message(Locale.Get("gun.help2", p));
+            p.Message(Locale.Get("gun.help3", p));
         }
     }
 }

@@ -29,14 +29,14 @@ namespace MCGalaxy.Commands.Misc {
 
         public override void Use(Player p, string message, CommandData data) {
             if (!Hacks.CanUseFly(p)) {
-                p.Message("You cannot use &T/Fly &Son this map.");
+                p.Message(Locale.Get("fly.no_fly", p));
                 p.isFlying = false; return;
             }
-            
+
             p.isFlying = !p.isFlying;
             if (!p.isFlying) return;
-            
-            p.Message("You are now flying. &cJump!");
+
+            p.Message(Locale.Get("fly.now_flying", p));
             
             FlyState state = new FlyState();
             state.player = p;
@@ -59,7 +59,7 @@ namespace MCGalaxy.Commands.Misc {
             foreach (Vec3U16 pos in state.lastGlass) {
                 p.SendBlockchange(pos.X, pos.Y, pos.Z, Block.Air);
             }            
-            p.Message("Stopped flying");
+            p.Message(Locale.Get("fly.stopped", p));
             task.Repeating = false;
         }
 
@@ -99,11 +99,10 @@ namespace MCGalaxy.Commands.Misc {
         
         public override void Help(Player p) {
             string name = Group.GetColoredName(LevelPermission.Operator);
-            p.Message("&T/Fly");
-            p.Message("&HCreates a glass platform underneath you that moves with you.");
-            p.Message("&H  May not work if you have high latency.");
-            p.Message("&H  Cannot be used on maps which have -hax in their motd. " +
-                           "(unless you are {0}&H+ and the motd has +ophax)", name);
+            p.Message(Locale.Get("fly.help1", p));
+            p.Message(Locale.Get("fly.help2", p));
+            p.Message(Locale.Get("fly.help3", p));
+            p.Message(Locale.Get("fly.help4", p), name);
         }
     }
 }

@@ -1,0 +1,671 @@
+# Auto-generated locale entries — do not edit by hand
+# Merge into locale/en.lang when satisfied
+
+
+# ── Overseer.cs ─────────────────────────────────────────────────
+cmd.overseer.msg1 = Note that &T/{0} {1}&S has been renamed to &T/{0} {2}
+cmd.overseer.msg2 = You have reached the limit for your overseer maps.
+cmd.overseer.msg3 = Your rank is not allowed to create any /{0} maps.
+cmd.overseer.msg4 = Use &T/{0} allow [name] &Sto allow other players to build in the map.
+cmd.overseer.msg5 = You must provide a backup to delete.
+cmd.overseer.msg6 = A backup is usually a number, but may also be named.
+cmd.overseer.msg7 = See &T/{0} restore &7to display backups.
+cmd.overseer.msg8 = To delete your current map, type &T/{0} delete
+cmd.overseer.msg9 = &WYou need to type a player name to {0}.
+cmd.overseer.msg10 = You must specify a player to kick.
+cmd.overseer.msg11 = Player is not on your level!
+cmd.overseer.msg12 = Could not find map option \"{0}\".
+cmd.overseer.msg13 = Use &T/help map options &Sto see all.
+cmd.overseer.msg14 = &WYou cannot change the {0} map option via /{1} map.
+cmd.overseer.msg15 = You may only use &T/{0} map {1}&S after you join your map.
+cmd.overseer.msg16 = You may only use &T/{0} {1}&S after you join your map.
+cmd.overseer.msg17 = Not enough args provided! Usage:
+cmd.overseer.help1 = &T/{0} resize [width] [height] [length]
+cmd.overseer.msg18 = Type &T/{0} resize {1} {2} {3} confirm &Sif you're sure.
+cmd.overseer.msg19 = See &T/help pervisit &Sfor how to use this command, but don't include [level].
+cmd.overseer.msg20 = See &T/help perbuild &Sfor how to use this command, but don't include [level].
+cmd.overseer.msg21 = This command is the &T/{0} &Sversion of &T/zone&S.
+cmd.overseer.msg22 = To learn how to use it, read &T/help zone&S
+cmd.overseer.msg23 = This server does not allow renaming os realms.
+cmd.overseer.msg24 = Your os name must be {0} characters or fewer.
+cmd.overseer.msg25 = To visit the next os map, use &T/os tour
+cmd.overseer.msg26 = To go backwards, use &T/os tour prev
+cmd.overseer.help2 = &HTo use &T/os tour&H, first join any player's personal realm.
+cmd.overseer.msg27 = &S(to join your own, use &T/os go&S)
+cmd.overseer.help3 = &HOnce you are in someone's realm, use &T/os tour <prev/next>
+cmd.overseer.help4 = &Hto easily join other realms owned by that player.
+cmd.overseer.msg28 = You are in {0} {1} {2}realm.
+cmd.overseer.msg29 = To see a list of zones in a level, use &T/zonelist
+cmd.overseer.msg30 = To see who is disallowed from visiting, use &T/mapinfo
+cmd.overseer.help5 = &T  /{0} zone &Hwas used for managing permissions in your map.
+cmd.overseer.help6 = &H  It has now been replaced by the following &T/{0} &Hcommands:
+cmd.overseer.help7 = &T  Allow, Disallow, Ban, Unban
+cmd.overseer.help8 = &H  To manage zoned areas in your map, use &T/{0} plot
+
+# ── CmdBalance.cs ───────────────────────────────────────────────
+cmd.balance.msg1 =  Last {0}: {1}
+
+# ── CmdZombieSpawn.cs ───────────────────────────────────────────
+cmd.zombiespawn.msg1 = /zombiespawn <flag> <x> <y> <z> - Spawns waves of zombies.
+cmd.zombiespawn.msg2 = <flag> - 'r' for random or 'd' for diameter
+cmd.zombiespawn.msg3 = <x> - the number of waves
+cmd.zombiespawn.msg4 = <y> - the length of the waves in seconds
+cmd.zombiespawn.msg5 = <z> - the number of zombies spawned/diameter of spawn
+cmd.zombiespawn.msg6 = /zombiespawn x - Destroys all zombies.
+
+# ── CmdCustomColors.cs ──────────────────────────────────────────
+cmd.customcolors.msg1 = &WColor code cannot be a space, percentage, or ampersand.
+cmd.customcolors.msg2 = &WCannot change system defined color codes using %T/CustomColors
+cmd.customcolors.msg3 = Successfully added '{0}' color
+cmd.customcolors.msg4 = Successfully removed '{0}' color
+cmd.customcolors.msg5 = Set name of {0} to {1}
+cmd.customcolors.msg6 = Set fallback of {0} to %&S{1}
+cmd.customcolors.msg7 = Set hex color of {0} to {1}
+cmd.customcolors.msg8 = There is already an existing color named \"{0}\".
+cmd.customcolors.msg9 = There is no color with the code {0}.
+cmd.customcolors.msg10 = Use &T/CustomColors list &Sto see a list of colors.
+cmd.customcolors.msg11 = {0} must be a standard color code.
+cmd.customcolors.help1 = &T/CustomColors add [code] [name] [fallback] [hex]
+cmd.customcolors.help2 = &H  code is a single character.
+cmd.customcolors.help3 = &H  fallback is the color code shown to non-supporting clients.
+cmd.customcolors.help4 = &T/CustomColors remove [code] &H- Removes that custom color.
+cmd.customcolors.help5 = &T/CustomColors list [offset] &H- lists all custom colors.
+cmd.customcolors.help6 = &T/CustomColors edit [code] [name/fallback/hex] [value]
+
+# ── CmdEntityRot.cs ─────────────────────────────────────────────
+cmd.entityrot.msg1 = You need to provide an axis name and angle.
+cmd.entityrot.msg2 = Axis name must be X or Z.
+cmd.entityrot.help1 = &T/EntityRot [name] x/z [angle].
+cmd.entityrot.help2 = &HSets X or Z axis rotation (in degrees) of that player.
+cmd.entityrot.help3 = &T/EntityRot bot [name] x/z [angle]
+cmd.entityrot.help4 = &HSets the X or Z axis rotation (in degrees) of that bot.
+
+# ── CmdEnvironment.cs ───────────────────────────────────────────
+cmd.environment.msg1 = &WWhen using &T/Env &Wfrom {0}, only &T/Env Global &Wis supported
+cmd.environment.msg2 = Reset environment for {0} &Sto normal
+cmd.environment.help1 = &T/Env preset [type] &H- Applies an env preset on the map
+cmd.environment.help2 = &T/Environment global/level [variable] [value]
+cmd.environment.help3 = &HChanges server default or current level's environment.
+cmd.environment.help4 = &HSee &T/Help env variables &Hfor list of variables
+cmd.environment.help5 = &T/Environment global/level normal
+cmd.environment.help6 = &HResets all environment variables to default
+cmd.environment.help7 = &HVariables: &f{0}
+cmd.environment.help8 = &HUse &T/Help env [variable] &Hto see details for that variable
+cmd.environment.help9 = &T/Env {0} [value]
+cmd.environment.help10 = &HUse 'normal' for [value] to reset to default
+cmd.environment.msg3 = &WUnrecognised property \"{0}\"
+
+# ── CmdHold.cs ──────────────────────────────────────────────────
+cmd.hold.msg1 = Cannot hold physics blocks
+cmd.hold.msg2 = Set your held block to {0}.
+cmd.hold.msg3 = Your client doesn't support changing your held block.
+cmd.hold.help1 = &T/Hold [block] <locked>
+cmd.hold.help2 = &HMakes you hold the given block in your hand
+cmd.hold.help3 = &H  <locked> optionally prevents you from changing it
+
+# ── CmdModel.cs ─────────────────────────────────────────────────
+cmd.model.msg1 = You changed the model of bot {0} &Sto a &c{1}
+cmd.model.msg2 = &WScale must be {0} or less for {1} model
+cmd.model.help1 = &T/Model <model> &H- Sets your own model.
+cmd.model.help2 = &T/OModel [name] <model> &H- Sets the model of other player.
+cmd.model.help3 = &T/Model bot [name] <model> &H- Sets the model of that bot.
+cmd.model.help4 = &H Leave <model> blank to reset it.
+cmd.model.help5 = &H  Use &T/Help Model models &Hfor a list of models.
+cmd.model.help6 = &H  Use &T/Help Model scale &Hfor how to scale a model.
+cmd.model.help7 = &HAvailable models: &SChibi, Chicken, Creeper, Giant, Humanoid, Pig, Sheep, Spider, Skeleton, Zombie, Head, Sit, Corpse
+cmd.model.help8 = &HTo set a block model, use a block ID for the model name.
+cmd.model.help9 = &HUse &T/Help Model scale &Hfor how to scale a model.
+cmd.model.help10 = &HFor a scaled model, put \"|[scale]\" after the model name.
+cmd.model.help11 = &H  e.g. pig|0.5, chibi|3
+
+# ── CmdModelScale.cs ────────────────────────────────────────────
+cmd.modelscale.msg1 = You changed the {1} scale of bot {0}
+cmd.modelscale.msg2 = Changed your own {0} scale
+cmd.modelscale.help1 = &T/ModelScale [name] X/Y/Z [scale] &H- Sets scale for a player
+cmd.modelscale.help2 = &T/ModelScale bot [name] X/Y/Z [scale] &H- Sets scale for a bot
+cmd.modelscale.help3 = &HSets the scale of the given entity's model on one axis 
+cmd.modelscale.help4 = &H  e.g. &T/ModelScale -own Y 2 &Hmakes yourself twice as tall
+cmd.modelscale.help5 = &H  Use a [scale] of 0 to reset scale on that axis
+
+# ── CmdPing.cs ──────────────────────────────────────────────────
+cmd.ping.msg1 = {0} client does not support measuring ping
+cmd.ping.msg2 = No ping measurements yet. Try again in a bit.
+cmd.ping.msg3 = Ping/latency list of online players: (&aLo&S:&7Avg&S:&cHi&S)ms
+cmd.ping.help1 = &T/Ping &H- Outputs details about your ping to the server.
+cmd.ping.help2 = &T/Ping [player] &H- Outputs ping details for a player.
+cmd.ping.help3 = &T/Ping all &H- Outputs ping details for all players.
+cmd.ping.msg4 = &cNOTE: &HNot all clients support measuring ping.
+
+# ── CmdReachDistance.cs ─────────────────────────────────────────
+cmd.reachdistance.msg1 = Your reach distance is {0} blocks
+cmd.reachdistance.msg2 = \"{0}\", is too long a reach distance. Max is 1023 blocks.
+cmd.reachdistance.msg3 = Set your reach distance to {0} blocks.
+cmd.reachdistance.msg4 = Your client doesn't support changing your reach distance.
+cmd.reachdistance.help1 = &T/ReachDistance [distance]
+cmd.reachdistance.help2 = &HSets the reach distance for how far away you can modify blocks.
+cmd.reachdistance.help3 = &H  The default reach distance is 5.
+
+# ── CmdSkin.cs ──────────────────────────────────────────────────
+cmd.skin.help1 = &T/Skin [name] [skin] &H- Sets the skin of that player.
+cmd.skin.help2 = &T/Skin bot [name] [skin] &H- Sets the skin of that bot.
+cmd.skin.help3 = &H[skin] can be:
+cmd.skin.help4 = &H - a ClassiCube player's name (e.g Hetal)
+cmd.skin.help5 = &H - a Minecraft player's name, if you put a + (e.g +Hypixel)
+cmd.skin.help6 = &H - a direct url to a skin
+cmd.skin.help7 = &HDirect url skins also apply to non human models (e.g pig)
+
+# ── CmdTexture.cs ───────────────────────────────────────────────
+cmd.texture.msg1 = URL must contain either .png (for terrain) or .zip (for texture pack)
+cmd.texture.msg2 = Reset server textures to default
+cmd.texture.msg3 = Reset level textures to server default
+cmd.texture.help1 = &T/Texture global/level [url]
+cmd.texture.help2 = &HChanges server default or current level's texture.
+cmd.texture.help3 = &H[url] must end with .png (terrain) or .zip (texture pack)
+cmd.texture.help4 = &HUsing 'reset' for [url] will reset the texture to default
+
+# ── CustomBlockCommand.cs ───────────────────────────────────────
+cmd.customblockcommand.msg1 = Aborted the custom block creation process.
+cmd.customblockcommand.msg2 =   Use &T{0} abort &Sat any time to stop making the block.
+cmd.customblockcommand.msg3 =   Use &T{0} revert &Sto go back a step
+cmd.customblockcommand.msg4 =   Use &T{0} [input] &Sto provide input
+cmd.customblockcommand.msg5 = &f----------------------------------------------------------
+cmd.customblockcommand.msg6 = Hence, you cannot copy custom blocks from that level
+cmd.customblockcommand.msg7 = Copied the {0} custom block with id \"{1}\".
+cmd.customblockcommand.msg8 = {0} custom blocks were copied from level {1}
+cmd.customblockcommand.msg9 = Duplicated the {0} custom block with id \"{1}\" to \"{2}\".
+cmd.customblockcommand.msg10 = About {0} ({1})
+cmd.customblockcommand.msg11 =   Draw type: {0}, Blocks light: {1}, collide type: {2}
+cmd.customblockcommand.msg12 =   Fallback ID: {0}, Sound: {1}, Speed: {2}
+cmd.customblockcommand.msg13 =   Block does not use fog
+cmd.customblockcommand.msg14 =   Fog density: {0}, color: {1}
+cmd.customblockcommand.msg15 =   Tint color: {0}
+cmd.customblockcommand.msg16 =   Block is a sprite
+cmd.customblockcommand.msg17 =   Texture ID: {0}
+cmd.customblockcommand.msg18 =   Block is a cube from ({0}, {1}, {2}) to ({3}, {4}, {5})
+cmd.customblockcommand.msg19 =   Texture IDs:
+cmd.customblockcommand.msg20 =     left: {0}, right: {1}, front: {2}, back: {3}
+cmd.customblockcommand.msg21 =     top: {0}, bottom: {1}
+cmd.customblockcommand.msg22 =   Order: None
+cmd.customblockcommand.msg23 =   Order: Hidden from inventory
+cmd.customblockcommand.msg24 =   {0}: {1}
+cmd.customblockcommand.msg25 = Custom block &T{0} &Shas name &T{1}
+cmd.customblockcommand.msg26 = Removed {0} custom block {1}({2})
+cmd.customblockcommand.msg27 = Block {0} already had order {1}
+cmd.customblockcommand.msg28 = Set inventory order for {0} to {1}
+cmd.customblockcommand.msg29 = Set {0} for {1} to {2}
+cmd.customblockcommand.msg30 = Created a new {0} custom block {1}({2})
+cmd.customblockcommand.msg31 = You may also manually specify the same existing id of a global custom block.
+cmd.customblockcommand.msg32 = &WCustom blocks cannot be used as fallback blocks.
+cmd.customblockcommand.msg33 = &WPhysics block cannot be used as fallback blocks.
+cmd.customblockcommand.msg34 = &WThere are no custom block ids left, you must &T{0} remove &Wa custom block first.
+cmd.customblockcommand.msg35 = &WThere is no {1} custom block with the id \"{0}\".
+cmd.customblockcommand.msg36 = Type &T{0} list &Sto see a list of {1} custom blocks.
+cmd.customblockcommand.msg37 = &WThere is already a {1} custom block with the id \"{0}\".
+cmd.customblockcommand.msg38 = Type &T{0} list &Sto see a list of {1} custom blocks.
+cmd.customblockcommand.msg39 = &W{0} is not a valid block {1} custom block name
+cmd.customblockcommand.msg40 = Use &T{0} [answer] &Sto type your answers
+cmd.customblockcommand.msg41 = &f--------------------------
+cmd.customblockcommand.help1 = &H{0} help page 1:
+cmd.customblockcommand.help2 = &T{0} add [id] &H- begins creating a new custom block
+cmd.customblockcommand.help3 = &T{0} copy [id] <new id> &H- clones an existing custom block
+cmd.customblockcommand.help4 = &T{0} edit [id] [property] [value] &H- edits that custom block
+cmd.customblockcommand.help5 = &T{0} remove [id] &H- removes that custom block
+cmd.customblockcommand.help6 = &HTo see the list of editable properties, type &T{0} edit
+cmd.customblockcommand.help7 = &HTo read help page 2, type &T/help {0} 2
+cmd.customblockcommand.help8 = &H{0} help page 2:
+cmd.customblockcommand.help9 = &T{0} copyall [level] &H- clones all custom blocks from [level]
+cmd.customblockcommand.help10 = &T{0} list <offset> &H- lists all custom blocks
+cmd.customblockcommand.help11 = &T{0} info [id] &H- shows info about that custom block
+cmd.customblockcommand.help12 = &HYou may edit, remove or see info for multiple IDs at once.
+cmd.customblockcommand.help13 = &HUse &T/help {0} 3 &Hfor multi explanation.
+cmd.customblockcommand.help14 = &H{0} help page 3:
+cmd.customblockcommand.help15 = &HTo work with multiple block IDs at once,
+cmd.customblockcommand.help16 = &Huse a start and end range seperated by a dash.
+cmd.customblockcommand.help17 = &HFor example, &T{0} remove 21-24
+cmd.customblockcommand.help18 = &Hwould remove blocks with ID 21, 22, 23, and 24.
+cmd.customblockcommand.help19 = &HMulti editing only works with &T{0} edit, remove, or info
+
+# ── CmdPlayers.cs ───────────────────────────────────────────────
+cmd.players.msg1 = :{0}:{1}
+
+# ── CmdTop.cs ───────────────────────────────────────────────────
+cmd.top.msg1 = &a{0}:
+cmd.top.msg2 = {0}) {1} &S- {2}
+
+# ── CmdBot.cs ───────────────────────────────────────────────────
+cmd.bot.msg1 = A bot with that name already exists.
+cmd.bot.msg2 = Reached maximum number of bots allowed on this map.
+cmd.bot.msg3 = There are no bots owned by {0}&S in this level.
+cmd.bot.msg4 = Removed {0} bot{1} belonging to {2}&S.
+cmd.bot.msg5 = &WYou cannot remove all bots belonging to {0}&W unless you are the owner of this map.
+cmd.bot.msg6 = There are no bots in this level.
+cmd.bot.msg7 = Removed {0} bot{1}.
+cmd.bot.msg8 = &WYou cannot remove all bots unless you are the owner of this map.
+cmd.bot.msg9 = Removed bot {0}
+cmd.bot.msg10 = Removed text shown when bot {0} &Sclicked on
+cmd.bot.msg11 = Set text shown when bot {0} &Sis clicked on to {1}
+cmd.bot.msg12 = Reset shown when bot {0} &Skills someone
+cmd.bot.msg13 = Set message shown when bot {0} &Skills someone to {1}
+cmd.bot.msg14 = New name of bot required.
+cmd.bot.msg15 = A bot with the new name already exists.
+cmd.bot.msg16 = Renamed bot {0}
+cmd.bot.msg17 = Name of new bot required.
+cmd.bot.msg18 = Your client does not support clicking on entities.
+cmd.bot.msg19 = You must type &T/botinfo [name] &Sto see info.
+cmd.bot.msg20 = To help find the name of a nicknamed bot, try
+cmd.bot.help1 = &T/whonick bot [nickname]
+cmd.bot.msg21 = Left, right, or middle click a bot to display its information.
+cmd.bot.msg22 = Note: pending click-to-check bot info has been cancelled.
+cmd.bot.help2 = &T/Bot add [name] &H- Adds a new bot at your position
+cmd.bot.help3 = &T/Bot remove [name] &H- Removes the bot with that name
+cmd.bot.help4 = &T/Bot remove all &H- Removes all bots on your map.
+cmd.bot.help5 = &T/Bot remove all [owner]
+cmd.bot.help6 = &HRemoves all bots owned by [owner] on your map.
+cmd.bot.help7 = &T/Bot text [name] <text>
+cmd.bot.help8 = &HSets the text shown when a player clicks on this bot
+cmd.bot.help9 = &HSee &T/Help mb &Hfor more details on <text>
+cmd.bot.help10 = &T/Bot deathmessage [name] <message>
+cmd.bot.help11 = &HSets the message shown when this bot kills a player
+cmd.bot.help12 = &T/Bot rename [name] [new name] &H- Renames a bot
+cmd.bot.help13 = &H  Note: To only change name tag of a bot, use &T/Nick bot
+cmd.bot.help14 = &T/Bot copy [name] [new name] &H- Clones an existing bot
+cmd.bot.help15 = &T/Bot info &H- Displays info of the next bot you click
+cmd.bot.help16 = &T/Bot info [name] &H- Displays info of bot with that name
+
+# ── CmdBotAI.cs ─────────────────────────────────────────────────
+cmd.botai.msg1 = Reserved for special AI.
+cmd.botai.msg2 = Could not find specified bot AI.
+cmd.botai.msg3 = There is no bot AI with that name.
+cmd.botai.help1 = &T/BotAI del [name] &H- deletes that AI
+cmd.botai.help2 = &T/BotAI del [name] last&H- deletes last instruction of that AI
+cmd.botai.help3 = &T/BotAI info [name] &H- prints list of instructions that AI has
+cmd.botai.help4 = &T/BotAI list &H- lists all current AIs
+cmd.botai.help5 = &T/BotAI add [name] [instruction] <args>
+cmd.botai.help6 = &HInstructions: &S{0}
+cmd.botai.help7 = &HTo see detailed help, type &T/Help BotAI [instruction]
+cmd.botai.help8 = &HInstructions: &S{0}, reverse
+
+# ── CmdBotSet.cs ────────────────────────────────────────────────
+cmd.botset.help1 = &T/BotSet [bot] <AI script>
+cmd.botset.help2 = &HMakes [bot] do the instructions in <AI script>
+cmd.botset.help3 = &H  Special AI scripts: Kill and Hunt
+cmd.botset.help4 = &HIf <AI script> is not given, turns off the bot's AI.
+
+# ── CmdBotSummon.cs ─────────────────────────────────────────────
+cmd.botsummon.help1 = &T/BotSummon [name] [x y z] <yaw> <pitch>
+cmd.botsummon.help2 = &HTeleports a bot to the given block coordinates.
+cmd.botsummon.help3 = &HUse ~ before a coordinate to move relative to current position
+cmd.botsummon.help4 = &T/BotSummon [name]
+cmd.botsummon.help5 = &HSummons a bot to your position.
+
+# ── CmdBots.cs ──────────────────────────────────────────────────
+cmd.bots.help1 = &HShows a list of bots on your level, and their AIs and levels
+cmd.bots.help2 = &T/Bots [level]
+cmd.bots.help3 = &HShows bots on the given level
+
+# ── CmdBanEdit.cs ───────────────────────────────────────────────
+cmd.banedit.msg1 = That player isn't banned.
+cmd.banedit.msg2 = Set ban reason for &0{0} &Sto: &2{1}
+cmd.banedit.help1 = &T/BanEdit [username] [reason]
+cmd.banedit.help2 = &HEdits reason of ban for the user.
+
+# ── CmdBanip.cs ─────────────────────────────────────────────────
+cmd.banip.msg1 = \"{0}\" is not a valid IP.
+cmd.banip.msg2 = You cannot IP ban the server.
+cmd.banip.msg3 = You cannot IP ban yourself.
+cmd.banip.msg4 = {0} is already IP banned.
+cmd.banip.msg5 = You can only IP ban IPs used by players with a lower rank.
+cmd.banip.help1 = &T/BanIP [ip/player] <reason>
+cmd.banip.help2 = &HBans an IP, or the IP the given player is on.
+cmd.banip.help3 = &HFor <reason>, @number can be used as a shortcut for that rule.
+
+# ── CmdBlockSet.cs ──────────────────────────────────────────────
+cmd.blockset.help1 = &T/BlockSet [block] [rank]
+cmd.blockset.help2 = &HSets lowest rank that can use and delete [block] to [rank]
+cmd.blockset.help3 = &T/BlockSet place [block] [rank]
+cmd.blockset.help4 = &HSets lowest rank that can use/modify [block] to [rank]
+cmd.blockset.help5 = &T/BlockSet delete [block] [rank]
+cmd.blockset.help6 = &HSets lowest rank that can delete [block] to [rank]
+cmd.blockset.help7 = &H- For more advanced permissions, see &T/Help blockset advanced
+cmd.blockset.help8 = &H- To see available ranks, type &T/ViewRanks
+cmd.blockset.help9 = &T/BlockSet [block] +[rank]
+cmd.blockset.help10 = &HAllows a specific rank to use and delete [block]
+cmd.blockset.help11 = &T/BlockSet [block] -[rank]
+cmd.blockset.help12 = &HPrevents a specific rank from using or deleting [block]
+
+# ── CmdCmdSet.cs ────────────────────────────────────────────────
+cmd.cmdset.msg1 = Could not find command entered
+cmd.cmdset.msg2 = Therefore you cannot change the permissions of &T/{0}
+cmd.cmdset.msg3 = This command has no extra permission by that number.
+cmd.cmdset.help1 = &T/CmdSet [cmd] [rank]
+cmd.cmdset.help2 = &HSets lowest rank that can use [cmd] to [rank]
+cmd.cmdset.help3 = &T/CmdSet [cmd] [rank] [extra permission number]
+cmd.cmdset.help4 = &HSet the lowest rank that has that extra permission for [cmd]
+cmd.cmdset.help5 = &H- For more advanced permissions, see &T/Help cmdset advanced
+cmd.cmdset.help6 = &H- To see available ranks, type &T/ViewRanks
+cmd.cmdset.help7 = &T/CmdSet [cmd] +[rank]
+cmd.cmdset.help8 = &HAllows a specific rank to use [cmd]
+cmd.cmdset.help9 = &T/CmdSet [cmd] -[rank]
+cmd.cmdset.help10 = &HPrevents a specific rank from using [cmd]
+
+# ── CmdHighlight.cs ─────────────────────────────────────────────
+cmd.highlight.msg1 = Place or break two blocks to determine the edges.
+cmd.highlight.msg2 = Highlighting &T{0}&S changes by {1}&S in the past &b{2}
+cmd.highlight.msg3 = &WUse /reload to un-highlight
+cmd.highlight.msg4 = No changes found by {1} &Sin the past &b{0}
+cmd.highlight.help1 = &T/Highlight [player] <timespan>
+cmd.highlight.help2 = &HHighlights blocks changed by [player] in the past <timespan>
+cmd.highlight.help3 = &T/Highlight area [player] <timespan>
+cmd.highlight.help4 = &HOnly highlights in the specified region.
+cmd.highlight.help5 = &H If <timespan> is not given, highlights for last 100 days
+cmd.highlight.msg5 = &W/Highlight cannot be disabled, use /reload to un-highlight
+
+# ── CmdJoker.cs ─────────────────────────────────────────────────
+cmd.joker.help1 = &T/Joker [player]
+cmd.joker.help2 = &HMakes that player become a joker!
+cmd.joker.help3 = &T/Joker #[player]
+cmd.joker.help4 = &HMakes that player silently become a joker!
+
+# ── CmdLocation.cs ──────────────────────────────────────────────
+cmd.location.msg1 = &WPlayer has an internal IP, cannot trace
+cmd.location.msg2 = &WError parsing GeoIP info
+cmd.location.help1 = &T/Location [name/IP]
+cmd.location.help2 = &HTracks down location of the given IP, or IP player is on.
+
+# ── CmdModerate.cs ──────────────────────────────────────────────
+cmd.moderate.help1 = &T/Moderate &H- Toggles chat moderation status.
+cmd.moderate.help2 = &HWhen enabled, only players with &T/Voice &Hmay speak.
+
+# ── CmdMoveAll.cs ───────────────────────────────────────────────
+cmd.moveall.msg1 = You cannot move {0} &Sbecause {1} {2} of equal or higher rank
+cmd.moveall.help1 = &T/MoveAll [level]
+cmd.moveall.help2 = &HMoves all players to that level.
+
+# ── CmdOhide.cs ─────────────────────────────────────────────────
+cmd.ohide.msg1 = Hidden {0} &Sfrom players ranked below {1}
+cmd.ohide.help1 = &T/OHide [player] &H- Hides/unhides the player specified.
+cmd.ohide.help2 = &T/OHide [player] myrank &H- Hides/unhides the player specified to players below your rank.
+cmd.ohide.help3 = &HOnly works on players of lower rank.
+
+# ── CmdP2P.cs ───────────────────────────────────────────────────
+cmd.p2p.msg1 = You did not specify the target player.
+cmd.p2p.help1 = &T/P2P [source] [target]
+cmd.p2p.help2 = &HTeleports the source player to the target player.
+
+# ── CmdPatrol.cs ────────────────────────────────────────────────
+cmd.patrol.msg1 = &WNo players to patrol.
+cmd.patrol.msg2 = Now visiting {0}&S.
+cmd.patrol.help1 = &HTeleports you to a random player. {0} &Hare not patrolled
+cmd.patrol.help2 = &HPlayers patrolled within the last 15 seconds are ignored
+
+# ── CmdRestoreSelection.cs ──────────────────────────────────────
+cmd.restoreselection.msg1 = Select two corners for restore.
+cmd.restoreselection.msg2 = Backup {0} does not exist.
+cmd.restoreselection.help1 = &T/RestoreSelection [backup name]
+cmd.restoreselection.help2 = &HRestores a previous backup of the current selection
+
+# ── CmdTempBan.cs ───────────────────────────────────────────────
+cmd.tempban.msg1 = {0} &Sis already temp-banned.
+cmd.tempban.msg2 = Cannot temp ban someone for less than a second.
+cmd.tempban.help1 = &T/TempBan [name] [timespan] <reason>
+cmd.tempban.help2 = &HBans [name] for [timespan]. Default is 1 hour.
+cmd.tempban.help3 = &H e.g. to tempban for 90 minutes, [timespan] would be &S1h30m
+cmd.tempban.help4 = &HFor <reason>, @number can be used as a shortcut for that rule.
+
+# ── CmdTempRank.cs ──────────────────────────────────────────────
+cmd.temprank.msg1 = &WThe player already has a temporary rank assigned!
+cmd.temprank.msg2 = &WYou cannot assign yourself a temporary rank.
+cmd.temprank.msg3 = {0} &Whas not been assigned a temp rank.
+cmd.temprank.msg4 = {0} &Whas not been assigned a temp rank.
+cmd.temprank.msg5 = &WThere are no players with a temporary rank assigned.
+cmd.temprank.msg6 = &ePlayers with a temporary rank assigned:
+cmd.temprank.msg7 = Temp rank information for {0}:
+cmd.temprank.msg8 =   From {0} &Sto {1}&S, by {2} &a{3} &Sago, expires in &a{4}
+cmd.temprank.help1 = &T/TempRank [player] [rank] [timespan] <reason>
+cmd.temprank.help2 = &HSets a temporary rank for the specified player.
+cmd.temprank.help3 = &T/TempRank info [player]
+cmd.temprank.help4 = &HLists information about the temp rank for the given player.
+cmd.temprank.help5 = &T/TempRank delete [player] &H- Removes player's temp rank.
+cmd.temprank.help6 = &T/TempRank list &H- Lists all current temp ranks.
+
+# ── CmdTrust.cs ─────────────────────────────────────────────────
+cmd.trust.help1 = &T/Trust [name]
+cmd.trust.help2 = &HTurns off the anti-grief for [name]
+
+# ── CmdUnban.cs ─────────────────────────────────────────────────
+cmd.unban.help1 = &T/Unban [player] <reason>
+cmd.unban.help2 = &HUnbans a player. This includes temporary bans.
+cmd.unban.help3 = &HFor <reason>, @number can be used as a shortcut for that rule.
+
+# ── CmdUnbanip.cs ───────────────────────────────────────────────
+cmd.unbanip.msg1 = \"{0}\" is not a valid IP.
+cmd.unbanip.msg2 = You cannot un-IP ban yourself.
+cmd.unbanip.help1 = &T/UnbanIP [ip/player]
+cmd.unbanip.help2 = &HUn-bans an IP, or the IP the given player is on.
+
+# ── CmdUndoPlayer.cs ────────────────────────────────────────────
+cmd.undoplayer.msg1 = You need to provide a player name.
+cmd.undoplayer.msg2 = Place or break two blocks to determine the edges.
+cmd.undoplayer.msg3 = No changes found by {1} &Sin the past &b{0}
+cmd.undoplayer.help1 = &T/UndoPlayer [player1] <player2..> <timespan>
+cmd.undoplayer.help2 = &HUndoes the block changes of [players] in the past <timespan>
+cmd.undoplayer.help3 = &T/UndoPlayer -area [player1] <player2..> <timespan>
+cmd.undoplayer.help4 = &HOnly undoes block changes in the specified region.
+cmd.undoplayer.help5 = &H  If <timespan> is not given, undoes 30 minutes.
+
+# ── CmdVIP.cs ───────────────────────────────────────────────────
+cmd.vip.msg1 = {0} &Sis already a VIP.
+cmd.vip.msg2 = {0} &Sis now a VIP.
+cmd.vip.msg3 = You are now a VIP!
+cmd.vip.msg4 = {0} &Sis not a VIP.
+cmd.vip.msg5 = {0} &Sis no longer a VIP.
+cmd.vip.msg6 = You are no longer a VIP!
+cmd.vip.help1 = &T/VIP add/remove [player]
+cmd.vip.help2 = &HAdds or removes [player] from the VIP list.
+cmd.vip.help3 = &T/VIP list
+cmd.vip.help4 = &HLists all players who are on the VIP list.
+cmd.vip.help5 = &H  VIPs can join regardless of the player limit.
+
+# ── CmdVoice.cs ─────────────────────────────────────────────────
+cmd.voice.msg1 = Your voice status has been revoked.
+cmd.voice.msg2 = You have received voice status.
+cmd.voice.help1 = &T/Voice [name]
+cmd.voice.help2 = &HToggles voice status on or off for the given player.
+cmd.voice.help3 = &HIf no name is given, toggles your own voice status.
+
+# ── CmdWhitelist.cs ─────────────────────────────────────────────
+cmd.whitelist.msg1 = Whitelist is not enabled.
+cmd.whitelist.msg2 = {0} &Sis already on the whitelist!
+cmd.whitelist.msg3 = {0} &Sis not on the whitelist!
+cmd.whitelist.help1 = &T/Whitelist add/del [player]
+cmd.whitelist.help2 = &HAdds or removes [player] from the whitelist
+cmd.whitelist.help3 = &T/Whitelist list
+cmd.whitelist.help4 = &HLists all players who are on the whitelist
+cmd.whitelist.help5 = &T/Whitelist enable/disable
+cmd.whitelist.help6 = &HSets whether only whitelisted players can join the server
+
+# ── CmdXban.cs ──────────────────────────────────────────────────
+cmd.xban.help1 = &T/XBan [player] <reason>
+cmd.xban.help2 = &HBans, IP bans, undoes, and kicks the given player.
+cmd.xban.help3 = &T/UBan [player] <reason>
+cmd.xban.help4 = &HSame as &T/XBan&H, but does not ban the IP.
+
+# ── ZoneCmds.cs ─────────────────────────────────────────────────
+cmd.zonecmds.msg1 = Hence, you cannot edit this zone.
+cmd.zonecmds.msg2 = A zone with that name already exists. Use &T/zedit &Sto change it.
+cmd.zonecmds.msg3 = Place or break two blocks to determine the edges.
+cmd.zonecmds.msg4 = Hence, you cannot delete this zone.
+cmd.zonecmds.msg5 = Zone {0} &Sdeleted
+cmd.zonecmds.msg6 = No value provided. See &T/Help zone properties
+cmd.zonecmds.help1 = &T/{0} add [name] <permissions>
+cmd.zonecmds.help2 = &HCreates a new zone, optionally also sets build permissions
+cmd.zonecmds.help3 = &T/{0} del [name]
+cmd.zonecmds.help4 = &HDeletes the given zone
+cmd.zonecmds.help5 = &T/{0} perbuild [name] [permissions]
+cmd.zonecmds.help6 = &HSets build permissions for the given zone
+cmd.zonecmds.help7 = &H  For syntax of permissions, see &T/Help PerBuild
+cmd.zonecmds.help8 = &T/{0} set [name] [property] [value]
+cmd.zonecmds.help9 = &HSets a property of this zone. See &T/Help {0} properties
+cmd.zonecmds.help10 = &T/{0} set [name] alpha [value]
+cmd.zonecmds.help11 = &HSets how solid the box shown around the zone is
+cmd.zonecmds.help12 = &H0 - not shown at all, 0.5 - half solid, 1 - fully solid
+cmd.zonecmds.help13 = &T/{0} set [name] color [hex color]
+cmd.zonecmds.help14 = &HSets the color of the box shown around the zone
+cmd.zonecmds.help15 = &T/{0} set [name] motd [value]
+cmd.zonecmds.help16 = &HSets the MOTD applied when in the zone. See &T/Help map motd
+cmd.zonecmds.help17 = &T/{0} set [name] [env property] [value]
+cmd.zonecmds.help18 = &HSets an env setting applied when in the zone. See &T/Help env
+cmd.zonecmds.msg7 = Place or delete a block where you would like to check for zones.
+cmd.zonecmds.msg8 =   Zone {0} &S- {1}{2}
+cmd.zonecmds.msg9 = No zones affect this block.
+cmd.zonecmds.help19 = &T/ZoneTest &H- Lists all zones affecting a block
+cmd.zonecmds.msg10 = {0} &b- ({1}, {2}, {3}) to ({4}, {5}, {6})
+cmd.zonecmds.help20 = &T/ZoneList &H- Lists all zones in current level
+cmd.zonecmds.msg11 = &STo use &T/ZoneMark &Swithout providing a zone name, you must be standing in a zone
+cmd.zonecmds.msg12 = Cannot mark, no selection in progress.
+cmd.zonecmds.help21 = &T/ZoneMark [name]
+cmd.zonecmds.help22 = &HUses corners of the given zone as a &T/Mark &Hfor selections
+cmd.zonecmds.help23 = &HUses corners of the zone you are currently standing in
+
+# ── CmdBlockProperties.cs ───────────────────────────────────────
+cmd.blockproperties.help1 = &TProperties of {0}:
+cmd.blockproperties.msg1 =   Kills players who collide with this block
+cmd.blockproperties.msg2 =   Is an ordinary door
+cmd.blockproperties.msg3 =   Is a tdoor (allows other blocks through when open)
+cmd.blockproperties.msg4 =   Is an odoor (can be toggled by doors, and toggles other odoors)
+cmd.blockproperties.msg5 =   Can be used as a &T/Portal
+cmd.blockproperties.msg6 =   Can be used as a &T/MessageBlock
+cmd.blockproperties.msg7 =   Is destroyed by flooding water
+cmd.blockproperties.msg8 =   Is destroyed by flooding lava
+cmd.blockproperties.msg9 =   Is not affected by explosions
+cmd.blockproperties.msg10 =   Can be used as rails for &T/Train
+cmd.blockproperties.msg11 =   Has the {0} AI behaviour
+cmd.blockproperties.msg12 =   Stacks as {0} when placed on top of itself
+cmd.blockproperties.help2 = &H  Players can drown in this block
+cmd.blockproperties.msg13 =   Grows into {0} when in sunlight
+cmd.blockproperties.msg14 =   Decays into {0} when in shadow
+cmd.blockproperties.help3 = &HProperties: &f{0}
+
+# ── CmdDeleteLvl.cs ─────────────────────────────────────────────
+cmd.deletelvl.msg1 = If you are sure, type &T/os delete {0} {1} confirm
+cmd.deletelvl.msg2 = If you are sure, type &T/{0} {1} {2} confirm
+
+# ── CmdImport.cs ────────────────────────────────────────────────
+cmd.import.msg1 =   {0} ({1})
+
+# ── CmdMap.cs ───────────────────────────────────────────────────
+cmd.map.help1 = &HOptions: &f{0}
+cmd.map.help2 = &T/Map [level] {0}{1}
+cmd.map.help3 = &T-/+hax &H- disallows/allows all hacks
+cmd.map.help4 = &T-/+fly &H- disallows/allows flying
+cmd.map.help5 = &T-/+noclip &H- disallows/allows noclipping
+cmd.map.help6 = &T-/+respawn &H- disallows/allows respawning
+cmd.map.help7 = &T-/+thirdperson &H- disallows/allows third person camera
+cmd.map.help8 = &T-/+speed &H- disallows/allows speeding
+cmd.map.help9 = &T-/+ophax &H- disallows/allows hacks for {0}&S+
+cmd.map.help10 = &T-/+push &H- disallows/allows player pushing
+cmd.map.help11 = &Tjumpheight=[height] &H- sets max height users can jump up to
+cmd.map.help12 = &Thorspeed=[speed] &H- sets base horizontal speed users move at
+cmd.map.help13 = &Tjumps=[number] &H- sets max number of consecutive jumps
+
+# ── CmdPhysics.cs ───────────────────────────────────────────────
+cmd.physics.msg1 = {0} &Shas physics at &b{1}&S. &cChecks: {2}; Updates: {3}
+
+# ── CmdCmdBind.cs ───────────────────────────────────────────────
+cmd.cmdbind.help1 = &T/{0} &Sbound to &T/{1}
+cmd.cmdbind.help2 = &T/{0} &Sbound to &T/{1}
+cmd.cmdbind.msg1 = Bound &T/{1} &Sto &T/{0}
+
+# ── CmdCopySlot.cs ──────────────────────────────────────────────
+cmd.copyslot.msg1 =   #{0}: {1}
+
+# ── CmdDoNotMark.cs ─────────────────────────────────────────────
+cmd.donotmark.msg1 = Click blocks to &T/mark&S: {0}
+
+# ── CmdImageprint.cs ────────────────────────────────────────────
+cmd.imageprint.msg1 = Palette {0} not found.
+cmd.imageprint.msg2 = &WUnknown print mode \"{0}\".
+cmd.imageprint.msg3 = {0} does not exist
+
+# ── CmdMode.cs ──────────────────────────────────────────────────
+cmd.mode.msg1 = &b{0} &Smode: &cOFF
+cmd.mode.msg2 = &b{0} &Smode: &cOFF
+cmd.mode.msg3 = &b{0} &Smode: &aON
+
+# ── CmdPalette.cs ───────────────────────────────────────────────
+cmd.palette.msg1 = {0} - {1}
+
+# ── CmdStatic.cs ────────────────────────────────────────────────
+cmd.static.help1 = &T/Static [command]
+cmd.static.help2 = &HMakes every command a toggle.
+cmd.static.help3 = &HIf [command] is given, then that command is used
+
+# ── CmdTorus.cs ─────────────────────────────────────────────────
+cmd.torus.help1 = &T/Torus <brush args>
+cmd.torus.msg1 =    &HNote: radius of the tube itself is the vertical difference between the two points.
+
+# ── CmdTransform.cs ─────────────────────────────────────────────
+cmd.transform.help1 = &T/Transform [name] <transform args>
+cmd.transform.help2 = &HSets your current transform to the transform with that name.
+cmd.transform.help3 = &T/Help Transform [name]
+cmd.transform.help4 = &HOutputs the help for the transform with that name.
+
+# ── CmdTree.cs ──────────────────────────────────────────────────
+cmd.tree.help1 = &T/Tree [type] <brush args> &H- Draws a tree.
+cmd.tree.help2 = &T/Tree [type] [size/height] <brush args>
+cmd.tree.help3 = &H  Types: &f{0}
+
+# ── CmdTriangle.cs ──────────────────────────────────────────────
+cmd.triangle.help1 = &T/Triangle <brush args>
+cmd.triangle.help2 = &HDraws a triangle between three points.
+
+# ── CmdWrite.cs ─────────────────────────────────────────────────
+cmd.write.msg1 = You must be able to use &T/Write &Sto use &T/WriteText.
+cmd.write.msg2 = No direction was selected
+cmd.write.help1 = &T/WriteText [scale] [spacing] [message]
+cmd.write.help2 = &HWrites the given message in blocks.
+cmd.write.help3 = &Hspacing specifies the number of blocks between each letter.
+cmd.write.help4 = &T/Write [message]
+cmd.write.help5 = &HWrites [message] in blocks
+cmd.write.help6 = &HNote that this has been deprecated by &T/WriteText.
+
+# ── CmdInbox.cs ─────────────────────────────────────────────────
+cmd.inbox.msg1 =   {0}
+
+# ── CmdPronouns.cs ──────────────────────────────────────────────
+cmd.pronouns.help1 = &H  &T{0}
+
+# ── cmdCTFADSFD.cs ──────────────────────────────────────────────
+cmd.ctfadsfd.msg1 = Invalid team color chosen.
+cmd.ctfadsfd.msg2 = Place a block to determine where to place the flag.
+cmd.ctfadsfd.msg3 = You must indicate a numeric points value greater than 0.
+cmd.ctfadsfd.msg4 = That team already exists.
+cmd.ctfadsfd.msg5 = That player is already on that team.
+cmd.ctfadsfd.msg6 = That team has not been initialized on this level.
+cmd.ctfadsfd.msg7 = That player is not on that team.
+cmd.ctfadsfd.msg8 = That team has not been initialized on this level.
+cmd.ctfadsfd.msg9 = That team has not been initialized on this level.
+cmd.ctfadsfd.msg10 = That team has not been initialized on this level.
+cmd.ctfadsfd.msg11 = Please visit http://forums.mclawl.tk and visit the Help and How-To section for a detailed
+cmd.ctfadsfd.msg12 = help feature for CTF.  There are too many functions and required things to list here!
+
+# ── CmdCmdLoad.cs ───────────────────────────────────────────────
+cmd.cmdload.help1 = &T/CmdLoad [command name]
+cmd.cmdload.help2 = &HLoads a compiled command into the server for use.
+cmd.cmdload.help3 = &H  Loads both C# and Visual Basic compiled commands.
+
+# ── CmdCmdUnload.cs ─────────────────────────────────────────────
+cmd.cmdunload.msg1 = \"{0}\" is not a valid or loaded command.
+cmd.cmdunload.help1 = &T/CmdUnload [command]
+cmd.cmdunload.help2 = &HUnloads a command from the server.
+
+# ── CmdPlugin.cs ────────────────────────────────────────────────
+cmd.plugin.msg1 = Loaded plugins:
+cmd.plugin.msg2 = Use &T/PCreate &Sinstead
+cmd.plugin.msg3 = Use &T/PCompile &Sinstead
+cmd.plugin.help1 = &T/Plugin load [filename]
+cmd.plugin.help2 = &HLoad a compiled plugin from the &fplugins &Hfolder
+cmd.plugin.help3 = &T/Plugin unload [name]
+cmd.plugin.help4 = &HUnloads a currently loaded plugin
+cmd.plugin.help5 = &T/Plugin list
+cmd.plugin.help6 = &HLists all loaded plugins

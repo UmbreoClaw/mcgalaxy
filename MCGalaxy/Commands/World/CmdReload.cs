@@ -17,6 +17,7 @@
  */
 using System;
 using MCGalaxy.Games;
+using MCGalaxy.Localization;
 namespace MCGalaxy.Commands.World {
     public sealed class CmdReload : Command2 {
         public override string name { get { return "Reload"; } }
@@ -38,10 +39,10 @@ namespace MCGalaxy.Commands.World {
                 if (!IGame.CheckAllowed(p, "use &T/Reload")) {
                     // messaging handled in CheckAllowed
                 } else if (!Hacks.CanUseNoclip(p)) {
-                    p.Message("You cannot use &T/Reload &Son this level");
+                    p.Message(Locale.Get("reload.cannot_use", p));
                 } else {
                     PlayerActions.ReloadMap(p);
-                    p.Message("&bMap reloaded");
+                    p.Message(Locale.Get("reload.reloaded", p));
                 }
                 return;
             } 
@@ -57,9 +58,9 @@ namespace MCGalaxy.Commands.World {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Reload &H- Reloads the level you are in, just for you");
-            p.Message("&T/Reload all &H- Reloads for all players in level you are in");
-            p.Message("&T/Reload [level] &H- Reloads for all players in [level]");
+            p.Message(Locale.Get("reload.help1", p));
+            p.Message(Locale.Get("reload.help2", p));
+            p.Message(Locale.Get("reload.help3", p));
         }
     }
 }

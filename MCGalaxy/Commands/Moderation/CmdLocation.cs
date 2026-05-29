@@ -42,7 +42,7 @@ namespace MCGalaxy.Commands.Moderation {
             if (ip == null) return;
             
             if (IPUtil.IsPrivate(IPAddress.Parse(ip))) {
-                p.Message("&WPlayer has an internal IP, cannot trace"); return;
+                p.Message(Locale.Get("cmd.location.msg1", p)); return;
             }
 
             string json;
@@ -57,7 +57,7 @@ namespace MCGalaxy.Commands.Moderation {
             
             JsonReader reader = new JsonReader(json);
             JsonObject obj    = (JsonObject)reader.Parse();
-            if (obj == null) { p.Message("&WError parsing GeoIP info"); return; }
+            if (obj == null) { p.Message(Locale.Get("cmd.location.msg2", p)); return; }
             
             object region = null, country = null;
             obj.TryGetValue("region",   out region);
@@ -71,8 +71,8 @@ namespace MCGalaxy.Commands.Moderation {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Location [name/IP]");
-            p.Message("&HTracks down location of the given IP, or IP player is on.");
+            p.Message(Locale.Get("cmd.location.help1", p));
+            p.Message(Locale.Get("cmd.location.help2", p));
         }
     }
 }

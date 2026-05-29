@@ -27,14 +27,14 @@ namespace MCGalaxy.Commands.Building {
         
         protected override int MarksCount { get { return 3; } }
         protected override string SelectionType { get { return "points"; } }
-        protected override string PlaceMessage { get { return "Place or break two blocks to determine the endpoints, then another for the control point"; } }
+        protected override string PlaceMessage { get { return "bezier.place_msg"; } }
 
         protected override DrawOp GetDrawOp(DrawArgs dArgs) { return new BezierDrawOp(); }
-        
+
         public override void Help(Player p) {
-            p.Message("&T/Bezier <brush args>");
-            p.Message("&HDraws a quadratic bezier curve.");
-            p.Message("&HFirst two points specify the endpoints, then another point specifies the control point.");
+            p.Message(Locale.Get("bezier.help1", p));
+            p.Message(Locale.Get("bezier.help2", p));
+            p.Message(Locale.Get("bezier.help3", p));
             p.Message(BrushHelpLine);
         }
     }

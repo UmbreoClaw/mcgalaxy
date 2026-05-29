@@ -17,6 +17,7 @@
  */
 using System;
 using MCGalaxy.Eco;
+using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.Eco {
     public sealed class CmdEconomy : Command2 {
@@ -35,10 +36,10 @@ namespace MCGalaxy.Commands.Eco {
             if (!CheckExtraPerm(p, data, 1)) return;
             
             if (args[0].CaselessEq("enable")) {
-                p.Message("Economy is now &aenabled");
+                p.Message(Locale.Get("economy.enabled", p));
                 Economy.Enabled = true; Economy.Save();
             } else if (args[0].CaselessEq("disable")) {
-                p.Message("Economy is now &cdisabled");
+                p.Message(Locale.Get("economy.disabled", p));
                 Economy.Enabled = false; Economy.Save();
             } else {
                 Item item = Economy.GetItem(args[0]);
@@ -54,15 +55,15 @@ namespace MCGalaxy.Commands.Eco {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Eco enable/disable &H- Enables/disables the economy system.");
-            p.Message("&T/Eco help [item] &H- Outputs help for setting up that item.");
+            p.Message(Locale.Get("economy.help1", p));
+            p.Message(Locale.Get("economy.help2", p));
             p.Message("   &HAll items: &S" + Economy.Items.Join(item => item.Name));
         }
-        
+
         public override void Help(Player p, string message) {
             Item item = Economy.GetItem(message);
             if (item == null) {
-                p.Message("No item has that name, see &T/Eco help &Sfor a list of items.");
+                p.Message(Locale.Get("economy.no_item", p));
             } else {
                 item.OnSetupHelp(p);
             }

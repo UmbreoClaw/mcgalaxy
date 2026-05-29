@@ -114,7 +114,7 @@ namespace MCGalaxy.Commands.Info
         
         static void OutputList(Player p, string keyword, string cmd, string type, string modifier, List<string> items) {
             if (items.Count == 0) {
-                p.Message("No {0} found containing \"{1}\"", type, keyword);
+                p.Message(Locale.Get("search.not_found", p), type, keyword);
             } else {
                 Paginator.Output(p, items, item => item, cmd + " " + keyword, type, modifier);
             }
@@ -135,12 +135,12 @@ namespace MCGalaxy.Commands.Info
         
         
         public override void Help(Player p) {
-            p.Message("&T/Search [list] [keyword]");
-            p.Message("&HFinds entries in a list that match the given keyword");
-            p.Message("&H  keyword can also include wildcard characters:");
-            p.Message("&H    * - placeholder for zero or more characters");
-            p.Message("&H    ? - placeholder for exactly one character");
-            p.Message("&HLists: &fblocks/commands/ranks/players/online/loaded/maps");
+            p.Message(Locale.Get("search.help1", p));
+            p.Message(Locale.Get("search.help2", p));
+            p.Message(Locale.Get("search.help3", p));
+            p.Message(Locale.Get("search.help4", p));
+            p.Message(Locale.Get("search.help5", p));
+            p.Message(Locale.Get("search.help6", p));
         }
     }
 }

@@ -19,6 +19,7 @@ using System;
 using MCGalaxy.Bots;
 using MCGalaxy.Generator;
 using MCGalaxy.Levels.IO;
+using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.World {
     public sealed class CmdResizeLvl : Command2 {
@@ -38,7 +39,7 @@ namespace MCGalaxy.Commands.World {
             if (DoResize(p, args, data, out needConfirm)) return;
             
             if (!needConfirm) return;
-            p.Message("Type &T/ResizeLvl {0} {1} {2} {3} confirm &Sif you're sure.",
+            p.Message(Locale.Get("resizelvl.confirm", p),
                       args[0], args[1], args[2], args[3]);
         }
         
@@ -54,7 +55,7 @@ namespace MCGalaxy.Commands.World {
             
             bool confirmed = args.Length > 4 && args[4].CaselessEq("confirm");
             if (!confirmed && (x < lvl.Width || y < lvl.Height || z < lvl.Length)) {
-                p.Message("New level dimensions are smaller than the current dimensions, &Wyou will lose blocks&S.");
+                p.Message(Locale.Get("resizelvl.smaller_dims", p));
                 needConfirm = true;
                 return false;
             }
@@ -64,8 +65,8 @@ namespace MCGalaxy.Commands.World {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/ResizeLvl [level] [width] [height] [length]");
-            p.Message("&HResizes the given level.");
+            p.Message(Locale.Get("resizelvl.help1", p));
+            p.Message(Locale.Get("resizelvl.help2", p));
         }
     }
 }

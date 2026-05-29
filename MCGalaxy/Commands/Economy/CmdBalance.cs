@@ -17,6 +17,7 @@
  */
 using System;
 using MCGalaxy.Eco;
+using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.Eco 
 {
@@ -47,9 +48,9 @@ namespace MCGalaxy.Commands.Eco
             }
 
             string targetName = p.FormatNick(target);
-            p.Message("Economy stats for {0}&S:", targetName);
-            p.Message(" Current balance: &f{0} &3{1}", money, Server.Config.Currency);
-            
+            p.Message(Locale.Get("balance.eco_stats", p), targetName);
+            p.Message(Locale.Get("balance.current_balance", p), money, Server.Config.Currency);
+
             Economy.EcoStats ecos = Economy.RetrieveStats(target);
             p.Message(" Total spent: &f" + ecos.TotalSpent + " &3" + Server.Config.Currency);
             Output(p, ecos.Purchase, "purchase");
@@ -65,7 +66,7 @@ namespace MCGalaxy.Commands.Eco
             if (!AdjustRelative(ref value, " on %f")) {
                 AdjustRelative(ref value, " - Date: %f"); // old date format for purchases
             }
-            p.Message(" Last {0}: {1}", type, value);
+            p.Message(Locale.Get("cmd.balance.msg1", p), type, value);
         }
         
         static bool AdjustRelative(ref string value, string dateStart) {
@@ -92,10 +93,9 @@ namespace MCGalaxy.Commands.Eco
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Balance [player]");
-            p.Message("&HShows how much &3" + Server.Config.Currency + " &H[player] has, " +
-                           "plus their most recent transactions.");
-            p.Message("&HIf [player] is not given, shows your own balance.");
+            p.Message(Locale.Get("balance.help1", p));
+            p.Message(Locale.Get("balance.help2", p), Server.Config.Currency);
+            p.Message(Locale.Get("balance.help3", p));
         }
     }
 }

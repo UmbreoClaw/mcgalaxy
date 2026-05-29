@@ -32,8 +32,8 @@ namespace MCGalaxy.Commands.Info
             List<OnlineListEntry> all = PlayerInfo.GetOnlineList(p, data.Rank, out total);
             if (message.Length > 0) { ListOfRank(p, message, all); return; }
             
-            p.Message("There {0} &a{1} &Splayer{2} online.",
-                      total == 1 ? "is" : "are",
+            p.Message(Locale.Get("players.online_count", p),
+                      total == 1 ? Locale.Get("players.is", p) : Locale.Get("players.are", p),
                       total, total.Plural());
             
             foreach (OnlineListEntry e in all) {
@@ -47,7 +47,7 @@ namespace MCGalaxy.Commands.Info
             OnlineListEntry rank = all.Find(e => e.group == grp);
             
             if (rank == null || rank.players.Count == 0) {
-                p.Message("There are no {0} &Sonline.", 
+                p.Message(Locale.Get("players.none_of_rank_online", p),
                           rank.group.GetFormattedName());
             } else {
                 Output(rank, p, false);
@@ -75,14 +75,14 @@ namespace MCGalaxy.Commands.Info
 
             // remove , from end, keeping in mind that length could be 0 if showWhenEmpty
             if (data.Length > 0) { data.Remove(data.Length - 1, 1); }
-            p.Message(":{0}:{1}", e.group.GetFormattedName(), data);
+            p.Message(Locale.Get("cmd.players.msg1", p), e.group.GetFormattedName(), data);
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Players");
-            p.Message("&HLists name and rank of all online players");
-            p.Message("&T/Players [rank]");
-            p.Message("&HLists all online players who have that rank");
+            p.Message(Locale.Get("players.help1", p));
+            p.Message(Locale.Get("players.help2", p));
+            p.Message(Locale.Get("players.help3", p));
+            p.Message(Locale.Get("players.help4", p));
         }
     }
 }

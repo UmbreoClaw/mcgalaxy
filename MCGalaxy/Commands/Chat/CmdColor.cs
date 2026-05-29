@@ -44,8 +44,7 @@ namespace MCGalaxy.Commands.Chatting
             string color = colName.Length == 0 ? "&1" : Matcher.FindColor(p, colName);
             if (color == null) return;
             
-            p.Message("You changed the color of bot " + bot.ColoredName + 
-                      " &Sto " + color + Colors.Name(color));
+            p.Message(Locale.Get("color.bot_color_changed", p), bot.ColoredName, color + Colors.Name(color));
             bot.color = color;
             
             bot.GlobalDespawn();
@@ -58,14 +57,14 @@ namespace MCGalaxy.Commands.Chatting
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Color <color>");
-            p.Message("&H Sets your nick color");
-            p.Message("&T/OColor [player] <color>");
-            p.Message("&H Sets the nick color of other player");
-            p.Message("&T/Color bot [bot] <color>");
-            p.Message("&H Sets the name color of that bot.");
-            p.Message("&H  Leave <color> blank to reset it.");
-            p.Message("&HTo see a list of all colors, use /Help colors.");
+            p.Message(Locale.Get("color.help1", p));
+            p.Message(Locale.Get("color.help2", p));
+            p.Message(Locale.Get("color.help3", p));
+            p.Message(Locale.Get("color.help4", p));
+            p.Message(Locale.Get("color.help5", p));
+            p.Message(Locale.Get("color.help6", p));
+            p.Message(Locale.Get("color.help7", p));
+            p.Message(Locale.Get("color.help8", p));
         }
     }
 }

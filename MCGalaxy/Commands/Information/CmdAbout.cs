@@ -39,7 +39,7 @@ namespace MCGalaxy.Commands.Info
         }
         
         public override void Use(Player p, string message, CommandData data) {
-            p.Message("Break/build a block to display information.");
+            p.Message(Locale.Get("about.break_build", p));
             p.MakeSelection(1, "Selecting location for &SBlock info", data, PlacedMark);
         }
 
@@ -49,7 +49,7 @@ namespace MCGalaxy.Commands.Info
             p.RevertBlock(x, y, z);
             Dictionary<int, string> names = new Dictionary<int, string>();
 
-            p.Message("Retrieving block change records..");
+            p.Message(Locale.Get("about.retrieving", p));
 
             bool foundAny = false;
             ListFromDatabase(p, ref foundAny, x, y, z);
@@ -58,15 +58,15 @@ namespace MCGalaxy.Commands.Info
                     p.level.BlockDB.FindChangesAt(x, y, z,
                                                   entry => OutputEntry(p, ref foundAny, names, entry));
                 } else {
-                    p.Message("&WUnable to accquire read lock on BlockDB after 30 seconds, aborting.");
+                    p.Message(Locale.Get("about.lock_failed", p));
                     return false;
                 }
             }
             
-            if (!foundAny) p.Message("No block change records found for this block.");
+            if (!foundAny) p.Message(Locale.Get("about.no_records", p));
             BlockID raw = Block.IsPhysicsType(block) ? block : Block.ToRaw(block);
             string blockName = Block.GetName(p, block);
-            p.Message("Block ({0}, {1}, {2}): &f{3} = {4}&S.", x, y, z, raw, blockName);
+            p.Message(Locale.Get("about.block_info", p), x, y, z, raw, blockName);
             
             CommandData data = (CommandData)state;
             if (HasExtraPerm(p, data.Rank, 1)) {
@@ -121,8 +121,8 @@ namespace MCGalaxy.Commands.Info
         }
         
         public override void Help(Player p) {
-            p.Message("&T/About");
-            p.Message("&HOutputs the change/edit history for a block.");
+            p.Message(Locale.Get("about.help1", p));
+            p.Message(Locale.Get("about.help2", p));
         }
     }
 }

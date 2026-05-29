@@ -16,6 +16,7 @@
     permissions and limitations under the Licenses.
  */
 using System;
+using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.World {
     public sealed class CmdLoad : Command2 {
@@ -34,8 +35,8 @@ namespace MCGalaxy.Commands.World {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Load [level]");
-            p.Message("&HLoads a level.");
+            p.Message(Locale.Get("load.help1", p));
+            p.Message(Locale.Get("load.help2", p));
         }
     }
 }

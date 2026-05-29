@@ -48,46 +48,46 @@ namespace MCGalaxy.Commands.Info
             if (target != null) target.hasreadrules = true;
 
             string[] rules = rulesFile.GetText();
-            target.Message("Server Rules:");
+            target.Message(Locale.Get("rules.header", p));
             target.MessageLines(rules);
-            
+
             if (target != null && p != target) {
-                p.Message("Sent the rules to {0}&S.", p.FormatNick(target));
-                target.Message("{0} &Ssent you the rules.", target.FormatNick(p));
+                p.Message(Locale.Get("rules.sent_to", p), p.FormatNick(target));
+                target.Message(Locale.Get("rules.sent_by", target), target.FormatNick(p));
             }
         }
         
         void Agree(Player p) {
-            if (p.IsSuper) { p.Message("Only in-game players can agree to the rules."); return; }
-            if (!Server.Config.AgreeToRulesOnEntry) { p.Message("agree-to-rules-on-entry is not enabled."); return; }
-            if (!p.hasreadrules) { p.Message("&9You must read &T/Rules &9before agreeing."); return; }
-            
+            if (p.IsSuper) { p.Message(Locale.Get("rules.agree_ingame_only", p)); return; }
+            if (!Server.Config.AgreeToRulesOnEntry) { p.Message(Locale.Get("rules.agree_not_enabled", p)); return; }
+            if (!p.hasreadrules) { p.Message(Locale.Get("rules.must_read_first", p)); return; }
+
             if (!Server.agreed.Add(p.name)) {
-                p.Message("You have already agreed to the rules.");
-            } else {                
+                p.Message(Locale.Get("rules.already_agreed", p));
+            } else {
                 p.agreed = true;
-                p.Message("Thank you for agreeing to follow the rules. You may now build and use commands!");
+                p.Message(Locale.Get("rules.agreed_thanks", p));
                 Server.agreed.Save(false);
             }
         }
-        
+
         void Disagree(Player p, CommandData data) {
-            if (p.IsSuper) { p.Message("Only in-game players can disagree with the rules."); return; }
-            if (!Server.Config.AgreeToRulesOnEntry) { p.Message("agree-to-rules-on-entry is not enabled."); return; }
-            
+            if (p.IsSuper) { p.Message(Locale.Get("rules.disagree_ingame_only", p)); return; }
+            if (!Server.Config.AgreeToRulesOnEntry) { p.Message(Locale.Get("rules.agree_not_enabled", p)); return; }
+
             if (data.Rank > LevelPermission.Guest) {
-                p.Message("Your awesomeness prevents you from using this command"); return;
+                p.Message(Locale.Get("rules.rank_prevents_disagree", p)); return;
             }
-            p.Leave("If you don't agree with the rules, consider playing elsewhere.");
+            p.Leave(Locale.Get("rules.leave_reason"));
         }
 
         public override void Help(Player p) {
             if (HasExtraPerm(p, p.Rank, 1)) {
-                p.Message("&T/Rules [player] &H- Displays server rules to [player]");
+                p.Message(Locale.Get("rules.help_send", p));
             }
-            p.Message("&T/Rules &H- Displays the server rules to you");
-            p.Message("&T/Rules agree &H- Agrees to the server's rules");
-            p.Message("&T/Rules disagree &H- Disagrees with the server's rules");
+            p.Message(Locale.Get("rules.help1", p));
+            p.Message(Locale.Get("rules.help2", p));
+            p.Message(Locale.Get("rules.help3", p));
         }
     }
 }

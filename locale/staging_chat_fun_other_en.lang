@@ -1,0 +1,463 @@
+# Staging locale file (English) for Chat/, Fun/, other/ commands
+# Generated from source translation pass
+# Format: key = value
+# {0}, {1}, ... are positional placeholders. &X are colour codes.
+# λNICK, λFULL, λSHORT are player name tokens — do not translate.
+
+# ── /8ball ───────────────────────────────────────────────────────────────────
+8ball.recharging = The 8-ball is still recharging, wait another {0} seconds.
+8ball.help1 = &T/8ball [yes or no question]
+8ball.help2 = &HGet an answer from the all-knowing 8-Ball!
+
+# ── /AdminChat ───────────────────────────────────────────────────────────────
+adminchat.enabled = All messages will now be sent to Admins only
+adminchat.disabled = Admin chat turned off
+adminchat.help1 = &T/AdminChat [message]
+adminchat.help2 = &HSends a message to online Admins
+adminchat.help3 = &T/AdminChat
+adminchat.help4 = &HMakes all messages sent go to Admins by default
+
+# ── /AFK ────────────────────────────────────────────────────────────────────
+afk.now_afk = You are now marked as being AFK.
+afk.no_longer_afk = You are no longer marked as being AFK.
+afk.is_afk = -λNICK&S- is AFK
+afk.not_afk = -λNICK&S- is no longer AFK
+afk.help1 = &T/AFK <reason>
+afk.help2 = &HMarks yourself as AFK. Use again to mark yourself as back
+
+# ── /Clear ───────────────────────────────────────────────────────────────────
+clear.cleared = &4Chat cleared.
+clear.global_cleared = &4Global Chat cleared.
+clear.help1 = &T/Clear &H- Clears your chat.
+clear.help2 = &T/Clear global &H- Clears chat of all users.
+
+# ── /Color ───────────────────────────────────────────────────────────────────
+color.bot_color_changed = You changed the color of bot {0} &Sto {1}
+color.help1 = &T/Color <color>
+color.help2 = &H Sets your nick color
+color.help3 = &T/OColor [player] <color>
+color.help4 = &H Sets the nick color of other player
+color.help5 = &T/Color bot [bot] <color>
+color.help6 = &H Sets the name color of that bot.
+color.help7 = &H  Leave <color> blank to reset it.
+color.help8 = &HTo see a list of all colors, use /Help colors.
+
+# ── /Eat ─────────────────────────────────────────────────────────────────────
+eat.help1 = &T/Eat &H- Eats a random snack.
+eat.help2 = &HCosts {0} &3{1} &Heach time
+
+# ── /Emote ───────────────────────────────────────────────────────────────────
+emote.status = Emote parsing is {0}.
+emote.enabled = enabled
+emote.disabled = disabled
+emote.help1 = &T/Emote
+emote.help2 = &HEnables or disables emoticon parsing
+
+# ── /Hug ─────────────────────────────────────────────────────────────────────
+hug.help1 = &T/Hug [player] <type>
+hug.help2 = &HValid types are: &floving, friendly, creepy and deadly.
+hug.help3 = &HSpecifying no type or a non-existent type results in a normal hug.
+
+# ── /Ignore ──────────────────────────────────────────────────────────────────
+ignore.toggle_all = {0} ignoring all chat
+ignore.toggle_irc = {0} ignoring IRC chat
+ignore.toggle_titles = {1}Player titles {0} show before names in chat
+ignore.toggle_nicks = {1}Custom player nicks {0} show in chat
+ignore.toggle_8ball = {0} ignoring &T/8ball
+ignore.toggle_drawoutput = {0} ignoring draw command output
+ignore.toggle_worldchanges = {0} ignoring world changes
+ignore.no_longer = &aNo longer ignoring {0}
+ignore.now_ignoring = &cNow ignoring {0}
+ignore.full_name_required = You must use the full name when unignoring offline players.
+ignore.no_longer_irc = &aNo longer ignoring IRC nick: {0}
+ignore.now_irc = &cNow ignoring IRC nick: {0}
+ignore.help1 = &T/Ignore [name]
+ignore.help2 = &HSee &T/Help ignore special &Hfor special names when ignoring.
+ignore.help3 = &HOtherwise, all chat from the player with [name] is ignored.
+ignore.help4 = &HUsing the same [name] again will unignore.
+ignore.help5 = &T/Ignore list &H- display what you're currently ignoring.
+ignore.help_special1 = &HSpecial names for &T/Ignore [name]
+ignore.help_special2 = &H all - all chat is ignored.
+ignore.help_special3 = &H irc - IRC chat is ignored.
+ignore.help_special4 = &H irc [nick] - IRC chat by that IRC nick ignored.
+ignore.help_special5 = &H titles - player titles before names are ignored.
+ignore.help_special6 = &H nicks - custom player nicks do not show in chat.
+ignore.help_special7 = &H 8ball - &T/8ball &His ignored.
+ignore.help_special8 = &H drawoutput - drawing command output is ignored.
+ignore.help_special9 = &H worldchanges - world change messages are ignored.
+
+# ── /Inbox ───────────────────────────────────────────────────────────────────
+inbox.empty = Your inbox is empty.
+inbox.del_specify = You need to provide either "all" or a number.
+inbox.deleted_all = Deleted all {0} messages.
+inbox.no_such_message = Message #{0} does not exist.
+inbox.deleted = Deleted message #{0}
+inbox.from = {0}) From {1} &a{2} ago:
+inbox.help1 = &T/Inbox
+inbox.help2 = &HDisplays all your messages.
+inbox.help3 = &T/Inbox [num]
+inbox.help4 = &HDisplays the message at [num]
+inbox.help5 = &T/Inbox del [num]/all
+inbox.help6 = &HDeletes the message at [num], deletes all messages if "all"
+inbox.help7 =   &HUse &T/Send &Hto reply to a message
+
+# ── /LoginMessage ────────────────────────────────────────────────────────────
+loginmessage.help1 = &T/LoginMessage <message>
+loginmessage.help2 = &H Sets your login message
+loginmessage.help3 = &T/OLoginMessage [player] <message>
+loginmessage.help4 = &H Sets the login message of another player
+loginmessage.help5 = &H  Leave <message> blank to reset it.
+loginmessage.current = &HYour login message is currently: &S{0}
+
+# ── /LogoutMessage ───────────────────────────────────────────────────────────
+logoutmessage.help1 = &T/LogoutMessage <message>
+logoutmessage.help2 = &H Sets your logout message
+logoutmessage.help3 = &T/OLogoutMessage [player] <message>
+logoutmessage.help4 = &H Sets the logout message of another player
+logoutmessage.help5 = &H  Leave <message> blank to reset it.
+logoutmessage.current = &HYour logout message is currently: &S{0}
+
+# ── /Me ──────────────────────────────────────────────────────────────────────
+me.you = You
+me.jokered = Cannot use /me while jokered.
+me.help1 = What do you need help with, m'boy?! Are you stuck down a well?!
+
+# ── /Nick ────────────────────────────────────────────────────────────────────
+nick.bot_reverted = Bot {0} &Sreverted to their original name.
+nick.too_long = Name must be 62 or fewer letters.
+nick.bot_changed = You changed the name of bot {0} &Sto {1}
+nick.help1 = &T/Nick <nick>
+nick.help2 = &H Sets your nickname
+nick.help3 = &T/ONick [player] <nick>
+nick.help4 = &H Sets the nickname of other player
+nick.help5 = &T/Nick bot [bot] <nick>
+nick.help6 = &H Sets the nickname of that bot.
+nick.help7 = &H  Leave <nick> blank to remove it.
+nick.help8 = &H  If [name] is "empty", the bot will not have a name shown.
+
+# ── /OpChat ──────────────────────────────────────────────────────────────────
+opchat.enabled = All messages will now be sent to OPs only
+opchat.disabled = OP chat turned off
+opchat.help1 = &T/OpChat [message]
+opchat.help2 = &HSends a message to online OPs
+opchat.help3 = &T/OpChat
+opchat.help4 = &HMakes all messages sent go to OPs by default
+
+# ── /Pronouns ────────────────────────────────────────────────────────────────
+pronouns.changed = Your pronouns were changed to: &T{0}
+pronouns.help1 = &T/Pronouns [pronouns1] <pronouns2> <etc>
+pronouns.help2 = &H[pronouns1] will be used to refer to you in server messages.
+pronouns.help3 = &HThe list of pronouns you select will appear in &T/whois
+pronouns.current = &HYour pronouns are currently: &T{0}
+pronouns.available = &HThe following pronouns are currently available:
+
+# ── /RankMsg ─────────────────────────────────────────────────────────────────
+rankmsg.help1 = &T/RankMsg [Rank] [Message]
+rankmsg.help2 = &HSends a message to the specified rank.
+rankmsg.help3 = &HNote: If no [rank] is given, player's rank is taken.
+
+# ── /Roll ────────────────────────────────────────────────────────────────────
+roll.help1 = &T/Roll [min] [max]
+roll.help2 = &HRolls a random number between [min] and [max].
+
+# ── /Say ─────────────────────────────────────────────────────────────────────
+say.help1 = &T/Say [message]
+say.help2 = &HBroadcasts a global message to everyone in the server.
+
+# ── /Send ────────────────────────────────────────────────────────────────────
+send.msg_trimmed = &WMessage was too long. It has been trimmed to:
+send.inbox_full = {0} &calready has 200+ messages from you currently in {1} inbox. Try again later after {2} {3} deleted some of {4} inbox messages
+send.sent = Message sent to {0}&S.
+send.received = Message received from {0}&S. Check &T/Inbox
+send.help1 = &T/Send [name] [message]
+send.help2 = &HSends [message] to [name], which can be read with &T/Inbox
+
+# ── /TColor ──────────────────────────────────────────────────────────────────
+tcolor.help1 = &T/TColor <color>
+tcolor.help2 = &H Sets your title color
+tcolor.help3 = &T/OTColor [player] <color>
+tcolor.help4 = &H Sets the title color of other player
+tcolor.help5 = &H  Leave color blank to reset it.
+tcolor.help6 = &H  To see a list of all colors, use &T/Help colors.
+
+# ── /Title ───────────────────────────────────────────────────────────────────
+title.help1 = &T/Title <title>
+title.help2 = &H Sets your title
+title.help3 = &T/OTitle [player] <title>
+title.help4 = &H Sets the title of other player
+title.help5 = &H  Leave title blank to remove it.
+
+# ── /Vote ────────────────────────────────────────────────────────────────────
+vote.in_progress = A vote is in progress!
+vote.started = &2 VOTE: &S{0} &S(type &2Yes &Sor &cNo &Sin chat)
+vote.results = The votes are in! &2Y: {0} &cN: {1}
+vote.help1 = &T/Vote [message]
+vote.help2 = &HStarts a vote for 15 seconds.
+vote.help3 = &HType &TY &Hor &TN &Hinto chat to vote.
+
+# ── /Whisper ─────────────────────────────────────────────────────────────────
+whisper.enabled = All messages sent will now auto-whisper
+whisper.disabled = Whisper chat turned off
+whisper.auto_target = Auto-whisper enabled. All messages will now be sent to {0}.
+whisper.help1 = &T/Whisper [name]
+whisper.help2 = &HMakes all messages act like whispers
+
+# ── /High5 ───────────────────────────────────────────────────────────────────
+high5.help1 = &T/High5 [player]
+high5.help2 = &HHigh five someone! :D
+
+# ── /Explode ─────────────────────────────────────────────────────────────────
+explode.exploded = {0} &Shas been exploded!
+explode.coords = An explosion was made at ({0}, {1}, {2}).
+explode.bad_physics = &WThe physics on {0} &Ware not sufficient for exploding!
+explode.help1 = &T/Explode &H- Creates small explosions
+explode.help2 = &T/Explode me &H- Explodes at your location
+explode.help3 = &T/Explode [Player] &H- Explodes at given's player location
+explode.help4 = &T/Explode [x y z] &H- Explodes at the given corordinates
+
+# ── /FlipHeads ───────────────────────────────────────────────────────────────
+flipheads.broken = All necks were broken
+flipheads.mended = All necks were mended
+flipheads.help1 = &T/FlipHeads
+flipheads.help2 = &HMakes all players have upside down heads
+
+# ── /FlipHead ────────────────────────────────────────────────────────────────
+fliphead.status = Your head was {0}&S!
+fliphead.broken = &cbroken
+fliphead.healed = &ahealed
+fliphead.help1 = &T/FlipHead
+fliphead.help2 = &HMakes your head appear upside down to other players
+
+# ── /Gun ─────────────────────────────────────────────────────────────────────
+gun.no_guns = Guns cannot be used on this map!
+gun.help1 = &T/Gun [at end]
+gun.help2 = &HAllows you to fire bullets at people
+gun.help3 = &HAvailable [at end] types: &Sexplode, destroy, laser, tp
+
+# ── /Missile ─────────────────────────────────────────────────────────────────
+missile.no_missiles = Missiles cannot be used on this map!
+missile.help1 = &T/Missile [at end]
+missile.help2 = &HAllows you to fire missiles at people. Differs from &T/gun &Hin that the missile is guided.
+missile.help3 = &HAvailable [at end] types: &Sexplode, destroy, tp
+
+# ── /Referee ─────────────────────────────────────────────────────────────────
+referee.no_longer = λNICK &Sis no longer a referee
+referee.now_referee = λNICK &Sis now a referee
+referee.help1 = &T/Referee
+referee.help2 = &HTurns referee mode on/off.
+referee.help3 = &HReferee mode enables you to use hacks and TP in games
+referee.help4 = &H  Note that leaving referee mode sends you back to spawn
+
+# ── /Slap ────────────────────────────────────────────────────────────────────
+slap.not_found = Could not find player or map specified
+slap.into_roof = λNICK &Swas slapped into the roof by {0}
+slap.sky_high = λNICK &Swas slapped sky high by {0}
+slap.help1 = &T/Slap [name]
+slap.help2 = &HSlaps [name], knocking them into the air
+slap.help3 = &T/Slap [level]
+slap.help4 = &HSlaps all players on [level] that are a lower rank, knocking them into the air
+
+# ── /Team ────────────────────────────────────────────────────────────────────
+team.need_team_msg = You need to be in a team first to send a team message.
+team.need_team = You need to be in a team first.
+team.current_owner = The current owner of the team is: {0}
+team.only_owner_can_set_owner = Only the team owner can set a new team owner.
+team.kick_specify = You need to provide the name of the player to kick.
+team.only_owner_can_kick = Only the team owner can kick players from the team.
+team.kick_not_found = The given player was not found. You need to use their full account name.
+team.color_specify = You need to provide the new color.
+team.leave_first = You need to leave your current team before you can create one.
+team.create_specify = You need to provide the name of the new team.
+team.already_exists = There is already an existing team with that name.
+team.name_too_long = Team names must be 8 characters or less.
+team.no_invite = You do not currently have any invitation to join a team.
+team.leave_first_join = You need to leave your current team before you can join another one.
+team.invite_expired = The team you were invited to no longer exists.
+team.need_team_invite = You need to be in a team first to invite players.
+team.invite_specify = You need to provide the name of the person to invite.
+team.invite_cooldown = You can invite a player to join your team in another {0} seconds
+team.invited = Invited {0} &Sto join your team.
+team.was_invited = {0} &Sinvited you to join the {1} &Steam.
+team.need_team_leave = You need to be in a team first to leave one.
+team.not_in_team = You are not in a team, so must provide a team name.
+team.not_found = No team found with the name "{0}".
+team.owner = Team owner: {0}
+team.members = Members: {0}
+team.help1 = &T/Team owner [name] &H- Sets the player who has owner privileges for the team.
+team.help2 = &T/Team kick [name] &H- Removes that player from the team you are in.
+team.help3 = &T/Team color [color] &H- Sets the color of the team name shown in chat.
+team.help4 = &T/Team create &H- Creates a new team.
+team.help5 = &T/Team join &H- Joins the team you last received an invite to.
+team.help6 = &T/Team invite [name] &H- Invites that player to join your team.
+team.help7 = &T/Team leave &H- Removes you from the team you are in.
+team.help8 = &T/Team members [name] &H- Lists the players within that team.
+team.help9 = &T/Team list &H- Lists all teams.
+team.help10 = &HAnything else is sent as a message to all members of the team.
+
+# ── /Like / /Dislike ─────────────────────────────────────────────────────────
+like.no_game = Can only {0}like this map when a game is running on it.
+like.already_rated = You have already {0}liked this map.
+like.is_author = Cannot {0}like this map as you are an author of it.
+like.help1 = &T/Like
+like.help2 = &HIncrements the number of times this map has been liked.
+dislike.help1 = &T/Dislike
+dislike.help2 = &HIncrements the number of times this map has been disliked.
+
+# ── RoundsGame ───────────────────────────────────────────────────────────────
+roundsgame.not_running = {0} is not running
+roundsgame.already_running = {0} is already running
+roundsgame.no_round = No round is currently in progress
+roundsgame.ended = {0} has ended! We hope you had fun!
+roundsgame.running_on = Running on map: {0}
+
+# ── /Ascend ──────────────────────────────────────────────────────────────────
+ascend.no_hacks = You cannot use &T/Ascend &Son this map.
+ascend.no_space = There are no blocks above to ascend to.
+ascend.teleported = Teleported you up.
+ascend.help1 = &T/Ascend
+ascend.help2 = &HTeleports you to the first free space above you.
+ascend.help3 = &H  Cannot be used on maps which have -hax in their motd. (unless you are {0}&H+ and the motd has +ophax)
+
+# ── /Back ────────────────────────────────────────────────────────────────────
+back.no_teleport = You have not teleported anywhere yet
+back.help1 = &T/Back
+back.help2 = &HTakes you back to the position you were in before teleportation
+
+# ── /Delay ───────────────────────────────────────────────────────────────────
+delay.too_long = &WCan only wait for a minute at most.
+delay.mb_only = &WThis command can only be used in message blocks.
+delay.help1 = &T/Delay [timespan]
+delay.help2 = &HWaits for a certain amount of time.
+delay.help3 = &HUse to run a command after a certain delay in a &T/MB
+delay.help4 = &H  e.g. &T/MB air /Delay 1000ms |/Help Me &Hruns &T/Help Me &H1000 milliseconds (1 second) after the MB is clicked
+
+# ── /Descend ─────────────────────────────────────────────────────────────────
+descend.no_hacks = You cannot use &T/Descend &Son this map.
+descend.no_space = No free spaces found below you.
+descend.teleported = Teleported you down.
+descend.help1 = &T/Descend
+descend.help2 = &HTeleports you to the first free space below you.
+descend.help3 = &H  Cannot be used on maps which have -hax in their motd. (unless you are {0}&H+ and the motd has +ophax)
+
+# ── /FakeRank ────────────────────────────────────────────────────────────────
+fakerank.now_ranked = You are now ranked {0}&S, type /Help for your new set of commands.
+fakerank.help1 = &T/FakeRank [player] [rank]
+fakerank.help2 = &HGives [player] the appearance of being ranked to [rank].
+
+# ── /Fly ─────────────────────────────────────────────────────────────────────
+fly.no_fly = You cannot use &T/Fly &Son this map.
+fly.now_flying = You are now flying. &cJump!
+fly.stopped = Stopped flying
+fly.help1 = &T/Fly
+fly.help2 = &HCreates a glass platform underneath you that moves with you.
+fly.help3 = &H  May not work if you have high latency.
+fly.help4 = &H  Cannot be used on maps which have -hax in their motd. (unless you are {0}&H+ and the motd has +ophax)
+
+# ── /HackRank ────────────────────────────────────────────────────────────────
+hackrank.already_hacked = &WYou have already hacked a rank!
+hackrank.help1 = &T/HackRank [rank] &H- Hacks a rank
+hackrank.help2 = &HTo see available ranks, type &T/ViewRanks
+
+# ── /Invincible ──────────────────────────────────────────────────────────────
+invincible.now = now invincible
+invincible.no_longer = no longer invincible
+invincible.you_are = You are {0}
+invincible.other = {0} &Sis {1}.
+invincible.stopped = has stopped being invincible
+invincible.help1 = &T/Invincible <name>
+invincible.help2 = &HTurns invincible mode on/off.
+invincible.help3 = &HIf <name> is given, that player's invincibility is toggled
+
+# ── /Kill ────────────────────────────────────────────────────────────────────
+kill.help1 = &T/Kill [name] <message>
+kill.help2 = &HKills [name], with <message> if given.
+kill.help3 = &HCauses an explosion if "explode" is used for <message>
+
+# ── /Ride ────────────────────────────────────────────────────────────────────
+ride.stand_near = Stand near a train to mount it
+ride.dismounted = Dismounted
+ride.help1 = &T/Ride
+ride.help2 = &HRides a nearby train.
+
+# ── /SendCmd ─────────────────────────────────────────────────────────────────
+sendcmd.no_cmd = No command name given.
+sendcmd.unknown_cmd = Unknown command "{0}".
+sendcmd.help1 = &T/SendCmd [player] [command] <arguments>
+sendcmd.help2 = &HMake another user use a command. (e.g &T/SendCmd bob tp bob2&H)
+sendcmd.help3 =   &WNote [player] uses the command as if they had your rank
+
+# ── /Summon ──────────────────────────────────────────────────────────────────
+summon.summoned_by = You were summoned by {0}&S.
+summon.summoned_everyone = λNICK &Ssummoned everyone
+summon.moving = {0} &Sis in a different level, moving them..
+summon.blacklisted = {0} &Sis blacklisted from visiting this map.
+summon.below_min_rank = Only {0}&S+ may normally visit this map. {1}&S is ranked {2}
+summon.above_max_rank = Only {0}&S and below may normally visit this map. {1}&S is ranked {2}
+summon.confirm = If you still want to summon them, type &T/Summon {0} confirm
+summon.help1 = &T/Summon [player]
+summon.help2 = &HSummons [player] to your position.
+summon.help3 = &T/Summon all
+summon.help4 = &HSummons all players in your map
+
+# ── /Timer ───────────────────────────────────────────────────────────────────
+timer.one_at_a_time = Can only have one timer at a time. Use /abort to cancel your previous timer.
+timer.too_long = Cannot have more than 5 minutes in a timer
+timer.started = Timer lasting for {0} seconds has started.
+timer.ended = Timer ended.
+timer.remaining = Timer has {0} seconds remaining.
+timer.help1 = &T/Timer [time] [message]
+timer.help2 = &HStarts a timer which repeats [message] every 5 seconds.
+timer.help3 = &HRepeats constantly until [time] has passed
+
+# ── /TP ──────────────────────────────────────────────────────────────────────
+tp.in_museum = {0} &Sis in a museum.
+tp.referee_only = You can only teleport to players in a game when you are in referee mode.
+tp.help1 = &HUse ~ before a coordinate to move relative to current position
+tp.help2 = &T/TP [x y z] <yaw> <pitch>
+tp.help3 = &HTeleports yourself to the given block coordinates.
+tp.help4 = &T/TP -precise [x y z] <yaw> <pitch>
+tp.help5 = &HTeleports using precise units. (32 units = 1 block)
+tp.help6 = &T/TP [player]
+tp.help7 = &HTeleports yourself to that player.
+tp.help8 = &T/TP bot [name]
+tp.help9 = &HTeleports yourself to that bot.
+
+# ── /TPA ─────────────────────────────────────────────────────────────────────
+tpa.no_self = You cannot /tpa to yourself.
+tpa.pending = You still have a pending teleport request with this player.
+tpa.in_museum = {0} &Sis in a museum.
+tpa.waiting = Waiting for {0} &Sto spawn...
+tpa.timed_out_sender = Your teleport request has timed out.
+tpa.timed_out_target = Pending teleport request has timed out.
+tpa.sent = Your teleport request has been sent to {0}
+tpa.timeout_notice = This request will timeout after &b90 &Sseconds.
+tpa.request_received = {0} &Swould like to teleport to you.
+tpa.accept_or_deny = Type &2/tpaccept &Sor &4/tpdeny&S.
+tpa.no_requests = You do not have any pending teleport requests.
+tpa.sender_offline = The player who requested to teleport to you isn't online anymore.
+tpa.accepted = You have accepted {0}&S's teleportation request.
+tpa.sender_accepted = {0} &Shas accepted your request. Teleporting now...
+tpa.denied = You have denied {0}&S's teleportation request.
+tpa.sender_denied = {0} &Shas denied your request.
+tpa.help1 = &T/TPA [player] &H- Sends a teleport request to that player
+tpa.help2 = &T/TPA accept &H- Accepts a teleport request
+tpa.help3 = &T/TPA deny &H- Denies a teleport request
+
+# ── /RageQuit ────────────────────────────────────────────────────────────────
+ragequit.help1 = &T/RageQuit
+ragequit.help2 = &HMakes you ragequit
+
+# ── /Quit ────────────────────────────────────────────────────────────────────
+quit.left = Left the game.
+quit.left_reason = Left the game
+quit.help1 = &T/Quit <reason>
+quit.help2 = &HLeave the server.
+
+# ── /CrashServer ─────────────────────────────────────────────────────────────
+crashserver.help1 = &T/CrashServer
+crashserver.help2 = &HCrash the server with a generic error
+
+# ── /Hacks ───────────────────────────────────────────────────────────────────
+hacks.abuse = &WIncorrect syntax. Abuse detected.
+hacks.help1 = &T/Hacks
+hacks.help2 = &HPerforms various server hacks. OPERATORS ONLY!!!

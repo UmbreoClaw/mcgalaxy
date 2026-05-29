@@ -17,6 +17,7 @@
  */
 using System.IO;
 using System.Threading;
+using MCGalaxy.Localization;
 namespace MCGalaxy.Commands.World {
     
     public sealed class CmdLockdown : Command2 {
@@ -37,20 +38,20 @@ namespace MCGalaxy.Commands.World {
             if (map == null) return;
 
             if (Server.lockdown.Remove(map)) {
-                Chat.MessageGlobal("Map " + map + " was unlocked");
-                Chat.MessageFromOps(p, "Map " + map + " unlocked by: λNICK");
+                Chat.MessageGlobal(Locale.Get("lockdown.unlocked"), map);
+                Chat.MessageFromOps(p, string.Format(Locale.Get("lockdown.unlocked_ops"), map));
             } else {
                 Server.lockdown.Add(map);
-                Chat.MessageGlobal("Map " + map + " was locked");
-                Chat.MessageFromOps(p, "Map " + map + " locked by: λNICK");
+                Chat.MessageGlobal(Locale.Get("lockdown.locked"), map);
+                Chat.MessageFromOps(p, string.Format(Locale.Get("lockdown.locked_ops"), map));
             }
             Server.lockdown.Save();
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Lockdown [level]");
-            p.Message("&HPrevents new players from joining that level.");
-            p.Message("&HUsing /lockdown again will unlock that level");
+            p.Message(Locale.Get("lockdown.help1", p));
+            p.Message(Locale.Get("lockdown.help2", p));
+            p.Message(Locale.Get("lockdown.help3", p));
         }
     }
 }

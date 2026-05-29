@@ -61,13 +61,13 @@ namespace MCGalaxy.Commands.Building
                 if (!Formatter.ValidFilename(p, parts[1])) return;
                 
                 string path = FindCopy(p.name, parts[1]);
-                if (path == null) { p.Message("No such copy exists."); return; }
+                if (path == null) { p.Message(Locale.Get("copy.no_such_copy", p)); return; }
                 File.Delete(path);
-                p.Message("Deleted copy " + parts[1]);
+                p.Message(Locale.Get("copy.deleted_copy", p), parts[1]);
             } else if (IsListAction(opt)) {
                 string dir = "extra/savecopy/" + p.name;
                 if (!Directory.Exists(dir)) {
-                    p.Message("You have no saved copies"); return;
+                    p.Message(Locale.Get("copy.no_saved_copies", p)); return;
                 }
                 
                 string[] files = Directory.GetFiles(dir);
@@ -94,7 +94,7 @@ namespace MCGalaxy.Commands.Building
                 }
             }
 
-            DrawCmd.DrawMessage(p, "Place or break two blocks to determine the edges.");
+            DrawCmd.DrawMessage(p, Locale.Get("draw.place_two_blocks", p));
             int marks = cArgs.offsetIndex != -1 ? 3 : 2;
             p.MakeSelection(marks, "Selecting region for &SCopy", cArgs, DoCopy, DoCopyMark);
         }
@@ -117,7 +117,7 @@ namespace MCGalaxy.Commands.Building
                 copy.Offset.Y = copy.OriginY - m[i].Y;
                 copy.Offset.Z = copy.OriginZ - m[i].Z;
                 
-                DrawCmd.DrawMessage(p, "Set offset of where to paste from.");
+                DrawCmd.DrawMessage(p, Locale.Get("copy.set_offset", p));
                 CompleteCopy(p, m, cArgs);
                 return;
             }
@@ -147,7 +147,7 @@ namespace MCGalaxy.Commands.Building
             }
             
             if (cState.UsedBlocks > p.group.DrawLimit) {
-                p.Message("You tried to copy {0} blocks. You cannot copy more than {1} blocks.",
+                p.Message(Locale.Get("copy.too_many_blocks", p),
                           cState.UsedBlocks, p.group.DrawLimit);
                 cState.Clear(); cState = null;
                 p.ClearSelection();
@@ -157,14 +157,14 @@ namespace MCGalaxy.Commands.Building
             cState.CopySource = "level " + p.level.name;
             p.CurrentCopy = cState;
 
-            DrawCmd.DrawMessage(p, "Copied &a{0} &Sblocks, origin at ({1}, {2}, {3}) corner", cState.UsedBlocks,
+            DrawCmd.DrawMessage(p, Locale.Get("copy.copied_blocks", p), cState.UsedBlocks,
                       cState.OriginX == cState.X ? "Min" : "Max",
                       cState.OriginY == cState.Y ? "Min" : "Max",
                       cState.OriginZ == cState.Z ? "Min" : "Max");
-            if (!cState.PasteAir) DrawCmd.DrawMessage(p, "To also copy air blocks, use &T/Copy Air");
+            if (!cState.PasteAir) DrawCmd.DrawMessage(p, Locale.Get("copy.copy_air_hint", p));
             
             if (cArgs.offsetIndex != -1) {
-                DrawCmd.DrawMessage(p, "Place a block to determine where to paste from");
+                DrawCmd.DrawMessage(p, Locale.Get("copy.place_offset_block", p));
             } else {
                 CompleteCopy(p, m, cArgs);
             }
@@ -179,13 +179,13 @@ namespace MCGalaxy.Commands.Building
             if (!Directory.Exists("extra/savecopy/" + p.name))
                 Directory.CreateDirectory("extra/savecopy/" + p.name);
             if (Directory.GetFiles("extra/savecopy/" + p.name).Length > 15) {
-                p.Message("You can only save a maxmium of 15 copies. /copy delete some.");
+                p.Message(Locale.Get("copy.max_copies", p));
                 return;
             }
-            
+
             CopyState cState = p.CurrentCopy;
             if (cState == null) {
-                p.Message("You haven't copied anything yet"); return;
+                p.Message(Locale.Get("copy.not_copied_yet", p)); return;
             }
             
             string path = "extra/savecopy/" + p.name + "/" + file + ".cpb";
@@ -194,12 +194,12 @@ namespace MCGalaxy.Commands.Building
             {
                 cState.SaveTo(gs);
             }
-            p.Message("Saved copy as " + file);
+            p.Message(Locale.Get("copy.saved_copy", p), file);
         }
 
         void LoadCopy(Player p, string file) {
             string path = FindCopy(p.name, file);
-            if (path == null) { p.Message("No such copy exists"); return; }
+            if (path == null) { p.Message(Locale.Get("copy.no_such_copy", p)); return; }
             
             using (FileStream fs = File.OpenRead(path))
                 using (GZipStream gs = new GZipStream(fs, CompressionMode.Decompress))
@@ -214,7 +214,7 @@ namespace MCGalaxy.Commands.Building
                 state.CopySource = "file " + file;
                 p.CurrentCopy = state;
             }
-            p.Message("Loaded copy from " + file);
+            p.Message(Locale.Get("copy.loaded_copy", p), file);
         }
         
         static string FindCopy(string player, string file) {
@@ -228,14 +228,14 @@ namespace MCGalaxy.Commands.Building
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Copy &H- Copies the blocks in an area.");
-            p.Message("&T/Copy save [name] &H- Saves what you have copied.");
-            p.Message("&T/Copy load [name] &H- Loads what you have saved.");
-            p.Message("&T/Copy delete [name] &H- Deletes the specified copy.");
-            p.Message("&T/Copy list &H- Lists all saved copies you have");
-            p.Message("&T/Copy cut &H- Copies the blocks in an area, then removes them.");
-            p.Message("&T/Copy air &H- Copies the blocks in an area, including air.");
-            p.Message("/Copy @ - @ toggle for all the above, gives you a third click after copying that determines where to paste from");
+            p.Message(Locale.Get("copy.help1", p));
+            p.Message(Locale.Get("copy.help2", p));
+            p.Message(Locale.Get("copy.help3", p));
+            p.Message(Locale.Get("copy.help4", p));
+            p.Message(Locale.Get("copy.help5", p));
+            p.Message(Locale.Get("copy.help6", p));
+            p.Message(Locale.Get("copy.help7", p));
+            p.Message(Locale.Get("copy.help8", p));
         }
     }
 }

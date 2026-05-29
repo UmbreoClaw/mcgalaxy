@@ -27,8 +27,8 @@ namespace MCGalaxy.Commands.Maintenance {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Restart <message>");
-            p.Message("&HRestarts the server! Use carefully!");
+            p.Message(Locale.Get("restart.help1", p));
+            p.Message(Locale.Get("restart.help2", p));
         }
     }
 }

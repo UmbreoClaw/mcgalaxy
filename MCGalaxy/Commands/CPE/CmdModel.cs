@@ -49,7 +49,7 @@ namespace MCGalaxy.Commands.CPE
             if (model == null) return;
             bot.UpdateModel(model);
             
-            p.Message("You changed the model of bot {0} &Sto a &c{1}", bot.ColoredName, model);
+            p.Message(Locale.Get("cmd.model.msg1", p), bot.ColoredName, model);
             BotsFile.Save(p.level);
         }
         
@@ -89,7 +89,7 @@ namespace MCGalaxy.Commands.CPE
             float max = ModelInfo.MaxScale(e, model);
             // restrict player model scale, but bots can have unlimited model scale
             if (ModelInfo.GetRawScale(model) > max) {
-                dst.Message("&WScale must be {0} or less for {1} model",
+                dst.Message(Locale.Get("cmd.model.msg2", p),
                             max, ModelInfo.GetRawModel(model));
                 return null;
             }
@@ -97,22 +97,22 @@ namespace MCGalaxy.Commands.CPE
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Model <model> &H- Sets your own model.");
-            p.Message("&T/OModel [name] <model> &H- Sets the model of other player.");
-            p.Message("&T/Model bot [name] <model> &H- Sets the model of that bot.");
-            p.Message("&H Leave <model> blank to reset it.");
-            p.Message("&H  Use &T/Help Model models &Hfor a list of models.");
-            p.Message("&H  Use &T/Help Model scale &Hfor how to scale a model.");
+            p.Message(Locale.Get("cmd.model.help1", p));
+            p.Message(Locale.Get("cmd.model.help2", p));
+            p.Message(Locale.Get("cmd.model.help3", p));
+            p.Message(Locale.Get("cmd.model.help4", p));
+            p.Message(Locale.Get("cmd.model.help5", p));
+            p.Message(Locale.Get("cmd.model.help6", p));
         }
         
         public override void Help(Player p, string message) {
             if (message.CaselessEq("models")) {
-                p.Message("&HAvailable models: &SChibi, Chicken, Creeper, Giant, Humanoid, Pig, Sheep, Spider, Skeleton, Zombie, Head, Sit, Corpse");
-                p.Message("&HTo set a block model, use a block ID for the model name.");
-                p.Message("&HUse &T/Help Model scale &Hfor how to scale a model.");
+                p.Message(Locale.Get("cmd.model.help7", p));
+                p.Message(Locale.Get("cmd.model.help8", p));
+                p.Message(Locale.Get("cmd.model.help9", p));
             } else if (message.CaselessEq("scale")) {
-                p.Message("&HFor a scaled model, put \"|[scale]\" after the model name.");
-                p.Message("&H  e.g. pig|0.5, chibi|3");
+                p.Message(Locale.Get("cmd.model.help10", p));
+                p.Message(Locale.Get("cmd.model.help11", p));
             } else {
                 Help(p);
             }

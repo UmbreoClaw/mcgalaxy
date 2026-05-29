@@ -37,7 +37,7 @@ namespace MCGalaxy.Commands.Scripting
             if (IsListAction(args[0])) {
                 string modifier = args.Length > 1 ? args[1] : "";
                 
-                p.Message("Loaded plugins:");
+                p.Message(Locale.Get("cmd.plugin.msg1", p));
                 Paginator.Output(p, Plugin.custom, pl => pl.name,
                                  "Plugins", "plugins", modifier);
                 return;
@@ -53,9 +53,9 @@ namespace MCGalaxy.Commands.Scripting
             } else if (cmd.CaselessEq("unload")) {
                 UnloadPlugin(p, name);
             } else if (cmd.CaselessEq("create")) {
-                p.Message("Use &T/PCreate &Sinstead");
+                p.Message(Locale.Get("cmd.plugin.msg2", p));
             } else if (cmd.CaselessEq("compile")) {
-                p.Message("Use &T/PCompile &Sinstead");
+                p.Message(Locale.Get("cmd.plugin.msg3", p));
             } else {
                 Help(p);
             }
@@ -71,12 +71,12 @@ namespace MCGalaxy.Commands.Scripting
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Plugin load [filename]");
-            p.Message("&HLoad a compiled plugin from the &fplugins &Hfolder");
-            p.Message("&T/Plugin unload [name]");
-            p.Message("&HUnloads a currently loaded plugin");
-            p.Message("&T/Plugin list");
-            p.Message("&HLists all loaded plugins");
+            p.Message(Locale.Get("cmd.plugin.help1", p));
+            p.Message(Locale.Get("cmd.plugin.help2", p));
+            p.Message(Locale.Get("cmd.plugin.help3", p));
+            p.Message(Locale.Get("cmd.plugin.help4", p));
+            p.Message(Locale.Get("cmd.plugin.help5", p));
+            p.Message(Locale.Get("cmd.plugin.help6", p));
         }
     }
 }

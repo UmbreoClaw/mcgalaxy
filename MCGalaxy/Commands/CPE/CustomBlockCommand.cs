@@ -81,7 +81,7 @@ namespace MCGalaxy.Commands.CPE
                 case "ids":
                     ListHandler(p, parts, args); break;
                 case "abort":
-                    p.Message("Aborted the custom block creation process.");
+                    p.Message(Locale.Get("cmd.customblockcommand.msg1", p));
                     SetBD(p, args, null); break;
                 case "edit":
                     EditHandler(p, parts, args); break;
@@ -116,10 +116,10 @@ namespace MCGalaxy.Commands.CPE
             SetBD(p, args, def);
             args.curDef = def;
 
-            p.Message("  Use &T{0} abort &Sat any time to stop making the block.", args.cmd);
-            p.Message("  Use &T{0} revert &Sto go back a step", args.cmd);
-            p.Message("  Use &T{0} [input] &Sto provide input", args.cmd);
-            p.Message("&f----------------------------------------------------------");
+            p.Message(Locale.Get("cmd.customblockcommand.msg2", p), args.cmd);
+            p.Message(Locale.Get("cmd.customblockcommand.msg3", p), args.cmd);
+            p.Message(Locale.Get("cmd.customblockcommand.msg4", p), args.cmd);
+            p.Message(Locale.Get("cmd.customblockcommand.msg5", p));
             
             SetStep(p, args, 2);
             SendStepHelp(p, args);
@@ -133,7 +133,7 @@ namespace MCGalaxy.Commands.CPE
             AccessController visit = new LevelAccessController(cfg, map, true);
             
             if (!visit.CheckDetailed(p, data.Rank)) {
-                p.Message("Hence, you cannot copy custom blocks from that level"); 
+                p.Message(Locale.Get("cmd.customblockcommand.msg6", p)); 
                 return null;
             }
             
@@ -159,10 +159,10 @@ namespace MCGalaxy.Commands.CPE
                 if (!DoCopy(p, args, true, srcDefs[i], b, b)) continue;
                 copied++;
                 
-                p.Message("Copied the {0} custom block with id \"{1}\".", args.scope, Block.ToRaw(b));
+                p.Message(Locale.Get("cmd.customblockcommand.msg7", p), args.scope, Block.ToRaw(b));
             }
             
-            p.Message("{0} custom blocks were copied from level {1}", 
+            p.Message(Locale.Get("cmd.customblockcommand.msg8", p), 
                       copied > 0 ? copied.ToString() : "No", coloredMap);
             if (copied > 0) BlockDefinition.Save(args.global, args.level);
         }
@@ -194,7 +194,7 @@ namespace MCGalaxy.Commands.CPE
                 BlockID src = Block.FromRaw((BlockID)i);
                 if (!DoCopy(p, args, false, srcDefs[src], src, dst)) continue;
                 
-                p.Message("Duplicated the {0} custom block with id \"{1}\" to \"{2}\".", 
+                p.Message(Locale.Get("cmd.customblockcommand.msg9", p), 
                           args.scope, i, Block.ToRaw(dst));
                 changed = true;
             }
@@ -235,47 +235,47 @@ namespace MCGalaxy.Commands.CPE
             BlockDefinition def = args.defs[block];
             if (def == null) { MessageNoBlock(p, block, args); return; }
             
-            p.Message("About {0} ({1})", def.Name, def.RawID);
-            p.Message("  Draw type: {0}, Blocks light: {1}, collide type: {2}",
+            p.Message(Locale.Get("cmd.customblockcommand.msg10", p), def.Name, def.RawID);
+            p.Message(Locale.Get("cmd.customblockcommand.msg11", p),
                            def.BlockDraw, def.BlocksLight, def.CollideType);
-            p.Message("  Fallback ID: {0}, Sound: {1}, Speed: {2}",
+            p.Message(Locale.Get("cmd.customblockcommand.msg12", p),
                            def.FallBack, def.WalkSound, def.Speed.ToString("F2"));
             
             if (def.FogDensity == 0) {
-                p.Message("  Block does not use fog");
+                p.Message(Locale.Get("cmd.customblockcommand.msg13", p));
             } else {
-                p.Message("  Fog density: {0}, color: {1}",
+                p.Message(Locale.Get("cmd.customblockcommand.msg14", p),
                                def.FogDensity, Utils.Hex(def.FogR, def.FogG, def.FogB));
             }
             
             bool tinted = (def.FogR != 0 || def.FogG != 0 || def.FogB != 0) && def.Name.IndexOf('#') >= 0;
             if (tinted) {
-                p.Message("  Tint color: {0}", Utils.Hex(def.FogR, def.FogG, def.FogB));
+                p.Message(Locale.Get("cmd.customblockcommand.msg15", p), Utils.Hex(def.FogR, def.FogG, def.FogB));
             }
             
             if (def.Shape == 0) {
-                p.Message("  Block is a sprite");
-                p.Message("  Texture ID: {0}", def.RightTex);
+                p.Message(Locale.Get("cmd.customblockcommand.msg16", p));
+                p.Message(Locale.Get("cmd.customblockcommand.msg17", p), def.RightTex);
             } else {
-                p.Message("  Block is a cube from ({0}, {1}, {2}) to ({3}, {4}, {5})",
+                p.Message(Locale.Get("cmd.customblockcommand.msg18", p),
                                def.MinX, def.MinZ, def.MinY, def.MaxX, def.MaxZ, def.MaxY);
-                p.Message("  Texture IDs:");
-                p.Message("    left: {0}, right: {1}, front: {2}, back: {3}",
+                p.Message(Locale.Get("cmd.customblockcommand.msg19", p));
+                p.Message(Locale.Get("cmd.customblockcommand.msg20", p),
                                def.LeftTex, def.RightTex, def.FrontTex, def.BackTex);
-                p.Message("    top: {0}, bottom: {1}",
+                p.Message(Locale.Get("cmd.customblockcommand.msg21", p),
                                def.TopTex, def.BottomTex);
             }
             
             if (def.InventoryOrder < 0) {
-                p.Message("  Order: None");
+                p.Message(Locale.Get("cmd.customblockcommand.msg22", p));
             } else if (def.InventoryOrder == 0) {
-                p.Message("  Order: Hidden from inventory");
+                p.Message(Locale.Get("cmd.customblockcommand.msg23", p));
             } else {
                 p.Message("  Order: " + def.InventoryOrder);
             }
             if (def.Brightness > 0) {
                 string word = def.UseLampBrightness ? "LampLight" : "LavaLight";
-                p.Message("  {0}: {1}", word, def.Brightness);
+                p.Message(Locale.Get("cmd.customblockcommand.msg24", p), word, def.Brightness);
             }
         }
 
@@ -299,7 +299,7 @@ namespace MCGalaxy.Commands.CPE
         }
         
         static void PrintBlock(Player p, BlockDefinition def) {
-            p.Message("Custom block &T{0} &Shas name &T{1}", def.RawID, def.Name);
+            p.Message(Locale.Get("cmd.customblockcommand.msg25", p), def.RawID, def.Name);
         }
 
         
@@ -323,7 +323,7 @@ namespace MCGalaxy.Commands.CPE
             
             BlockDefinition.Remove(def, args.defs, args.level);
             ResetProps(args, block);
-            p.Message("Removed {0} custom block {1}({2})", args.scope, def.Name, def.RawID);
+            p.Message(Locale.Get("cmd.customblockcommand.msg26", p), args.scope, def.Name, def.RawID);
             
             BlockDefinition globalDef = BlockDefinition.GlobalDefs[block];
             if (!args.global && globalDef != null)
@@ -545,14 +545,14 @@ namespace MCGalaxy.Commands.CPE
                         for (int i = 0; i < defs.Length; i++) 
                         {
                             if (defs[i] == null || defs[i].InventoryOrder != order) continue;
-                            p.Message("Block {0} already had order {1}", defs[i].Name, order);
+                            p.Message(Locale.Get("cmd.customblockcommand.msg27", p), defs[i].Name, order);
                             return false;
                         }
                     }
                     
                     def.InventoryOrder = order == def.RawID ? -1 : order;
                     BlockDefinition.UpdateOrder(def, args.global, args.level);
-                    p.Message("Set inventory order for {0} to {1}", blockName,
+                    p.Message(Locale.Get("cmd.customblockcommand.msg28", p), blockName,
                                    order == def.RawID ? "default" : order.ToString());
                     return true;
 
@@ -575,7 +575,7 @@ namespace MCGalaxy.Commands.CPE
                     p.Message("Unrecognised property: " + arg); return false;
             }
             
-            p.Message("Set {0} for {1} to {2}", arg, blockName, value);
+            p.Message(Locale.Get("cmd.customblockcommand.msg29", p), arg, blockName, value);
             BlockDefinition.Add(def, args.defs, args.level);
             if (changedFallback) {
                 BlockDefinition.UpdateFallback(args.global, def.GetBlock(), args.level);
@@ -608,7 +608,7 @@ namespace MCGalaxy.Commands.CPE
         
         
         static void UpdateBlock(Player p, BlockDefinitionsArgs args, BlockDefinition def) {
-            p.Message("Created a new {0} custom block {1}({2})", args.scope, def.Name, def.RawID);
+            p.Message(Locale.Get("cmd.customblockcommand.msg30", p), args.scope, def.Name, def.RawID);
 
             BlockID block = def.GetBlock();
             BlockDefinition.Add(def, args.defs, args.level);
@@ -624,7 +624,7 @@ namespace MCGalaxy.Commands.CPE
             if (old != null) {
                 block = GetFreeBlock(p, args);
                 if (block == Block.Invalid) {
-                    if (!args.global) p.Message("You may also manually specify the same existing id of a global custom block.");
+                    if (!args.global) p.Message(Locale.Get("cmd.customblockcommand.msg31", p));
                     return false;
                 }
                 def.SetBlock(block);
@@ -639,11 +639,11 @@ namespace MCGalaxy.Commands.CPE
             if (!CommandParser.GetBlock(p, value, out block)) return Block.Invalid;
             
             if (block >= Block.Extended) {
-                p.Message("&WCustom blocks cannot be used as fallback blocks.");
+                p.Message(Locale.Get("cmd.customblockcommand.msg32", p));
                 return Block.Invalid;
             }
             if (Block.IsPhysicsType(block)) {
-                p.Message("&WPhysics block cannot be used as fallback blocks.");
+                p.Message(Locale.Get("cmd.customblockcommand.msg33", p));
                 return Block.Invalid;
             }
             return (BlockRaw)block;
@@ -667,19 +667,19 @@ namespace MCGalaxy.Commands.CPE
                 }
             }
             
-            p.Message("&WThere are no custom block ids left, you must &T{0} remove &Wa custom block first.", args.cmd);
+            p.Message(Locale.Get("cmd.customblockcommand.msg34", p), args.cmd);
             return Block.Invalid;
         }
         
         
         static void MessageNoBlock(Player p, BlockID block, BlockDefinitionsArgs args) {
-            p.Message("&WThere is no {1} custom block with the id \"{0}\".", Block.ToRaw(block), args.scope);
-            p.Message("Type &T{0} list &Sto see a list of {1} custom blocks.", args.cmd, args.scope);
+            p.Message(Locale.Get("cmd.customblockcommand.msg35", p), Block.ToRaw(block), args.scope);
+            p.Message(Locale.Get("cmd.customblockcommand.msg36", p), args.cmd, args.scope);
         }
         
         static void MessageAlreadyBlock(Player p, BlockID block, BlockDefinitionsArgs args) {
-            p.Message("&WThere is already a {1} custom block with the id \"{0}\".", Block.ToRaw(block), args.scope);
-            p.Message("Type &T{0} list &Sto see a list of {1} custom blocks.", args.cmd, args.scope);
+            p.Message(Locale.Get("cmd.customblockcommand.msg37", p), Block.ToRaw(block), args.scope);
+            p.Message(Locale.Get("cmd.customblockcommand.msg38", p), args.cmd, args.scope);
         }
         
         static bool EditByte(Player p, string value, string propName, ref byte target, string help) {
@@ -724,7 +724,7 @@ namespace MCGalaxy.Commands.CPE
                 BlockDefinition def = BlockDefinition.ParseName(arg, args.defs);
                 
                 if (def == null) {
-                    p.Message("&W{0} is not a valid block {1} custom block name", arg, args.scope);
+                    p.Message(Locale.Get("cmd.customblockcommand.msg39", p), arg, args.scope);
                     return false;
                 }
                 raw = def.RawID;
@@ -803,8 +803,8 @@ namespace MCGalaxy.Commands.CPE
                 
                 p.Message(msg);
             }
-            if (step == 2) p.Message("Use &T{0} [answer] &Sto type your answers", args.cmd);
-            p.Message("&f--------------------------");
+            if (step == 2) p.Message(Locale.Get("cmd.customblockcommand.msg40", p), args.cmd);
+            p.Message(Locale.Get("cmd.customblockcommand.msg41", p));
         }
         
         static void SendEditHelp(Player p, string section) {
@@ -895,32 +895,32 @@ namespace MCGalaxy.Commands.CPE
         
         
         internal static void Help(Player p, string cmd) {
-            p.Message("&H{0} help page 1:", cmd.Substring(1));
-            p.Message("&T{0} add [id] &H- begins creating a new custom block", cmd);
-            p.Message("&T{0} copy [id] <new id> &H- clones an existing custom block", cmd);
-            p.Message("&T{0} edit [id] [property] [value] &H- edits that custom block", cmd);
-            p.Message("&T{0} remove [id] &H- removes that custom block", cmd);
-            p.Message("&HTo see the list of editable properties, type &T{0} edit", cmd);
-            p.Message("&HTo read help page 2, type &T/help {0} 2", cmd.Substring(1));
+            p.Message(Locale.Get("cmd.customblockcommand.help1", p), cmd.Substring(1));
+            p.Message(Locale.Get("cmd.customblockcommand.help2", p), cmd);
+            p.Message(Locale.Get("cmd.customblockcommand.help3", p), cmd);
+            p.Message(Locale.Get("cmd.customblockcommand.help4", p), cmd);
+            p.Message(Locale.Get("cmd.customblockcommand.help5", p), cmd);
+            p.Message(Locale.Get("cmd.customblockcommand.help6", p), cmd);
+            p.Message(Locale.Get("cmd.customblockcommand.help7", p), cmd.Substring(1));
         }
         
         internal static void Help(Player p, string cmd, string args) {
             if (args.CaselessEq("2")) { 
-                p.Message("&H{0} help page 2:", cmd.Substring(1));
-                p.Message("&T{0} copyall [level] &H- clones all custom blocks from [level]", cmd);                
-                p.Message("&T{0} list <offset> &H- lists all custom blocks", cmd);
-                p.Message("&T{0} info [id] &H- shows info about that custom block", cmd);
-                p.Message("&HYou may edit, remove or see info for multiple IDs at once.");
-                p.Message("&HUse &T/help {0} 3 &Hfor multi explanation.", cmd.Substring(1));
+                p.Message(Locale.Get("cmd.customblockcommand.help8", p), cmd.Substring(1));
+                p.Message(Locale.Get("cmd.customblockcommand.help9", p), cmd);                
+                p.Message(Locale.Get("cmd.customblockcommand.help10", p), cmd);
+                p.Message(Locale.Get("cmd.customblockcommand.help11", p), cmd);
+                p.Message(Locale.Get("cmd.customblockcommand.help12", p));
+                p.Message(Locale.Get("cmd.customblockcommand.help13", p), cmd.Substring(1));
                 return;
             }
             else if (args.CaselessEq("3")) {
-                p.Message("&H{0} help page 3:", cmd.Substring(1));
-                p.Message("&HTo work with multiple block IDs at once,");
-                p.Message("&Huse a start and end range seperated by a dash.");
-                p.Message("&HFor example, &T{0} remove 21-24", cmd);
-                p.Message("&Hwould remove blocks with ID 21, 22, 23, and 24.", cmd);
-                p.Message("&HMulti editing only works with &T{0} edit, remove, or info", cmd);
+                p.Message(Locale.Get("cmd.customblockcommand.help14", p), cmd.Substring(1));
+                p.Message(Locale.Get("cmd.customblockcommand.help15", p));
+                p.Message(Locale.Get("cmd.customblockcommand.help16", p));
+                p.Message(Locale.Get("cmd.customblockcommand.help17", p), cmd);
+                p.Message(Locale.Get("cmd.customblockcommand.help18", p), cmd);
+                p.Message(Locale.Get("cmd.customblockcommand.help19", p), cmd);
                 return;
             }
             if (!args.CaselessStarts("edit ")) { Help(p, cmd); return; }

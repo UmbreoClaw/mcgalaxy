@@ -17,6 +17,7 @@
  */
 using System;
 using System.IO;
+using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.World {
     public sealed class CmdRestore : Command2 {        
@@ -47,7 +48,7 @@ namespace MCGalaxy.Commands.World {
             if (File.Exists(path)) {
                 DoRestore(lvl, args[0]);
             } else {
-                p.Message("Backup {0} does not exist.", args[0]); 
+                p.Message(Locale.Get("restore.no_backup", p), args[0]);
                 LevelOperations.OutputBackups(p, lvl);
             }
         }
@@ -68,10 +69,10 @@ namespace MCGalaxy.Commands.World {
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Restore &H- lists all backups for the current level");
-            p.Message("&T/Restore [number] <level>");
-            p.Message("&HRestores a previous backup for the given level.");
-            p.Message("&H  If <level> is not given, the current level is used.");
+            p.Message(Locale.Get("restore.help1", p));
+            p.Message(Locale.Get("restore.help2", p));
+            p.Message(Locale.Get("restore.help3", p));
+            p.Message(Locale.Get("restore.help4", p));
         }
     }
 }

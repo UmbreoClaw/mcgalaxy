@@ -40,18 +40,18 @@ namespace MCGalaxy.Commands.Chatting
             bool cantSend = !p.CanSpeak();
             if (p.IsAfk) {
                 if (cantSend) {
-                    p.Message("You are now marked as being AFK.");
+                    p.Message(Locale.Get("afk.now_afk", p));
                 } else {
-                    ShowMessage(p, "-λNICK&S- is AFK " + message);
+                    ShowMessage(p, Locale.Get("afk.is_afk") + " " + message);
                     p.CheckForMessageSpam();
                 }
                 p.AFKCooldown = DateTime.UtcNow.AddSeconds(2);
                 OnPlayerActionEvent.Call(p, PlayerAction.AFK, null, cantSend);
             } else {
                 if (cantSend) {
-                    p.Message("You are no longer marked as being AFK.");
+                    p.Message(Locale.Get("afk.no_longer_afk", p));
                 } else {
-                    ShowMessage(p, "-λNICK&S- is no longer AFK");
+                    ShowMessage(p, Locale.Get("afk.not_afk"));
                     p.CheckForMessageSpam();
                 }
                 OnPlayerActionEvent.Call(p, PlayerAction.UnAFK, null, cantSend);
@@ -64,8 +64,8 @@ namespace MCGalaxy.Commands.Chatting
         }
         
         public override void Help(Player p) {
-            p.Message("&T/AFK <reason>");
-            p.Message("&HMarks yourself as AFK. Use again to mark yourself as back");
+            p.Message(Locale.Get("afk.help1", p));
+            p.Message(Locale.Get("afk.help2", p));
         }
     }
 }

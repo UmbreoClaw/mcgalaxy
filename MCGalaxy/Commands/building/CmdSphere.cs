@@ -30,7 +30,7 @@ namespace MCGalaxy.Commands.Building {
                     new CommandAlias("sph", "hollow"), new CommandAlias("Circle", "circle" ),
                     new CommandAlias("CircleH", "hollowcircle") }; }
         }
-        protected override string PlaceMessage { get { return "Place a block for the centre, then another for the radius."; } }
+        protected override string PlaceMessage { get { return "sphere.place_msg"; } }
         
         protected override DrawMode GetMode(string[] parts) {
             string msg = parts[0];
@@ -84,10 +84,10 @@ namespace MCGalaxy.Commands.Building {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Sphere <brush args>");
-            p.Message("&HCreates a sphere, with first point as centre, and second for radius");
-            p.Message("&T/Sphere [mode] <brush args>");
-            p.Message("&HModes: &fsolid/hollow/circle/hollowcircle");
+            p.Message(Locale.Get("sphere.help1", p));
+            p.Message(Locale.Get("sphere.help2", p));
+            p.Message(Locale.Get("sphere.help3", p));
+            p.Message(Locale.Get("sphere.help4", p));
             p.Message(BrushHelpLine);
         }
     }

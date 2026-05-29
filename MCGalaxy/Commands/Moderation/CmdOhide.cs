@@ -35,14 +35,14 @@ namespace MCGalaxy.Commands.Moderation {
             if (!own) data.Rank = target.Rank;
             
             Command.Find("Hide").Use(target, "", data);
-            p.Message("Hidden {0} &Sfrom players ranked below {1}",
+            p.Message(Locale.Get("cmd.ohide.msg1", p),
                       p.FormatNick(target), Group.GetColoredName(data.Rank));
         }
 
         public override void Help(Player p) {
-            p.Message("&T/OHide [player] &H- Hides/unhides the player specified.");
-            p.Message("&T/OHide [player] myrank &H- Hides/unhides the player specified to players below your rank.");
-            p.Message("&HOnly works on players of lower rank.");
+            p.Message(Locale.Get("cmd.ohide.help1", p));
+            p.Message(Locale.Get("cmd.ohide.help2", p));
+            p.Message(Locale.Get("cmd.ohide.help3", p));
         }
     }
 }

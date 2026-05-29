@@ -41,10 +41,10 @@ namespace MCGalaxy.Commands.Building {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Pyramid <brush args>");
-            p.Message("&HDraws a square pyramid, using two points for the base.");
-            p.Message("&T/Pyramid [mode] <brush args>");
-            p.Message("&HModes: &fsolid/hollow/reverse");
+            p.Message(Locale.Get("pyramid.help1", p));
+            p.Message(Locale.Get("pyramid.help2", p));
+            p.Message(Locale.Get("pyramid.help3", p));
+            p.Message(Locale.Get("pyramid.help4", p));
             p.Message(BrushHelpLine);
         }
     }

@@ -85,33 +85,33 @@ namespace MCGalaxy.Commands.Info
             }   
             
             if (cmds.Count == 0) {
-                p.Message("{0} &Scannot use any commands.", group.ColoredName); return;
-            }            
+                p.Message(Locale.Get("commands.cannot_use_any", p), group.ColoredName); return;
+            }
             SortCommands(cmds, sort);
             if (own)
-                p.Message("Available commands:");
+                p.Message(Locale.Get("commands.available_cmds", p));
             else
-                p.Message("Commands available to " + group.ColoredName + " &Srank:");
-            
+                p.Message(Locale.Get("commands.available_to_rank", p), group.ColoredName);
+
             string type = "Cmds " + group.Name;
             if (sort.Length > 0) type += " " + sort;
             Paginator.Output(p, cmds, Command.GetColoredName,
                              type, "commands", modifier);
-            p.Message("Type &T/Help <command> &Sfor more help on a command.");
+            p.Message(Locale.Get("commands.type_help", p));
         }
         
         static void PrintAllCommands(Player p, string sort, string modifier) {
             List<Command> cmds = Command.CopyAll();
             SortCommands(cmds, sort);
-            p.Message("All commands:");
-            
+            p.Message(Locale.Get("commands.all_cmds", p));
+
             string type = "Commands all";
             if (sort.Length > 0) type += " " + sort;
             Paginator.Output(p, cmds, Command.GetColoredName,
-                             type, "commands", modifier);            
-            p.Message("Type &T/Help <command> &Sfor more help on a command.");
+                             type, "commands", modifier);
+            p.Message(Locale.Get("commands.type_help", p));
         }
-        
+
         static bool PrintCategoryCommands(Player p, string sort, string modifier, string type) {
             List<Command> cmds = new List<Command>();
             bool foundAny = false;
@@ -131,17 +131,17 @@ namespace MCGalaxy.Commands.Info
             if (!foundAny) return false;
             
             if (cmds.Count == 0) {
-                p.Message("You cannot use any of the {0} commands.", type.Capitalize()); return true;
-            }            
+                p.Message(Locale.Get("commands.no_category_cmds", p), type.Capitalize()); return true;
+            }
             SortCommands(cmds, sort);
-            p.Message(type.Capitalize() + " commands you may use:");
+            p.Message(Locale.Get("commands.category_cmds_header", p), type.Capitalize());
 
             type = "Commands " + type;
             if (sort.Length > 0) type += " " + sort;
             Paginator.Output(p, cmds, Command.GetColoredName,
                              type, "commands", modifier);
             
-            p.Message("Type &T/Help <command> &Sfor more help on a command.");
+            p.Message(Locale.Get("commands.type_help", p));
             return true;
         }
         
@@ -183,14 +183,14 @@ namespace MCGalaxy.Commands.Info
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Commands [category] <sort by>");
-            p.Message("  &HIf no category is given, outputs all commands you can use.");
-            p.Message("  &HIf category is \"shortcuts\", outputs all command shortcuts.");
-            p.Message("  &HIf category is \"all\", outputs all commands.");
-            p.Message("  &HIf category is a rank name, outputs what that rank can use.");
-            p.Message("&HOther command categories:");
-            p.Message("  &H{0}", GetCategories());
-            p.Message("&HSort By is optional, and can be either \"name\" or \"rank\"");
+            p.Message(Locale.Get("commands.help1", p));
+            p.Message(Locale.Get("commands.help2", p));
+            p.Message(Locale.Get("commands.help3", p));
+            p.Message(Locale.Get("commands.help4", p));
+            p.Message(Locale.Get("commands.help5", p));
+            p.Message(Locale.Get("commands.help6", p));
+            p.Message(Locale.Get("commands.help7", p), GetCategories());
+            p.Message(Locale.Get("commands.help8", p));
         }
     }
 }

@@ -30,7 +30,7 @@ namespace MCGalaxy.Commands.Building {
         
         protected virtual int MarksCount { get { return 2; } }
         protected virtual string SelectionType { get { return "region"; } }
-        protected virtual string PlaceMessage { get { return "Place or break two blocks to determine the edges."; } }
+        protected virtual string PlaceMessage { get { return "draw.place_two_blocks"; } }
         protected const string BrushHelpLine = "   &HFor help about brushes, type &T/Help Brush";
         
         public override void Use(Player p, string message, CommandData data) {
@@ -42,7 +42,7 @@ namespace MCGalaxy.Commands.Building {
             BrushArgs bArgs = new BrushArgs(p, dArgs.BrushArgs, dArgs.Block);
             if (!factory.Validate(bArgs)) return;
             
-            DrawMessage(p, PlaceMessage);
+            DrawMessage(p, Locale.Get(PlaceMessage, p));
             p.MakeSelection(MarksCount, "Selecting " + SelectionType + " for &S" + dArgs.Op.Name, dArgs, DoDraw);
         }
         

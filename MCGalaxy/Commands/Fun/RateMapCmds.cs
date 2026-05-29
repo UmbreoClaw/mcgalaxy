@@ -33,15 +33,15 @@ namespace MCGalaxy.Commands.Fun
             
             IGame game = IGame.GameOn(p.level);
             if (game == null) {
-                p.Message("Can only {0}like this map when a game is running on it.", prefix); return false; 
+                p.Message(Locale.Get("like.no_game", p), prefix); return false;
             }
-            
+
             if (p.Game.RatedMap) {
                 prefix = p.Game.LikedMap ? "" : "dis";
-                p.Message("You have already {0}liked this map.", prefix); return false; 
+                p.Message(Locale.Get("like.already_rated", p), prefix); return false;
             }
             if (CheckIsAuthor(p)) {
-                p.Message("Cannot {0}like this map as you are an author of it.", prefix); return false;
+                p.Message(Locale.Get("like.is_author", p), prefix); return false;
             }
             
             game.RateMap(p, like);
@@ -56,18 +56,18 @@ namespace MCGalaxy.Commands.Fun
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Like");
-            p.Message("&HIncrements the number of times this map has been liked.");
+            p.Message(Locale.Get("like.help1", p));
+            p.Message(Locale.Get("like.help2", p));
         }
     }
-    
+
     public sealed class CmdDislike : CmdLike {
-        public override string name { get { return "Dislike"; } }        
+        public override string name { get { return "Dislike"; } }
         public override void Use(Player p, string message, CommandData data) { RateMap(p, false); }
-        
+
         public override void Help(Player p) {
-            p.Message("&T/Dislike");
-            p.Message("&HIncrements the number of times this map has been disliked.");
+            p.Message(Locale.Get("dislike.help1", p));
+            p.Message(Locale.Get("dislike.help2", p));
         }
     }
 }

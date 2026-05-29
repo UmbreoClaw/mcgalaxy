@@ -29,15 +29,15 @@ namespace MCGalaxy.Commands.Chatting
             if (message.Length > 0) { ChatModes.MessageAdmins(p, message); return; }
             
             p.adminchat = !p.adminchat;
-            if (p.adminchat) p.Message("All messages will now be sent to Admins only");
-            else p.Message("Admin chat turned off");
+            if (p.adminchat) p.Message(Locale.Get("adminchat.enabled", p));
+            else p.Message(Locale.Get("adminchat.disabled", p));
         }
         
         public override void Help(Player p) {
-            p.Message("&T/AdminChat [message]");
-            p.Message("&HSends a message to online Admins");
-            p.Message("&T/AdminChat");
-            p.Message("&HMakes all messages sent go to Admins by default");
+            p.Message(Locale.Get("adminchat.help1", p));
+            p.Message(Locale.Get("adminchat.help2", p));
+            p.Message(Locale.Get("adminchat.help3", p));
+            p.Message(Locale.Get("adminchat.help4", p));
         }
     }
 }

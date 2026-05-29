@@ -34,14 +34,14 @@ namespace MCGalaxy.Commands.Scripting
             Command cmd = Command.Find(cmdName);
             
             if (cmd == null) {
-                p.Message("\"{0}\" is not a valid or loaded command.", cmdName); return;
+                p.Message(Locale.Get("cmd.cmdunload.msg1", p), cmdName); return;
             }           
             ScriptingOperations.UnloadCommand(p, cmd);
         }
 
         public override void Help(Player p) {
-            p.Message("&T/CmdUnload [command]");
-            p.Message("&HUnloads a command from the server.");
+            p.Message(Locale.Get("cmd.cmdunload.help1", p));
+            p.Message(Locale.Get("cmd.cmdunload.help2", p));
         }
     }
 }

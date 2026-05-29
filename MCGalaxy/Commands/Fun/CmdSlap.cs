@@ -33,7 +33,7 @@ namespace MCGalaxy.Commands.Fun {
             if (who == null) {
                 Level lvl = Matcher.FindLevels(p, message);
                 if (lvl == null) {
-                    p.Message("Could not find player or map specified"); return;
+                    p.Message(Locale.Get("slap.not_found", p)); return;
                 }
                 
                 Player[] players = PlayerInfo.Online.Items;
@@ -55,14 +55,14 @@ namespace MCGalaxy.Commands.Fun {
             if (who.level.IsValidPos(x, y, z)) {
                 pos.Y = FindYAbove(who.level, (ushort)x, (ushort)y, (ushort)z);
                 if (pos.Y != -1) {
-                    Chat.MessageFromLevel(who, "λNICK &Swas slapped into the roof by " + p.ColoredName);
+                    Chat.MessageFromLevel(who, string.Format(Locale.Get("slap.into_roof"), p.ColoredName));
                     who.SendPosition(pos, who.Rot);
                     return;
                 }
             }
-            
+
             pos.Y = 1000 * 32;
-            Chat.MessageFromLevel(who, "λNICK &Swas slapped sky high by " + p.ColoredName);
+            Chat.MessageFromLevel(who, string.Format(Locale.Get("slap.sky_high"), p.ColoredName));
             who.SendPosition(pos, who.Rot);
         }
         
@@ -82,10 +82,10 @@ namespace MCGalaxy.Commands.Fun {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Slap [name]");
-            p.Message("&HSlaps [name], knocking them into the air");
-            p.Message("&T/Slap [level]");
-            p.Message("&HSlaps all players on [level] that are a lower rank, knocking them into the air");
+            p.Message(Locale.Get("slap.help1", p));
+            p.Message(Locale.Get("slap.help2", p));
+            p.Message(Locale.Get("slap.help3", p));
+            p.Message(Locale.Get("slap.help4", p));
         }
     }
 }

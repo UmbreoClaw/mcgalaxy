@@ -16,6 +16,7 @@
     permissions and limitations under the Licenses.
  */
 using System;
+using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.Moderation {
     public sealed class CmdFollow : Command2 {
@@ -25,7 +26,7 @@ namespace MCGalaxy.Commands.Moderation {
         public override bool SuperUseable { get { return false; } }
 
         public override void Use(Player p, string message, CommandData data) {
-            if (p.possessed) { p.Message("You're currently being &4possessed&S!"); return; }
+            if (p.possessed) { p.Message(Locale.Get("follow.being_possessed", p)); return; }
             string[] args = message.SplitSpaces(2);
             string name = args[0];
 
@@ -47,7 +48,7 @@ namespace MCGalaxy.Commands.Moderation {
         }
 
         static void Unfollow(Player p, CommandData data, bool stealth) {
-            p.Message("Stopped following " + p.FormatNick(p.following));
+            p.Message(Locale.Get("follow.stopped", p), p.FormatNick(p.following));
 
             Player target = PlayerInfo.FindExact(p.following);
             if (target != null) Entities.Spawn(p, target);
@@ -57,18 +58,18 @@ namespace MCGalaxy.Commands.Moderation {
             if (!stealth) {
                 Command.Find("Hide").Use(p, "", data);
             } else {
-                p.Message("You are still hidden.");
+                p.Message(Locale.Get("follow.still_hidden", p));
             }
         }
 
         static void Follow(Player p, string name, CommandData data, bool stealth) {
             Player target = PlayerInfo.FindMatches(p, name);
             if (target == null) return;
-            if (target == p) { p.Message("Cannot follow yourself."); return; }
+            if (target == p) { p.Message(Locale.Get("follow.no_self", p)); return; }
             if (!CheckRank(p, data, target, "follow", false)) return;
 
             if (target.following.Length > 0) {
-                p.Message("{0} &Sis already following {1}",
+                p.Message(Locale.Get("follow.already_following", p),
                           p.FormatNick(target), p.FormatNick(target.following)); return;
             }
 
@@ -81,15 +82,15 @@ namespace MCGalaxy.Commands.Moderation {
             }
 
             p.following = target.name;
-            p.Message("Following {0}&S. Use &T/Follow &Sto stop.", p.FormatNick(target));
+            p.Message(Locale.Get("follow.now_following", p), p.FormatNick(target));
             Entities.Despawn(p, target);
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Follow [name]");
-            p.Message("&HFollows <name> until the command is cancelled");
-            p.Message("&T/Follow # [name]");
-            p.Message("&HWill cause &T/Hide &Hnot to be toggled");
+            p.Message(Locale.Get("follow.help1", p));
+            p.Message(Locale.Get("follow.help2", p));
+            p.Message(Locale.Get("follow.help3", p));
+            p.Message(Locale.Get("follow.help4", p));
         }
     }
 }

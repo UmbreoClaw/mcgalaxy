@@ -37,7 +37,7 @@ namespace MCGalaxy.Commands.Moderation {
                 SetMode(false, "&cOFF"); return;
             }
 
-            if (!Server.Config.WhitelistedOnly) { p.Message("Whitelist is not enabled."); return; }
+            if (!Server.Config.WhitelistedOnly) { p.Message(Locale.Get("cmd.whitelist.msg1", p)); return; }
             if (message.Length == 0) { List(p, ""); return; }         
             
             if (cmd.CaselessEq("add")) {
@@ -68,7 +68,7 @@ namespace MCGalaxy.Commands.Moderation {
             name = Server.FromRawUsername(name);
            
             if (!Server.whiteList.Add(name)) {
-                p.Message("{0} &Sis already on the whitelist!", p.FormatNick(name));
+                p.Message(Locale.Get("cmd.whitelist.msg2", p), p.FormatNick(name));
             } else {
                 Chat.MessageFromOps(p, "λNICK &Sadded &f" + name + " &Sto the whitelist.");
                 Server.whiteList.Save();
@@ -80,7 +80,7 @@ namespace MCGalaxy.Commands.Moderation {
             name = Server.FromRawUsername(name);
             
             if (!Server.whiteList.Remove(name)) {
-                p.Message("{0} &Sis not on the whitelist!", p.FormatNick(name));
+                p.Message(Locale.Get("cmd.whitelist.msg3", p), p.FormatNick(name));
             } else {
                 Server.whiteList.Save();
                 Chat.MessageFromOps(p, "λNICK &Sremoved &f" + name + " &Sfrom the whitelist.");
@@ -93,12 +93,12 @@ namespace MCGalaxy.Commands.Moderation {
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Whitelist add/del [player]");
-            p.Message("&HAdds or removes [player] from the whitelist");
-            p.Message("&T/Whitelist list");
-            p.Message("&HLists all players who are on the whitelist");
-            p.Message("&T/Whitelist enable/disable");
-            p.Message("&HSets whether only whitelisted players can join the server");
+            p.Message(Locale.Get("cmd.whitelist.help1", p));
+            p.Message(Locale.Get("cmd.whitelist.help2", p));
+            p.Message(Locale.Get("cmd.whitelist.help3", p));
+            p.Message(Locale.Get("cmd.whitelist.help4", p));
+            p.Message(Locale.Get("cmd.whitelist.help5", p));
+            p.Message(Locale.Get("cmd.whitelist.help6", p));
         }
     }
 }

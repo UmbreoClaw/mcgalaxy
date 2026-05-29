@@ -53,7 +53,7 @@ namespace MCGalaxy.Commands.CPE
                 HttpUtil.FilterURL(ref url);
                 
                 if (!(url.CaselessContains(".png") || url.CaselessContains(".zip"))) {
-                    p.Message("URL must contain either .png (for terrain) or .zip (for texture pack)"); return;
+                    p.Message(Locale.Get("cmd.texture.msg1", p)); return;
                 }
                 if (url.Length > (NetUtils.StringSize * 2)) {
                     p.Message("The URL must be " + (NetUtils.StringSize * 2) + " characters or less."); return;
@@ -65,7 +65,7 @@ namespace MCGalaxy.Commands.CPE
                 Server.Config.DefaultTexture = "";
                 
                 if (url.Length == 0) {
-                    p.Message("Reset server textures to default");
+                    p.Message(Locale.Get("cmd.texture.msg2", p));
                 } else if (url.CaselessContains(".png")) {
                     Server.Config.DefaultTerrain = url;
                     p.Message("Set server's default terrain to " + url);
@@ -80,7 +80,7 @@ namespace MCGalaxy.Commands.CPE
                 p.level.Config.TexturePack = "";
                 
                 if (url.Length == 0) {
-                    p.Message("Reset level textures to server default");
+                    p.Message(Locale.Get("cmd.texture.msg3", p));
                 } else if (url.CaselessContains(".png")) {
                     p.level.Config.Terrain = url;
                     p.Message("Set level's terrain to " + url);
@@ -114,10 +114,10 @@ namespace MCGalaxy.Commands.CPE
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Texture global/level [url]");
-            p.Message("&HChanges server default or current level's texture.");
-            p.Message("&H[url] must end with .png (terrain) or .zip (texture pack)");
-            p.Message("&HUsing 'reset' for [url] will reset the texture to default");
+            p.Message(Locale.Get("cmd.texture.help1", p));
+            p.Message(Locale.Get("cmd.texture.help2", p));
+            p.Message(Locale.Get("cmd.texture.help3", p));
+            p.Message(Locale.Get("cmd.texture.help4", p));
         }
     }
 }

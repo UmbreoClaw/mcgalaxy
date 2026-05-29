@@ -29,11 +29,11 @@ namespace MCGalaxy.Commands.Fun {
         
         public override void Use(Player p, string message, CommandData data) {
             if (p.Game.Referee) {
-                Chat.MessageFrom(p, "λNICK &Sis no longer a referee", Chat.FilterVisible(p));
+                Chat.MessageFrom(p, Locale.Get("referee.no_longer"), Chat.FilterVisible(p));
                 OnPlayerActionEvent.Call(p, PlayerAction.UnReferee);
                 p.Game.Referee = false;
             } else {
-                Chat.MessageFrom(p, "λNICK &Sis now a referee", Chat.FilterVisible(p));
+                Chat.MessageFrom(p, Locale.Get("referee.now_referee"), Chat.FilterVisible(p));
                 OnPlayerActionEvent.Call(p, PlayerAction.Referee);
                 p.Game.Referee = true;
             }
@@ -49,10 +49,10 @@ namespace MCGalaxy.Commands.Fun {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Referee");
-            p.Message("&HTurns referee mode on/off.");
-            p.Message("&HReferee mode enables you to use hacks and TP in games");
-            p.Message("&H  Note that leaving referee mode sends you back to spawn");
+            p.Message(Locale.Get("referee.help1", p));
+            p.Message(Locale.Get("referee.help2", p));
+            p.Message(Locale.Get("referee.help3", p));
+            p.Message(Locale.Get("referee.help4", p));
         }
     }
 }

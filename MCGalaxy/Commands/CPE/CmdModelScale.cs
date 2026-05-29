@@ -39,7 +39,7 @@ namespace MCGalaxy.Commands.CPE
             if (!ParseArgs(p, bot, args, out axis)) return;
             bot.UpdateModel(bot.Model);
             
-            p.Message("You changed the {1} scale of bot {0}", bot.ColoredName, axis);
+            p.Message(Locale.Get("cmd.modelscale.msg1", p), bot.ColoredName, axis);
             BotsFile.Save(p.level);
         }
         
@@ -51,7 +51,7 @@ namespace MCGalaxy.Commands.CPE
             if (p != who) {
                 Chat.MessageFrom(who, "λNICK &Shad "+who.pronouns.Object+" " + axis + " scale changed");
             } else {
-                who.Message("Changed your own {0} scale", axis);
+                who.Message(Locale.Get("cmd.modelscale.msg2", p), axis);
             }
             
             UpdateSavedScale(who);
@@ -86,11 +86,11 @@ namespace MCGalaxy.Commands.CPE
         }
 
         public override void Help(Player p) {
-            p.Message("&T/ModelScale [name] X/Y/Z [scale] &H- Sets scale for a player");
-            p.Message("&T/ModelScale bot [name] X/Y/Z [scale] &H- Sets scale for a bot");
-            p.Message("&HSets the scale of the given entity's model on one axis ");
-            p.Message("&H  e.g. &T/ModelScale -own Y 2 &Hmakes yourself twice as tall");
-            p.Message("&H  Use a [scale] of 0 to reset scale on that axis");
+            p.Message(Locale.Get("cmd.modelscale.help1", p));
+            p.Message(Locale.Get("cmd.modelscale.help2", p));
+            p.Message(Locale.Get("cmd.modelscale.help3", p));
+            p.Message(Locale.Get("cmd.modelscale.help4", p));
+            p.Message(Locale.Get("cmd.modelscale.help5", p));
         }
     }
 }

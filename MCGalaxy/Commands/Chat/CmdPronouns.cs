@@ -45,20 +45,20 @@ namespace MCGalaxy.Commands.Chatting {
             }
 
             p.pronounsList = final;
-            p.Message("Your pronouns were changed to: &T{0}", Pronouns.ListFor(p, ", "));
+            p.Message(Locale.Get("pronouns.changed", p), Pronouns.ListFor(p, ", "));
             Pronouns.SaveFor(p);
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Pronouns [pronouns1] <pronouns2> <etc>");
-            p.Message("&H[pronouns1] will be used to refer to you in server messages.");
-            p.Message("&HThe list of pronouns you select will appear in &T/whois");
+            p.Message(Locale.Get("pronouns.help1", p));
+            p.Message(Locale.Get("pronouns.help2", p));
+            p.Message(Locale.Get("pronouns.help3", p));
             HelpList(p);
-            p.Message("&HYour pronouns are currently: &T{0}", Pronouns.ListFor(p, ", "));
+            p.Message(Locale.Get("pronouns.current", p), Pronouns.ListFor(p, ", "));
         }
         static void HelpList(Player p) {
-            p.Message("&HThe following pronouns are currently available:");
-            p.Message("&H  &T{0}", Pronouns.GetNames().Join("&H, &T"));
+            p.Message(Locale.Get("pronouns.available", p));
+            p.Message(Locale.Get("cmd.pronouns.help1", p), Pronouns.GetNames().Join("&H, &T"));
         }
     }
 }

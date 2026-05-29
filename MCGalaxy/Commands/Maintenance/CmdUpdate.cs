@@ -27,9 +27,9 @@ namespace MCGalaxy.Commands.Maintenance
 
         public override void Use(Player p, string message, CommandData data) {
             if (message.CaselessEq("check")) {
-                p.Message("Checking for updates..");
+                p.Message(Locale.Get("update.checking", p));
                 bool needsUpdating = Updater.NeedsUpdating();
-                p.Message("Server {0}", needsUpdating ? "&cneeds updating" : "&ais up to date");
+                p.Message(Locale.Get("update.status", p), needsUpdating ? Locale.Get("update.needs_updating", p) : Locale.Get("update.up_to_date", p));
             } else if (message.CaselessEq("latest")) {
                 Updater.PerformUpdate(false);
             }  else if (message.Length == 0) {
@@ -40,13 +40,13 @@ namespace MCGalaxy.Commands.Maintenance
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Update check");
-            p.Message("&HChecks whether the server needs updating");
-            p.Message("&T/Update latest");
-            p.Message("&HUpdates the server to the latest unstable build");
-            p.Message("&WNote unstable builds may have more bugs or issues");
-            p.Message("&T/Update");
-            p.Message("&HUpdates the server to the latest release");
+            p.Message(Locale.Get("update.help1", p));
+            p.Message(Locale.Get("update.help2", p));
+            p.Message(Locale.Get("update.help3", p));
+            p.Message(Locale.Get("update.help4", p));
+            p.Message(Locale.Get("update.help5", p));
+            p.Message(Locale.Get("update.help6", p));
+            p.Message(Locale.Get("update.help7", p));
         }
     }
 }

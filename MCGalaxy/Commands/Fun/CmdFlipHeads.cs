@@ -23,13 +23,13 @@ namespace MCGalaxy.Commands.Fun {
 
         public override void Use(Player p, string message, CommandData data) {
             Server.flipHead = !Server.flipHead;
-            if (Server.flipHead) Chat.MessageGlobal("All necks were broken");
-            else Chat.MessageGlobal("All necks were mended");
+            if (Server.flipHead) Chat.MessageGlobal(Locale.Get("flipheads.broken"));
+            else Chat.MessageGlobal(Locale.Get("flipheads.mended"));
         }
         
         public override void Help(Player p) {
-            p.Message("&T/FlipHeads");
-            p.Message("&HMakes all players have upside down heads");
+            p.Message(Locale.Get("flipheads.help1", p));
+            p.Message(Locale.Get("flipheads.help2", p));
         }
     }
 }

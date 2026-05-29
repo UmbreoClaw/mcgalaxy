@@ -31,7 +31,7 @@ namespace MCGalaxy.Commands.Misc {
             if (!p.onTrain) return;
             
             p.trainInvincible = true;
-            p.Message("Stand near a train to mount it");
+            p.Message(Locale.Get("ride.stand_near", p));
             
             SchedulerTask task = new SchedulerTask(RideCallback, p, TimeSpan.Zero, true);
             p.CriticalTasks.Add(task);
@@ -41,7 +41,7 @@ namespace MCGalaxy.Commands.Misc {
             Player p = (Player)task.State;
             if (!p.onTrain) {
                 p.trainGrab = false;
-                p.Message("Dismounted");
+                p.Message(Locale.Get("ride.dismounted", p));
                 
                 Server.MainScheduler.QueueOnce(TrainInvincibleCallback, p, 
                                                TimeSpan.FromSeconds(1));
@@ -81,8 +81,8 @@ namespace MCGalaxy.Commands.Misc {
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Ride");
-            p.Message("&HRides a nearby train.");
+            p.Message(Locale.Get("ride.help1", p));
+            p.Message(Locale.Get("ride.help2", p));
         }
     }
 }

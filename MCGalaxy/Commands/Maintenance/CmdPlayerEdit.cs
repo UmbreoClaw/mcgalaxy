@@ -41,7 +41,7 @@ namespace MCGalaxy.Commands.Maintenance {
             if (args[0] == null) return;
             Player who = PlayerInfo.FindExact(args[0]);
             if (args.Length == 1) {
-                p.Message("&WYou must specify a type to modify.");
+                p.Message(Locale.Get("playeredit.specify_type", p));
                 MessageValidTypes(p); return;
             }
             
@@ -63,9 +63,9 @@ namespace MCGalaxy.Commands.Maintenance {
                            v => who.money = v, type_norm);
             } else if (opt == "title") {
                 if (args.Length < 3) {
-                    p.Message("Title can be up to 20 characters. Use \"null\" to remove the title"); return;
+                    p.Message(Locale.Get("playeredit.title_format", p)); return;
                 }
-                if (args[2].Length >= 20) { p.Message("Title must be under 20 characters"); return; }
+                if (args[2].Length >= 20) { p.Message(Locale.Get("playeredit.title_too_long", p)); return; }
                 if (args[2] == "null") args[2] = "";
                 
                 if (who != null) {
@@ -77,12 +77,12 @@ namespace MCGalaxy.Commands.Maintenance {
                 MessageDataChanged(p, args[0], args[1], args[2]);
             } else if (opt == "ip") {
                 if (args.Length < 3) {
-                    p.Message("A new IP address must be provided."); return;
+                    p.Message(Locale.Get("playeredit.ip_required", p)); return;
                 }
-                
+
                 IPAddress ip;
                 if (!IPAddress.TryParse(args[2], out ip)) {
-                    p.Message("&W\"{0}\" is not a valid IP address.", args[2]); return;
+                    p.Message(Locale.Get("playeredit.invalid_ip", p), args[2]); return;
                 }
                 
                 if (who != null) who.SetIP(ip);
@@ -116,7 +116,7 @@ namespace MCGalaxy.Commands.Maintenance {
                 SetColor(p, args, PlayerData.ColumnTColor, who,
                          v => who.titlecolor = v);
             } else {
-                p.Message("&WInvalid type");
+                p.Message(Locale.Get("playeredit.invalid_type", p));
                 MessageValidTypes(p);
             }
         }
@@ -124,7 +124,7 @@ namespace MCGalaxy.Commands.Maintenance {
         
         static void SetColor(Player p, string[] args, string column, Player who, Action<string> setter) {
             if (args.Length < 3) {
-                p.Message("Color format: color name, or \"null\" to reset to default color."); return;
+                p.Message(Locale.Get("playeredit.color_format", p)); return;
             }
             
             string col = args[2] == "null" ? "" : Matcher.FindColor(p, args[2]);
@@ -142,13 +142,13 @@ namespace MCGalaxy.Commands.Maintenance {
         
         static void SetDate(Player p, string[] args, string column, Player who, Action<DateTime> setter) {
             if (args.Length < 3) {
-                p.Message("Dates must be in the format: " + Database.DateFormat);
+                p.Message(Locale.Get("playeredit.date_format", p), Database.DateFormat);
                 return;
             }
-            
+
             DateTime dt;
             if (!args[2].TryParseInvariantDateString(out dt)) {
-                p.Message("Invalid date. It must be in format: " + Database.DateFormat);
+                p.Message(Locale.Get("playeredit.invalid_date", p), Database.DateFormat);
                 return;
             }
             
@@ -159,7 +159,7 @@ namespace MCGalaxy.Commands.Maintenance {
         
         static void SetTimespan(Player p, string[] args, string column, Player who, Action<TimeSpan> setter) {
             if (args.Length < 3) {
-                p.Message("Timespan must be in the format: <number><quantifier>..");
+                p.Message(Locale.Get("playeredit.timespan_format", p));
                 p.Message(CommandParser.TimespanHelp, "set time spent to");
                 return;
             }
@@ -187,7 +187,7 @@ namespace MCGalaxy.Commands.Maintenance {
         static void SetInteger(Player p, string[] args, string column, int max, Player who,
                                Action<int> setter, int type) {
             if (args.Length < 3) {
-                p.Message("You must specify a positive integer, which can be {0} at most.", max); return;
+                p.Message(Locale.Get("playeredit.integer_format", p), max); return;
             }
             
             int value = 0;
@@ -216,22 +216,21 @@ namespace MCGalaxy.Commands.Maintenance {
         static void MessageDataChanged(Player p, string name, string type, string value) {
             name = p.FormatNick(name);
             if (value.Length == 0) {
-                p.Message("The {1} data for &b{0} &Shas been reset.", name, type);
+                p.Message(Locale.Get("playeredit.data_reset", p), name, type);
             } else {
-                p.Message("The {1} data for &b{0} &Shas been updated to &a{2}&S.", name, type, value);
+                p.Message(Locale.Get("playeredit.data_updated", p), name, type, value);
             }
         }
 
         static void MessageValidTypes(Player p) {
-            p.Message("&HValid types: &SFirstLogin, LastLogin, Logins, Title, IP, Deaths, Money, " +
-                      "Modified, Drawn, Placed, Deleted, TotalKicked, TimeSpent, Color, TitleColor, Messages ");
+            p.Message(Locale.Get("playeredit.valid_types", p));
         }
         
         public override void Help(Player p) {
-            p.Message("&T/PlayerEdit [username] [type] <value>");
-            p.Message("&HEdits an online or offline player's information. Use with caution!");
+            p.Message(Locale.Get("playeredit.help1", p));
+            p.Message(Locale.Get("playeredit.help2", p));
             MessageValidTypes(p);
-            p.Message("&HTo see value format for a specific type, leave <value> blank.");
+            p.Message(Locale.Get("playeredit.help3", p));
         }
     }
 }

@@ -15,6 +15,7 @@
     or implied. See the Licenses for the specific language governing
     permissions and limitations under the Licenses.
 */
+using MCGalaxy.Localization;
 namespace MCGalaxy.Commands.World {
     public sealed class CmdUnload : Command2 {
         public override string name { get { return "Unload"; } }
@@ -26,7 +27,7 @@ namespace MCGalaxy.Commands.World {
             
             if (message.Length == 0) {
                 if (!p.level.Unload()) {
-                    p.Message("You cannot unload this level.");
+                    p.Message(Locale.Get("unload.cannot_unload", p));
                 }
             } else if (message.CaselessEq("empty")) {
                 Level[] loaded = LevelInfo.Loaded.Items;
@@ -40,16 +41,16 @@ namespace MCGalaxy.Commands.World {
                 if (level == null) return;
                 
                 if (!level.Unload()) {
-                    p.Message("You cannot unload this level.");
+                    p.Message(Locale.Get("unload.cannot_unload", p));
                 }
             }
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Unload [map name]");
-            p.Message("&HUnloads the given map.");
-            p.Message("&H  If map name is \"empty\", unloads all maps with no players in them.");
-            p.Message("&H  If no map name is given, unloads the current map."); 
+            p.Message(Locale.Get("unload.help1", p));
+            p.Message(Locale.Get("unload.help2", p));
+            p.Message(Locale.Get("unload.help3", p));
+            p.Message(Locale.Get("unload.help4", p));
         }
     }
 }

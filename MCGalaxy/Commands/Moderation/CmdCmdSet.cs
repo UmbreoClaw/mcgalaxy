@@ -29,11 +29,11 @@ namespace MCGalaxy.Commands.Moderation
             Command.Search(ref cmdName, ref cmdArgs);
             Command cmd = Command.Find(cmdName);
             
-            if (cmd == null) { p.Message("Could not find command entered"); return; }
+            if (cmd == null) { p.Message(Locale.Get("cmd.cmdset.msg1", p)); return; }
             
             if (!p.CanUse(cmd)) {
                 cmd.Permissions.MessageCannotUse(p);
-                p.Message("Therefore you cannot change the permissions of &T/{0}", cmd.name); return;
+                p.Message(Locale.Get("cmd.cmdset.msg2", p), cmd.name); return;
             }
             
             if (args.Length == 2) {
@@ -47,7 +47,7 @@ namespace MCGalaxy.Commands.Moderation
                 
                 CommandExtraPerms perms = CommandExtraPerms.Find(cmd.name, num);
                 if (perms == null) {
-                    p.Message("This command has no extra permission by that number."); return;
+                    p.Message(Locale.Get("cmd.cmdset.msg3", p)); return;
                 }
                 
                 msg = SetPerms(p, args, data, perms, "extra permission", "use", "usable");
@@ -69,21 +69,21 @@ namespace MCGalaxy.Commands.Moderation
         }
         
         public override void Help(Player p) {
-            p.Message("&T/CmdSet [cmd] [rank]");
-            p.Message("&HSets lowest rank that can use [cmd] to [rank]");
-            p.Message("&T/CmdSet [cmd] [rank] [extra permission number]");
-            p.Message("&HSet the lowest rank that has that extra permission for [cmd]");
-            p.Message("&H- For more advanced permissions, see &T/Help cmdset advanced");
-            p.Message("&H- To see available ranks, type &T/ViewRanks");
+            p.Message(Locale.Get("cmd.cmdset.help1", p));
+            p.Message(Locale.Get("cmd.cmdset.help2", p));
+            p.Message(Locale.Get("cmd.cmdset.help3", p));
+            p.Message(Locale.Get("cmd.cmdset.help4", p));
+            p.Message(Locale.Get("cmd.cmdset.help5", p));
+            p.Message(Locale.Get("cmd.cmdset.help6", p));
         }
         
         public override void Help(Player p, string message) {
             if (!message.CaselessEq("advanced")) { base.Help(p, message); return; }
             
-            p.Message("&T/CmdSet [cmd] +[rank]");
-            p.Message("&HAllows a specific rank to use [cmd]");
-            p.Message("&T/CmdSet [cmd] -[rank]");
-            p.Message("&HPrevents a specific rank from using [cmd]");
+            p.Message(Locale.Get("cmd.cmdset.help7", p));
+            p.Message(Locale.Get("cmd.cmdset.help8", p));
+            p.Message(Locale.Get("cmd.cmdset.help9", p));
+            p.Message(Locale.Get("cmd.cmdset.help10", p));
         }
     }
 }

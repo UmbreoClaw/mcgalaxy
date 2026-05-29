@@ -22,12 +22,12 @@ namespace MCGalaxy.Commands.Fun {
 
         public override void Use(Player p, string message, CommandData data) {
             p.flipHead = !p.flipHead;
-            p.Message("Your head was {0}&S!", p.flipHead ? "&cbroken" : "&ahealed");
+            p.Message(Locale.Get("fliphead.status", p), p.flipHead ? Locale.Get("fliphead.broken", p) : Locale.Get("fliphead.healed", p));
         }
         
         public override void Help(Player p) {
-            p.Message("&T/FlipHead");
-            p.Message("&HMakes your head appear upside down to other players");
+            p.Message(Locale.Get("fliphead.help1", p));
+            p.Message(Locale.Get("fliphead.help2", p));
         }
     }
 }

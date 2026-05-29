@@ -59,10 +59,10 @@ namespace MCGalaxy.Commands.Building {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Cuboid <brush args>");
-            p.Message("&HDraws a cuboid between two points.");
-            p.Message("&T/Cuboid [mode] <brush args>");
-            p.Message("&HModes: &fsolid/hollow/walls/holes/wire/random");
+            p.Message(Locale.Get("cuboid.help1", p));
+            p.Message(Locale.Get("cuboid.help2", p));
+            p.Message(Locale.Get("cuboid.help3", p));
+            p.Message(Locale.Get("cuboid.help4", p));
             p.Message(BrushHelpLine);
         }
     }

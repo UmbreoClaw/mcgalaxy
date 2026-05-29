@@ -27,7 +27,7 @@ namespace MCGalaxy.Commands.Fun {
         
         public override void Use(Player p, string message, CommandData data) {
             if (!p.level.Config.Guns) {
-                p.Message("Missiles cannot be used on this map!"); return;
+                p.Message(Locale.Get("missile.no_missiles", p)); return;
             }
             if (p.weapon != null && message.Length == 0) {
                 p.weapon.Disable(); return;
@@ -49,9 +49,9 @@ namespace MCGalaxy.Commands.Fun {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Missile [at end]");
-            p.Message("&HAllows you to fire missiles at people. Differs from &T/gun &Hin that the missile is guided.");
-            p.Message("&HAvailable [at end] types: &Sexplode, destroy, tp");
+            p.Message(Locale.Get("missile.help1", p));
+            p.Message(Locale.Get("missile.help2", p));
+            p.Message(Locale.Get("missile.help3", p));
         }
     }
 }

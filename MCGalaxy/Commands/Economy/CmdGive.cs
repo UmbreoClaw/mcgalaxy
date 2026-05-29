@@ -18,6 +18,7 @@
 using System;
 using MCGalaxy.Eco;
 using MCGalaxy.Events.EconomyEvents;
+using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.Eco {
     public sealed class CmdGive : MoneyCmd {
@@ -58,14 +59,14 @@ namespace MCGalaxy.Commands.Eco {
         
         static bool ReachedMax(Player p, int current, int amount) {
             if (current + amount > 16777215) {
-                p.Message("&WPlayers cannot have over &316,777,215 &3" + Server.Config.Currency); return true;
+                p.Message(Locale.Get("give.max_balance", p), Server.Config.Currency); return true;
             }
             return false;
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Give [player] [amount] <reason>");
-            p.Message("&HGives [player] [amount] &3" + Server.Config.Currency);
+            p.Message(Locale.Get("give.help1", p));
+            p.Message(Locale.Get("give.help2", p), Server.Config.Currency);
         }
     }
 }

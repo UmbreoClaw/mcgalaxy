@@ -17,6 +17,7 @@
     permissions and limitations under the Licenses.
  */
 using MCGalaxy.Drawing.Ops;
+using MCGalaxy.Localization;
 using MCGalaxy.Maths;
 using MCGalaxy.Network;
 using BlockID = System.UInt16;
@@ -46,7 +47,7 @@ namespace MCGalaxy.Commands.World {
                 Help(p); return;
             }
 
-            p.Message("Place or break two blocks to determine the bounds within which grass/dirt is fixed");
+            p.Message(Locale.Get("fixgrass.select_bounds", p));
             p.MakeSelection(2, "Selecting corners for &SFixGrass", op, DoFixGrass);
         }
         
@@ -59,10 +60,10 @@ namespace MCGalaxy.Commands.World {
         }
 
         public override void Help(Player p) {
-            p.Message("&T/FixGrass &H- Turns grass with something on top to dirt, and turns dirt with nothing on top to grass");
-            p.Message("&T/FixGrass light &H- Only dirt/grass in sunlight becomes grass");
-            p.Message("&T/FixGrass grass &H- Turns grass with something on top to dirt");
-            p.Message("&T/FixGrass dirt &H- Turns dirt with nothing on top to grass");
+            p.Message(Locale.Get("fixgrass.help1", p));
+            p.Message(Locale.Get("fixgrass.help2", p));
+            p.Message(Locale.Get("fixgrass.help3", p));
+            p.Message(Locale.Get("fixgrass.help4", p));
         }
     }
 }

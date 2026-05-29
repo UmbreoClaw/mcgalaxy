@@ -45,7 +45,7 @@ namespace MCGalaxy.Commands.Info
             if (matches > 1) return;
             
             if (matches == 0) {
-                p.Message("Searching database for the player..");
+                p.Message(Locale.Get("whois.searching", p));
                 PlayerData target = PlayerDB.Match(p, message);
                 if (target == null) return;
                 
@@ -60,9 +60,9 @@ namespace MCGalaxy.Commands.Info
         }
 
         public override void Help(Player p) {
-            p.Message("&T/WhoIs [player]");
-            p.Message("&HDisplays information about that player.");
-            p.Message("&HNote: Works for both online and offline players.");
+            p.Message(Locale.Get("whois.help1", p));
+            p.Message(Locale.Get("whois.help2", p));
+            p.Message(Locale.Get("whois.help3", p));
         }
     }
 }

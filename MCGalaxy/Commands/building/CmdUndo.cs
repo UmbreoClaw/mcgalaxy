@@ -40,7 +40,7 @@ namespace MCGalaxy.Commands.Building {
             
             TimeSpan delta = GetDelta(p, p.name, parts, undoPhysics ? 1 : 0);
             if (delta == TimeSpan.MinValue || (!undoPhysics && parts.Length > 1)) {
-                p.Message("If you are trying to undo another player, use &T/UndoPlayer");
+                p.Message(Locale.Get("undo.use_undoplayer", p));
                 return;
             }
             
@@ -51,8 +51,8 @@ namespace MCGalaxy.Commands.Building {
         void UndoLastDrawOp(Player p) {
             UndoDrawOpEntry[] entries = p.DrawOps.Items;
             if (entries.Length == 0) {
-                p.Message("You have no draw operations to undo.");
-                p.Message("Try using &T/Undo [timespan] &Sinstead.");
+                p.Message(Locale.Get("undo.no_draw_ops", p));
+                p.Message(Locale.Get("undo.try_timespan", p));
                 return;
             }
             
@@ -66,19 +66,18 @@ namespace MCGalaxy.Commands.Building {
                 
                 op.Start = entry.Start; op.End = entry.End;
                 DrawOpPerformer.Do(op, null, p, new Vec3S32[] { Vec3U16.MinVal, Vec3U16.MaxVal } );
-                p.Message("Undo performed.");
+                p.Message(Locale.Get("undo.performed", p));
                 return;
             }
-            
-            p.Message("Unable to undo any draw operations, as all of the " +
-                               "past 50 draw operations are &T/Undo &Sor &T/Undo [timespan]");
-            p.Message("Try using &T/Undo [timespan] &Sinstead");
+
+            p.Message(Locale.Get("undo.unable_all_ops", p));
+            p.Message(Locale.Get("undo.try_timespan", p));
         }
         
         void UndoPhysics(Player p, CommandData data, TimeSpan delta) {
             if (!CheckExtraPerm(p, data, 1)) return;
             if (!p.CanUse("Physics")) {
-                p.Message("&WYou can only undo physics if you can use &T/Physics"); return;
+                p.Message(Locale.Get("undo.physics_no_perm", p)); return;
             }
             
             CmdPhysics.SetPhysics(p.level, 0);
@@ -86,7 +85,7 @@ namespace MCGalaxy.Commands.Building {
             op.Start = DateTime.UtcNow.Subtract(delta);
             DrawOpPerformer.Do(op, null, p, new Vec3S32[] { Vec3U16.MinVal, Vec3U16.MaxVal } );
             
-            p.level.Message("Physics were undone &b" + delta.Shorten());
+            p.level.Message(Locale.Get("undo.physics_undone") + " &b" + delta.Shorten());
             Logger.Log(LogType.UserActivity, "Physics were undone &b" + delta.Shorten());
             p.level.Save(true);
         }
@@ -98,11 +97,11 @@ namespace MCGalaxy.Commands.Building {
             
             DrawOpPerformer.Do(op, null, p, new Vec3S32[] { Vec3U16.MinVal, Vec3U16.MaxVal });
             if (op.found) {
-                p.Message("Undid your changes for the past &b{0}", delta.Shorten(true));
-                Logger.Log(LogType.UserActivity, "{0} undid their own actions for the past {1}", 
+                p.Message(Locale.Get("undo.undid_changes", p), delta.Shorten(true));
+                Logger.Log(LogType.UserActivity, "{0} undid their own actions for the past {1}",
                            p.name, delta.Shorten(true));
             } else {
-                p.Message("No changes found by you in the past &b{0}", delta.Shorten(true));
+                p.Message(Locale.Get("undo.no_changes_found", p), delta.Shorten(true));
             }
         }
         
@@ -121,7 +120,7 @@ namespace MCGalaxy.Commands.Building {
             if (delta.TotalSeconds == 0) 
                 delta = TimeSpan.FromMinutes(90);
             if (!self && delta > p.group.MaxUndo) {
-                p.Message("{0}&Ss may only undo up to {1}",
+                p.Message(Locale.Get("undo.max_undo", p),
                           p.group.ColoredName, p.group.MaxUndo.Shorten(true, true));
                 return p.group.MaxUndo;
             }
@@ -129,10 +128,10 @@ namespace MCGalaxy.Commands.Building {
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Undo &H- Undoes your last draw operation");
-            p.Message("&T/Undo [timespan]");
-            p.Message("&HUndoes your blockchanges in the past [timespan]");
-            p.Message("&T/Undo physics [timespan] &H- Undoes physics on current map");
+            p.Message(Locale.Get("undo.help1", p));
+            p.Message(Locale.Get("undo.help2", p));
+            p.Message(Locale.Get("undo.help3", p));
+            p.Message(Locale.Get("undo.help4", p));
         }
     }
 }

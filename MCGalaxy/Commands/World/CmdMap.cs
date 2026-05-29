@@ -16,6 +16,7 @@
     permissions and limitations under the Licenses.
  */
 using System;
+using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.World {
     public sealed class CmdMap : Command2 {
@@ -68,7 +69,7 @@ namespace MCGalaxy.Commands.World {
             
             LevelOption opt = LevelOptions.Find(optName);
             if (opt == null) {
-                p.Message("Could not find option entered.");
+                p.Message(Locale.Get("map.option_not_found", p));
             } else {
                 opt.SetFunc(p, lvl, value);
                 lvl.SaveSettings();
@@ -92,75 +93,75 @@ namespace MCGalaxy.Commands.World {
         }
         
         static void PrintMapInfo(Player p, LevelConfig cfg) {
-            p.Message("&TPhysics settings:");
-            p.Message("  Finite mode: {0}&S, Random flow: {1}",
+            p.Message(Locale.Get("map.physics_settings", p));
+            p.Message(Locale.Get("map.finite_random", p),
                            GetBool(cfg.FiniteLiquids), GetBool(cfg.RandomFlow));
-            p.Message("  Animal hunt AI: {0}&S, Edge water: {1}",
+            p.Message(Locale.Get("map.animal_edge", p),
                            GetBool(cfg.AnimalHuntAI), GetBool(cfg.EdgeWater));
-            p.Message("  Grass growing: {0}&S, {1} tree growing: {2}",
+            p.Message(Locale.Get("map.grass_tree", p),
                            GetBool(cfg.GrassGrow), cfg.TreeType.Capitalize(), GetBool(cfg.GrowTrees));
-            p.Message("  Leaf decay: {0}&S, Physics overload: {1}",
+            p.Message(Locale.Get("map.leaf_overload", p),
                            GetBool(cfg.LeafDecay), cfg.PhysicsOverload);
-            p.Message("  Physics speed: &b{0} &Smilliseconds between ticks",
+            p.Message(Locale.Get("map.physics_speed", p),
                            cfg.PhysicsSpeed);
-            
-            p.Message("&TSurvival settings:");
-            p.Message("  Survival death: {0} &S(Fall: {1}, Drown: {2})",
+
+            p.Message(Locale.Get("map.survival_settings", p));
+            p.Message(Locale.Get("map.survival_death", p),
                            GetBool(cfg.SurvivalDeath), cfg.FallHeight, cfg.DrownTime);
-            p.Message("  Guns: {0}&S, Killer blocks: {1}",
+            p.Message(Locale.Get("map.guns_killer", p),
                            GetBool(cfg.Guns), GetBool(cfg.KillerBlocks));
-            
-            p.Message("&TGeneral settings:");
+
+            p.Message(Locale.Get("map.general_settings", p));
             p.Message("  MOTD: &b" + cfg.MOTD);
             p.Message("  Local level only chat: " + GetBool(!cfg.ServerWideChat));
-            p.Message("  Load on /goto: {0}&S, Auto unload: {1}",
+            p.Message(Locale.Get("map.load_unload", p),
                            GetBool(cfg.LoadOnGoto), GetBool(cfg.AutoUnload));
-            p.Message("  Buildable: {0}&S, Deletable: {1}&S, Drawing: {2}",
+            p.Message(Locale.Get("map.build_delete_draw", p),
                            GetBool(cfg.Buildable), GetBool(cfg.Deletable), GetBool(cfg.Drawing));
         }
         
         static string GetBool(bool value) { return value ? "&aON" : "&cOFF"; }
 
         public override void Help(Player p) {
-            p.Message("&T/Map [level] [option] <value> &H- Sets [option] on that level");
-            p.Message("&HUse &T/Help map options &Hfor a list of options");
-            p.Message("&HUse &T/Help map [option] &Hto see description for that option");
+            p.Message(Locale.Get("map.help1", p));
+            p.Message(Locale.Get("map.help2", p));
+            p.Message(Locale.Get("map.help3", p));
         }
-        
+
         public override void Help(Player p, string message) {
             if (message.CaselessEq("options")) {
-                p.Message("&HOptions: &f{0}", LevelOptions.Options.Join(o => o.Name));
-                p.Message("&HUse &T/Help map [option] &Hto see description for that option");
+                p.Message(Locale.Get("cmd.map.help1", p), LevelOptions.Options.Join(o => o.Name));
+                p.Message(Locale.Get("map.help3", p));
                 return;
             }
-            
+
             LevelOption opt = LevelOptions.Find(message);
             if (opt == null) {
-                p.Message("Unrecognised option \"{0}\".", message); return;
+                p.Message(Locale.Get("map.unrecognised_option", p), message); return;
             }
-            
+
             bool isMotd = opt.Name == LevelOptions.MOTD;
             string suffix = isMotd ? " <value>" : (HasArgument(opt.Name) ? " [value]" : "");
-            
-            p.Message("&T/Map [level] {0}{1}", opt.Name, suffix);
+
+            p.Message(Locale.Get("cmd.map.help2", p), opt.Name, suffix);
             p.Message("&H" + opt.Help);
             if (isMotd) ShowMotdRules(p);
         }
-        
+
         static void ShowMotdRules(Player p) {
-            p.Message("&HSpecial rules that can be put in a motd:");
-            p.Message("&T-/+hax &H- disallows/allows all hacks");
-            p.Message("&T-/+fly &H- disallows/allows flying");
-            p.Message("&T-/+noclip &H- disallows/allows noclipping");
-            p.Message("&T-/+respawn &H- disallows/allows respawning");
-            p.Message("&T-/+thirdperson &H- disallows/allows third person camera");
-            p.Message("&T-/+speed &H- disallows/allows speeding");
-            p.Message("&T-/+ophax &H- disallows/allows hacks for {0}&S+",
+            p.Message(Locale.Get("map.motd_rules", p));
+            p.Message(Locale.Get("cmd.map.help3", p));
+            p.Message(Locale.Get("cmd.map.help4", p));
+            p.Message(Locale.Get("cmd.map.help5", p));
+            p.Message(Locale.Get("cmd.map.help6", p));
+            p.Message(Locale.Get("cmd.map.help7", p));
+            p.Message(Locale.Get("cmd.map.help8", p));
+            p.Message(Locale.Get("cmd.map.help9", p),
                            Group.GetColoredName(LevelPermission.Operator));
-            p.Message("&T-/+push &H- disallows/allows player pushing");
-            p.Message("&Tjumpheight=[height] &H- sets max height users can jump up to");
-            p.Message("&Thorspeed=[speed] &H- sets base horizontal speed users move at");
-            p.Message("&Tjumps=[number] &H- sets max number of consecutive jumps");
+            p.Message(Locale.Get("cmd.map.help10", p));
+            p.Message(Locale.Get("cmd.map.help11", p));
+            p.Message(Locale.Get("cmd.map.help12", p));
+            p.Message(Locale.Get("cmd.map.help13", p));
         }
     }
 }

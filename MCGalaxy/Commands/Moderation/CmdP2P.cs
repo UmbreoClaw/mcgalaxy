@@ -29,7 +29,7 @@ namespace MCGalaxy.Commands.Moderation {
             if (message.Length == 0) { Help(p); return; }
             string[] args = message.SplitSpaces();
             if (args.Length > 2) { Help(p); return; }
-            if (args.Length == 1) { p.Message("You did not specify the target player."); return; }
+            if (args.Length == 1) { p.Message(Locale.Get("cmd.p2p.msg1", p)); return; }
             Player source = PlayerInfo.FindMatches(p, args[0]);
             Player target = PlayerInfo.FindMatches(p, args[1]);
             
@@ -41,8 +41,8 @@ namespace MCGalaxy.Commands.Moderation {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/P2P [source] [target]");
-            p.Message("&HTeleports the source player to the target player.");
+            p.Message(Locale.Get("cmd.p2p.help1", p));
+            p.Message(Locale.Get("cmd.p2p.help2", p));
         }
     }
 }

@@ -41,10 +41,10 @@ namespace MCGalaxy.Commands.Moderation {
         }
 
         public override void Help(Player p) {
-            p.Message("&T/XBan [player] <reason>");
-            p.Message("&HBans, IP bans, undoes, and kicks the given player.");
-            p.Message("&T/UBan [player] <reason>");
-            p.Message("&HSame as &T/XBan&H, but does not ban the IP.");
+            p.Message(Locale.Get("cmd.xban.help1", p));
+            p.Message(Locale.Get("cmd.xban.help2", p));
+            p.Message(Locale.Get("cmd.xban.help3", p));
+            p.Message(Locale.Get("cmd.xban.help4", p));
         }
     }
 }

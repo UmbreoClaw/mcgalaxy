@@ -49,13 +49,13 @@ namespace MCGalaxy.Commands.Moderation {
             if (name == null) return;
             
             if (!Server.vip.Add(name)) {
-                p.Message("{0} &Sis already a VIP.", p.FormatNick(name));
+                p.Message(Locale.Get("cmd.vip.msg1", p), p.FormatNick(name));
             } else {
                 Server.vip.Save();
-                p.Message("{0} &Sis now a VIP.", p.FormatNick(name));
+                p.Message(Locale.Get("cmd.vip.msg2", p), p.FormatNick(name));
                 
                 Player vip = PlayerInfo.FindExact(name);
-                if (vip != null) vip.Message("You are now a VIP!");
+                if (vip != null) vip.Message(Locale.Get("cmd.vip.msg3", p));
             }
         }
         
@@ -64,13 +64,13 @@ namespace MCGalaxy.Commands.Moderation {
             if (name == null) return;
             
             if (!Server.vip.Remove(name)) {
-                p.Message("{0} &Sis not a VIP.", p.FormatNick(name));
+                p.Message(Locale.Get("cmd.vip.msg4", p), p.FormatNick(name));
             } else {
                 Server.vip.Save();
-                p.Message("{0} &Sis no longer a VIP.", p.FormatNick(name));
+                p.Message(Locale.Get("cmd.vip.msg5", p), p.FormatNick(name));
                 
                 Player vip = PlayerInfo.FindExact(name);
-                if (vip != null) vip.Message("You are no longer a VIP!");
+                if (vip != null) vip.Message(Locale.Get("cmd.vip.msg6", p));
             }
         }
         
@@ -79,11 +79,11 @@ namespace MCGalaxy.Commands.Moderation {
         }
 
         public override void Help(Player p) {
-            p.Message("&T/VIP add/remove [player]");
-            p.Message("&HAdds or removes [player] from the VIP list.");
-            p.Message("&T/VIP list");
-            p.Message("&HLists all players who are on the VIP list.");
-            p.Message("&H  VIPs can join regardless of the player limit.");
+            p.Message(Locale.Get("cmd.vip.help1", p));
+            p.Message(Locale.Get("cmd.vip.help2", p));
+            p.Message(Locale.Get("cmd.vip.help3", p));
+            p.Message(Locale.Get("cmd.vip.help4", p));
+            p.Message(Locale.Get("cmd.vip.help5", p));
         }
     }
 }

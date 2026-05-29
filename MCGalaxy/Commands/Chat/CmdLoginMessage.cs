@@ -42,12 +42,12 @@ namespace MCGalaxy.Commands.Chatting
         }
         
         public override void Help(Player p) {
-            p.Message("&T/LoginMessage <message>");
-            p.Message("&H Sets your login message");
-            p.Message("&T/OLoginMessage [player] <message>");
-            p.Message("&H Sets the login message of another player");
-            p.Message("&H  Leave <message> blank to reset it.");
-            p.Message("&HYour login message is currently: &S{0}", PlayerInfo.GetLoginMessage(p));
+            p.Message(Locale.Get("loginmessage.help1", p));
+            p.Message(Locale.Get("loginmessage.help2", p));
+            p.Message(Locale.Get("loginmessage.help3", p));
+            p.Message(Locale.Get("loginmessage.help4", p));
+            p.Message(Locale.Get("loginmessage.help5", p));
+            p.Message(Locale.Get("loginmessage.current", p), PlayerInfo.GetLoginMessage(p));
         }
     }
 }

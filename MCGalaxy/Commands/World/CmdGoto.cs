@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using MCGalaxy.Commands.Info;
+using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.World {
     public sealed class CmdGoto : Command2 {
@@ -48,7 +49,7 @@ namespace MCGalaxy.Commands.World {
                 } while (attempts < 5 && res == GrResult.NoPermission);
 
                 if (res == GrResult.NoPermission) {
-                    p.Message("&WTook too long to find a random map to go to. Giving up.");
+                    p.Message(Locale.Get("goto.no_random", p));
                 }
 
             } else if (Formatter.ValidMapName(p, message)) {
@@ -65,7 +66,7 @@ namespace MCGalaxy.Commands.World {
                 List<string> maps = Wildcard.Filter(files, args[1],
                                                     mapFile => Path.GetFileNameWithoutExtension(mapFile));
                 if (maps.Count == 0) {
-                    p.Message("No maps found containing \"{0}\"", args[1]);
+                    p.Message(Locale.Get("goto.no_maps_found", p), args[1]);
                     return GrResult.NoLevels;
                 }
                 map = maps[r.Next(maps.Count)];
@@ -84,10 +85,10 @@ namespace MCGalaxy.Commands.World {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Goto [map name]");
-            p.Message("&HTeleports yourself to a different level.");
-            p.Message("&T/Goto -random");
-            p.Message("&HTeleports yourself to a random level.");
+            p.Message(Locale.Get("goto.help1", p));
+            p.Message(Locale.Get("goto.help2", p));
+            p.Message(Locale.Get("goto.help3", p));
+            p.Message(Locale.Get("goto.help4", p));
         }
     }
 }

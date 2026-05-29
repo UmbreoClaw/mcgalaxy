@@ -23,7 +23,7 @@ namespace MCGalaxy.Commands.Misc {
 
         public override void Use(Player p, string message, CommandData data) {
             if (p.PreTeleportMap == null) {
-                p.Message("You have not teleported anywhere yet"); return;
+                p.Message(Locale.Get("back.no_teleport", p)); return;
             }
             
             if (!p.level.name.CaselessEq(p.PreTeleportMap))
@@ -32,8 +32,8 @@ namespace MCGalaxy.Commands.Misc {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Back");
-            p.Message("&HTakes you back to the position you were in before teleportation");
+            p.Message(Locale.Get("back.help1", p));
+            p.Message(Locale.Get("back.help2", p));
         }
     }
 }

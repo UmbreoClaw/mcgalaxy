@@ -50,10 +50,10 @@ namespace MCGalaxy.Commands.Building {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Transform [name] <transform args>");
-            p.Message("&HSets your current transform to the transform with that name.");
-            p.Message("&T/Help Transform [name]");
-            p.Message("&HOutputs the help for the transform with that name.");
+            p.Message(Locale.Get("cmd.transform.help1", p));
+            p.Message(Locale.Get("cmd.transform.help2", p));
+            p.Message(Locale.Get("cmd.transform.help3", p));
+            p.Message(Locale.Get("cmd.transform.help4", p));
             TransformFactory.List(p);
         }
         

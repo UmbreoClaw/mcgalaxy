@@ -17,6 +17,7 @@
  */
 
 using System;
+using MCGalaxy.Localization;
 namespace MCGalaxy.Commands.Moderation {
     
     public sealed class CmdPossess : Command2 {
@@ -38,27 +39,27 @@ namespace MCGalaxy.Commands.Moderation {
             string name = args[0];
             
             if (name.Length == 0) {
-                if (p.possess.Length == 0) { p.Message("&WNot possessing anyone"); return; }
+                if (p.possess.Length == 0) { p.Message(Locale.Get("possess.not_possessing", p)); return; }
                 
                 Player target = PlayerInfo.FindExact(p.possess);
                 p.possess = "";
-                if (target == null) { p.Message("Possession disabled."); return;  }
+                if (target == null) { p.Message(Locale.Get("possess.disabled", p)); return;  }
                 
                 Unpossess(target);
                 p.invincible = false;
                 Command.Find("Hide").Use(p, "", data);
-                p.Message("Stopped possessing {0}&S.", p.FormatNick(target));
+                p.Message(Locale.Get("possess.stopped", p), p.FormatNick(target));
             } else {
                 Player target = PlayerInfo.FindMatches(p, name);
                 if (target == null) return;
                 if (!CheckRank(p, data, target, "teleport", false)) return;
                 
-                if (p == target) { p.Message("&WCannot possess yourself!"); return; }
+                if (p == target) { p.Message(Locale.Get("possess.no_self", p)); return; }
                 if (target.possess.Length > 0) {
-                    p.Message("That player is currently possessing someone!"); return;
+                    p.Message(Locale.Get("possess.target_possessing", p)); return;
                 }
                 if (target.following.Length > 0) {
-                    p.Message("That player is either following someone or already possessed."); return;
+                    p.Message(Locale.Get("possess.target_following", p)); return;
                 }
                 if (p.possess.Length > 0) {
                     Player prev = PlayerInfo.FindExact(p.possess);
@@ -76,15 +77,15 @@ namespace MCGalaxy.Commands.Moderation {
                 
                 Entities.Despawn(p, target);
                 target.possessed = true;
-                p.Message("Now posessing {0}&S.", p.FormatNick(target));
+                p.Message(Locale.Get("possess.now_possessing", p), p.FormatNick(target));
             }
         }
 
         public override void Help(Player p) {
-            p.Message("/possess [player] <skin as #> - DEMONIC POSSESSION HUE HUE");
-            p.Message("Using # after player name makes possessed keep their custom skin during possession.");
-            p.Message("Not using it makes them lose their skin, and makes their name show as \"Player (YourName)\".");
-            p.Message("&T/possess &H- Ends current possession");
+            p.Message(Locale.Get("possess.help1", p));
+            p.Message(Locale.Get("possess.help2", p));
+            p.Message(Locale.Get("possess.help3", p));
+            p.Message(Locale.Get("possess.help4", p));
         }
     }
 }

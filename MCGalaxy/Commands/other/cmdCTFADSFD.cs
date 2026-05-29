@@ -51,7 +51,7 @@ namespace MCGalaxy.Commands
                                 CtfInitTeam(p, color);
                                 break;
                             default:
-                                p.Message("Invalid team color chosen.");
+                                p.Message(Locale.Get("cmd.ctfadsfd.msg1", p));
                                 return;
                         }
                         return;
@@ -81,7 +81,7 @@ namespace MCGalaxy.Commands
                     string color = c.Parse(message.SplitSpaces()[1].ToLower());
                     CatchPos cpos;
                     cpos.x = 0; cpos.y = 0; cpos.z = 0; cpos.color = color; p.blockchangeObject = cpos;
-                    p.Message("Place a block to determine where to place the flag.");
+                    p.Message(Locale.Get("cmd.ctfadsfd.msg2", p));
                     p.ClearBlockchange();
                     p.Blockchange += AddFlag;
                 }
@@ -109,7 +109,7 @@ namespace MCGalaxy.Commands
                     if (message.SplitSpaces().Length < 2) { Help(p); return; }
                     int i;
                     Int32.TryParse(message.SplitSpaces()[1], out i);
-                    if (i == 0) { p.Message("You must indicate a numeric points value greater than 0."); return; }
+                    if (i == 0) { p.Message(Locale.Get("cmd.ctfadsfd.msg3", p)); return; }
                     p.level.maxroundpoints = i;
                     p.Message("Max points has been set to " + i);
                 }
@@ -219,7 +219,7 @@ namespace MCGalaxy.Commands
             Level workLevel = p.level;
             Team workTeam = new Team();
             char teamCol = (char)color[1];
-            if (workLevel.teams.Find(team => team.color == teamCol) != null) { p.Message("That team already exists."); return; }
+            if (workLevel.teams.Find(team => team.color == teamCol) != null) { p.Message(Locale.Get("cmd.ctfadsfd.msg4", p)); return; }
             workTeam.color = teamCol;
             workTeam.points = 0;
             workTeam.maxpoints = p.level.maxroundpoints;
@@ -239,7 +239,7 @@ namespace MCGalaxy.Commands
             {
                 if (workLevel.teams.Find(team => team.color == teamCol).onTeam.Exists(player => player.name == newPlayer.name))
                 {
-                    p.Message("That player is already on that team.");
+                    p.Message(Locale.Get("cmd.ctfadsfd.msg5", p));
                     return;
                 }
                 else
@@ -251,7 +251,7 @@ namespace MCGalaxy.Commands
             }
             else
             {
-                p.Message("That team has not been initialized on this level.");
+                p.Message(Locale.Get("cmd.ctfadsfd.msg6", p));
             }
             
         }
@@ -270,12 +270,12 @@ namespace MCGalaxy.Commands
                 }
                 else
                 {
-                    p.Message("That player is not on that team.");
+                    p.Message(Locale.Get("cmd.ctfadsfd.msg7", p));
                 }
             }
             else
             {
-                p.Message("That team has not been initialized on this level.");
+                p.Message(Locale.Get("cmd.ctfadsfd.msg8", p));
             }
         }
         public void AddFlagbase(Player p, string color, ushort x, ushort y, ushort z)
@@ -302,7 +302,7 @@ namespace MCGalaxy.Commands
             }
             else
             {
-                p.Message("That team has not been initialized on this level.");
+                p.Message(Locale.Get("cmd.ctfadsfd.msg9", p));
             }
 
         }
@@ -323,7 +323,7 @@ namespace MCGalaxy.Commands
             }
             else
             {
-                p.Message("That team has not been initialized on this level.");
+                p.Message(Locale.Get("cmd.ctfadsfd.msg10", p));
             }
         }
 
@@ -346,8 +346,8 @@ namespace MCGalaxy.Commands
 
         public override void Help(Player p)
         {
-            p.Message("Please visit http://forums.mclawl.tk and visit the Help and How-To section for a detailed");
-            p.Message("help feature for CTF.  There are too many functions and required things to list here!");
+            p.Message(Locale.Get("cmd.ctfadsfd.msg11", p));
+            p.Message(Locale.Get("cmd.ctfadsfd.msg12", p));
         }
         
     }

@@ -29,21 +29,21 @@ namespace MCGalaxy.Commands.Chatting
         public override void Use(Player p, string message, CommandData data) {
             if (message.Length == 0) {
                 p.whisper = !p.whisper; p.whisperTo = "";
-                if (p.whisper) p.Message("All messages sent will now auto-whisper");
-                else p.Message("Whisper chat turned off");
+                if (p.whisper) p.Message(Locale.Get("whisper.enabled", p));
+                else p.Message(Locale.Get("whisper.disabled", p));
             } else {
                 Player target = PlayerInfo.FindMatches(p, message);
                 if (target == null) { p.whisperTo = ""; p.whisper = false; return; }
 
                 p.whisper   = true;
                 p.whisperTo = target.name;
-                p.Message("Auto-whisper enabled. All messages will now be sent to {0}.", p.FormatNick(target));
+                p.Message(Locale.Get("whisper.auto_target", p), p.FormatNick(target));
             }
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Whisper [name]");
-            p.Message("&HMakes all messages act like whispers");
+            p.Message(Locale.Get("whisper.help1", p));
+            p.Message(Locale.Get("whisper.help2", p));
         }
     }
 }

@@ -38,20 +38,20 @@ namespace MCGalaxy.Commands.CPE
             if (args.Length > 1 && !CommandParser.GetBool(p, args[1], ref locked)) return;
             
             if (Block.IsPhysicsType(block)) {
-                p.Message("Cannot hold physics blocks"); return;
+                p.Message(Locale.Get("cmd.hold.msg1", p)); return;
             }
             
             if (p.Session.SendHoldThis(block, locked)) {
-                p.Message("Set your held block to {0}.", Block.GetName(p, block));
+                p.Message(Locale.Get("cmd.hold.msg2", p), Block.GetName(p, block));
             } else {
-                p.Message("Your client doesn't support changing your held block.");
+                p.Message(Locale.Get("cmd.hold.msg3", p));
             }
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Hold [block] <locked>");
-            p.Message("&HMakes you hold the given block in your hand");
-            p.Message("&H  <locked> optionally prevents you from changing it");
+            p.Message(Locale.Get("cmd.hold.help1", p));
+            p.Message(Locale.Get("cmd.hold.help2", p));
+            p.Message(Locale.Get("cmd.hold.help3", p));
         }
     }
 }

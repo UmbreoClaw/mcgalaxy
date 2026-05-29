@@ -43,18 +43,18 @@ namespace MCGalaxy.Commands.Info
 
             List<string> accounts = PlayerInfo.FindAccounts(message);
             if (accounts.Count == 0) {
-                p.Message("No players last played with the given IP.");
+                p.Message(Locale.Get("clones.no_players", p));
             } else {
-                p.Message("These players have the same IP:");
+                p.Message(Locale.Get("clones.same_ip", p));
                 p.Message(accounts.Join(alt => p.FormatNick(alt)));
             }
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Clones [name]");
-            p.Message("&HFinds everyone with the same IP as [name]");
-            p.Message("&T/Clones [ip address]");
-            p.Message("&HFinds everyone who last played or is playing on the given IP");
+            p.Message(Locale.Get("clones.help1", p));
+            p.Message(Locale.Get("clones.help2", p));
+            p.Message(Locale.Get("clones.help3", p));
+            p.Message(Locale.Get("clones.help4", p));
         }
     }
 }

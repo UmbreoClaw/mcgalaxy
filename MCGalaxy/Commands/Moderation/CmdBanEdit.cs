@@ -27,15 +27,15 @@ namespace MCGalaxy.Commands.Moderation {
             if (args.Length < 2) { Help(p); return; }
 
             if (!Ban.ChangeBanReason(args[0], args[1])) {
-                p.Message("That player isn't banned.");
+                p.Message(Locale.Get("cmd.banedit.msg1", p));
             } else {
-                p.Message("Set ban reason for &0{0} &Sto: &2{1}", args[0], args[1]);
+                p.Message(Locale.Get("cmd.banedit.msg2", p), args[0], args[1]);
             }
         }
         
         public override void Help(Player p) {
-            p.Message("&T/BanEdit [username] [reason]");
-            p.Message("&HEdits reason of ban for the user.");
+            p.Message(Locale.Get("cmd.banedit.help1", p));
+            p.Message(Locale.Get("cmd.banedit.help2", p));
         }
     }
 }

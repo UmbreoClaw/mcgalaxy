@@ -29,13 +29,13 @@ namespace MCGalaxy.Commands.Building
             if (message.Length > 0) { Help(p); return; }
 
             p.deleteMode = !p.deleteMode;
-            p.Message("Delete mode: &a" + p.deleteMode);
+            p.Message(Locale.Get("delete.mode", p), p.deleteMode ? "&2ON" : "&cOFF");
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Delete");
-            p.Message("&HDeletes any block you click");
-            p.Message("&H\"any block\" meaning Door_Air, Portals, MBs, etc");
+            p.Message(Locale.Get("delete.help1", p));
+            p.Message(Locale.Get("delete.help2", p));
+            p.Message(Locale.Get("delete.help3", p));
         }
     }
 }

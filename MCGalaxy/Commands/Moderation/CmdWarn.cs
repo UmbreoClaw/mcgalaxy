@@ -17,6 +17,7 @@
 */
 using MCGalaxy.DB;
 using MCGalaxy.Events;
+using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.Moderation {    
     public sealed class CmdWarn : Command2 {        
@@ -43,9 +44,9 @@ namespace MCGalaxy.Commands.Moderation {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Warn [player] <reason>");
-            p.Message("&HWarns a player. Players are kicked after 3 warnings.");
-            p.Message("&HFor <reason>, @number can be used as a shortcut for that rule.");
+            p.Message(Locale.Get("warn.help1", p));
+            p.Message(Locale.Get("warn.help2", p));
+            p.Message(Locale.Get("warn.help3", p));
         }
     }
 }

@@ -42,17 +42,17 @@ namespace MCGalaxy.Commands.Misc {
         void DoTpa(Player p, string message) {
             Player target = PlayerInfo.FindMatches(p, message);
             if (target == null) return;
-            if (target == p) { p.Message("You cannot /tpa to yourself."); return; }
+            if (target == p) { p.Message(Locale.Get("tpa.no_self", p)); return; }
             if (target.Ignores.Names.CaselessContains(p.name)) { ShowSentMessage(p, target); return; }
             
             if (target.name.CaselessEq(p.currentTpa)) {
-                p.Message("You still have a pending teleport request with this player."); return; 
+                p.Message(Locale.Get("tpa.pending", p)); return;
             }
             if (p.level != target.level && target.level.IsMuseum) {
-                p.Message("{0} &Sis in a museum.", p.FormatNick(target)); return;
+                p.Message(Locale.Get("tpa.in_museum", p), p.FormatNick(target)); return;
             }
             if (target.Loading) {
-                p.Message("Waiting for {0} &Sto spawn...", p.FormatNick(target));
+                p.Message(Locale.Get("tpa.waiting", p), p.FormatNick(target));
                 target.BlockUntilLoad(10);
             }
             
@@ -64,9 +64,9 @@ namespace MCGalaxy.Commands.Misc {
             
             Thread.Sleep(90000);
             if (target.Request) {
-                p.Message("Your teleport request has timed out.");
-                target.Message("Pending teleport request has timed out.");
-                
+                p.Message(Locale.Get("tpa.timed_out_sender", p));
+                target.Message(Locale.Get("tpa.timed_out_target", target));
+
                 target.Request = false;
                 target.senderName = "";
                 p.currentTpa = "";
@@ -74,54 +74,54 @@ namespace MCGalaxy.Commands.Misc {
         }
         
         static void ShowSentMessage(Player p, Player target) {
-            p.Message("Your teleport request has been sent to {0}", p.FormatNick(target));
-            p.Message("This request will timeout after &b90 &Sseconds.");
+            p.Message(Locale.Get("tpa.sent", p), p.FormatNick(target));
+            p.Message(Locale.Get("tpa.timeout_notice", p));
         }
-        
+
         static void ShowRequestMessage(Player p, Player target) {
             if (Chat.Ignoring(target, p)) return;
-            
-            target.Message("{0} &Swould like to teleport to you.", target.FormatNick(p));
-            target.Message("Type &2/tpaccept &Sor &4/tpdeny&S.");
-            target.Message("This request will timeout after &b90 &Sseconds.");
+
+            target.Message(Locale.Get("tpa.request_received", target), target.FormatNick(p));
+            target.Message(Locale.Get("tpa.accept_or_deny", target));
+            target.Message(Locale.Get("tpa.timeout_notice", target));
         }
         
         void DoAccept(Player p) {
-            if (!p.Request) { p.Message("You do not have any pending teleport requests."); return; }
-            
+            if (!p.Request) { p.Message(Locale.Get("tpa.no_requests", p)); return; }
+
             Player sender = PlayerInfo.FindExact(p.senderName);
             p.Request = false;
             p.senderName = "";
             if (sender == null) {
-                p.Message("The player who requested to teleport to you isn't online anymore."); return;
+                p.Message(Locale.Get("tpa.sender_offline", p)); return;
             }
-            
-            p.Message("You have accepted {0}&S's teleportation request.", p.FormatNick(sender));
-            sender.Message("{0} &Shas accepted your request. Teleporting now...", sender.FormatNick(p));
+
+            p.Message(Locale.Get("tpa.accepted", p), p.FormatNick(sender));
+            sender.Message(Locale.Get("tpa.sender_accepted", sender), sender.FormatNick(p));
             sender.currentTpa = "";
             
             PlayerOperations.TeleportToEntity(sender, p);
         }
         
         void DoDeny(Player p) {
-            if (!p.Request) { p.Message("You do not have any pending teleport requests."); return; }
-            
+            if (!p.Request) { p.Message(Locale.Get("tpa.no_requests", p)); return; }
+
             Player sender = PlayerInfo.FindExact(p.senderName);
             p.Request = false;
             p.senderName = "";
             if (sender == null) {
-                p.Message("The player who requested to teleport to you isn't online anymore."); return;
+                p.Message(Locale.Get("tpa.sender_offline", p)); return;
             }
-            
-            p.Message("You have denied {0}&S's teleportation request.", p.FormatNick(sender));
-            sender.Message("{0} &Shas denied your request.", sender.FormatNick(p));
-            sender.currentTpa = "";            
-        } 
+
+            p.Message(Locale.Get("tpa.denied", p), p.FormatNick(sender));
+            sender.Message(Locale.Get("tpa.sender_denied", sender), sender.FormatNick(p));
+            sender.currentTpa = "";
+        }
 
         public override void Help(Player p) {
-            p.Message("&T/TPA [player] &H- Sends a teleport request to that player");
-            p.Message("&T/TPA accept &H- Accepts a teleport request");
-            p.Message("&T/TPA deny &H- Denies a teleport request");
+            p.Message(Locale.Get("tpa.help1", p));
+            p.Message(Locale.Get("tpa.help2", p));
+            p.Message(Locale.Get("tpa.help3", p));
         }
     }
 }

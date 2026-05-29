@@ -58,16 +58,16 @@ namespace MCGalaxy.Commands.Building
             p.level.UpdateBlock(p, (ushort)P.X, (ushort)P.Y, (ushort)P.Z, block);
             string blockName = Block.GetName(p, block);
             if (!p.Ignores.DrawOutput) {
-                p.Message("{1} block was placed at ({0}).", P, blockName);
+                p.Message(Locale.Get("place.placed", p), P, blockName);
             }
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Place <block>");
-            p.Message("&HPlaces block at your feet.");
-            p.Message("&T/Place <block> [x y z]");
-            p.Message("&HPlaces block at [x y z]");
-            p.Message("&HUse ~ before a coord to place relative to current position");
+            p.Message(Locale.Get("place.help1", p));
+            p.Message(Locale.Get("place.help2", p));
+            p.Message(Locale.Get("place.help3", p));
+            p.Message(Locale.Get("place.help4", p));
+            p.Message(Locale.Get("place.help5", p));
         }
     }
 }

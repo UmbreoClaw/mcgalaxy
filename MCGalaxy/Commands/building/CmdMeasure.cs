@@ -42,7 +42,7 @@ namespace MCGalaxy.Commands.Building
                 }
             }
             
-            p.Message("Place or break two blocks to determine the edges.");
+            p.Message(Locale.Get("draw.place_two_blocks", p));
             p.MakeSelection(2, "Selecting region for &SMeasure", toCount, DoMeasure);
         }
         
@@ -61,8 +61,8 @@ namespace MCGalaxy.Commands.Building
 
             int width = max.X - min.X + 1, height = max.Y - min.Y + 1, length = max.Z - min.Z + 1;
             int volume = width * height * length;
-            p.Message("Measuring from &a({0}) &Sto &a({1})", min, max);
-            p.Message("  &b{0} &Swide, &b{1} &Shigh, &b{2} &Slong, {3} blocks",
+            p.Message(Locale.Get("measure.measuring", p), min, max);
+            p.Message(Locale.Get("measure.dimensions", p),
                            width, height, length, volume);
             
             string title = "Block types: ";
@@ -103,10 +103,10 @@ namespace MCGalaxy.Commands.Building
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Measure <block1> <block2>..");
-            p.Message("&HMeasures all the blocks between two points");
-            p.Message("&HShows information such as dimensions, most frequent blocks");
-            p.Message("&H  <blocks> optionally indicates which blocks to only count");
+            p.Message(Locale.Get("measure.help1", p));
+            p.Message(Locale.Get("measure.help2", p));
+            p.Message(Locale.Get("measure.help3", p));
+            p.Message(Locale.Get("measure.help4", p));
         }
     }
 }

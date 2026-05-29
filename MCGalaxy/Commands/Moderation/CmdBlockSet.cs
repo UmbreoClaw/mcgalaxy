@@ -75,23 +75,23 @@ namespace MCGalaxy.Commands.Moderation
         }
         
         public override void Help(Player p) {
-            p.Message("&T/BlockSet [block] [rank]");
-            p.Message("&HSets lowest rank that can use and delete [block] to [rank]");
-            p.Message("&T/BlockSet place [block] [rank]");
-            p.Message("&HSets lowest rank that can use/modify [block] to [rank]");
-            p.Message("&T/BlockSet delete [block] [rank]");
-            p.Message("&HSets lowest rank that can delete [block] to [rank]");
-            p.Message("&H- For more advanced permissions, see &T/Help blockset advanced");
-            p.Message("&H- To see available ranks, type &T/ViewRanks");
+            p.Message(Locale.Get("cmd.blockset.help1", p));
+            p.Message(Locale.Get("cmd.blockset.help2", p));
+            p.Message(Locale.Get("cmd.blockset.help3", p));
+            p.Message(Locale.Get("cmd.blockset.help4", p));
+            p.Message(Locale.Get("cmd.blockset.help5", p));
+            p.Message(Locale.Get("cmd.blockset.help6", p));
+            p.Message(Locale.Get("cmd.blockset.help7", p));
+            p.Message(Locale.Get("cmd.blockset.help8", p));
         }
         
         public override void Help(Player p, string message) {
             if (!message.CaselessEq("advanced")) { base.Help(p, message); return; }
             
-            p.Message("&T/BlockSet [block] +[rank]");
-            p.Message("&HAllows a specific rank to use and delete [block]");
-            p.Message("&T/BlockSet [block] -[rank]");
-            p.Message("&HPrevents a specific rank from using or deleting [block]");
+            p.Message(Locale.Get("cmd.blockset.help9", p));
+            p.Message(Locale.Get("cmd.blockset.help10", p));
+            p.Message(Locale.Get("cmd.blockset.help11", p));
+            p.Message(Locale.Get("cmd.blockset.help12", p));
             // TODO place and delete messages
         }
     }

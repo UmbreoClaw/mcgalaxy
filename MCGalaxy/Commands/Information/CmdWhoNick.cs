@@ -47,7 +47,7 @@ namespace MCGalaxy.Commands.Info
                                         pl => pl.ColoredName + " &S(" + pl.name + ")",
                                         "online player nicks");
             if (match == null) return;
-            p.Message("The player nicknamed {0} &Sis named {1}", match.DisplayName, match.name);
+            p.Message(Locale.Get("whonick.player_named", p), match.DisplayName, match.name);
         }
         
         static void ForBot(Player p, string nick) {
@@ -60,14 +60,14 @@ namespace MCGalaxy.Commands.Info
                                            bot => bot.ColoredName + " &S(" + bot.name + ")", 
                                            "bot nicknames");
             if (match == null) return;
-            p.Message("The bot nicknamed {0} &Sis named {1}", match.DisplayName, match.name);
+            p.Message(Locale.Get("whonick.bot_named", p), match.DisplayName, match.name);
         }
         
         public override void Help(Player p) {
-            p.Message("&T/WhoNick [nickname]");
-            p.Message("&HDisplays the player's real username");
-            p.Message("&T/WhoNick bot [nickname]");
-            p.Message("&HDisplays the bot's real name");
+            p.Message(Locale.Get("whonick.help1", p));
+            p.Message(Locale.Get("whonick.help2", p));
+            p.Message(Locale.Get("whonick.help3", p));
+            p.Message(Locale.Get("whonick.help4", p));
         }
     }
 }

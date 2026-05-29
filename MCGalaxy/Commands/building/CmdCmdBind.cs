@@ -33,11 +33,11 @@ namespace MCGalaxy.Commands.Building
                 bool anyBinds = false;
                 foreach (var kvp in p.CmdBindings)
                 {
-                    p.Message("&T/{0} &Sbound to &T/{1}", kvp.Key, kvp.Value);
+                    p.Message(Locale.Get("cmd.cmdbind.help1", p), kvp.Key, kvp.Value);
                     anyBinds = true;
                 }
                 
-                if (!anyBinds) p.Message("You currently have no commands bound.");
+                if (!anyBinds) p.Message(Locale.Get("cmdbind.no_binds", p));
                 return;
             }
 
@@ -47,24 +47,24 @@ namespace MCGalaxy.Commands.Building
             if (parts.Length == 1) {
                 string value;
                 if (!p.CmdBindings.TryGetValue(trigger, out value)) {
-                    p.Message("No command bound for &T/{0}", trigger);
+                    p.Message(Locale.Get("cmdbind.no_cmd_bound", p), trigger);
                 } else {
-                    p.Message("&T/{0} &Sbound to &T/{1}", trigger, value);
+                    p.Message(Locale.Get("cmd.cmdbind.help2", p), trigger, value);
                 }
             } else {
                 p.CmdBindings[trigger] = parts[1];
-                p.Message("Bound &T/{1} &Sto &T/{0}", trigger, parts[1]);
+                p.Message(Locale.Get("cmd.cmdbind.msg1", p), trigger, parts[1]);
             }
         }
         
         public override void Help(Player p) {
-            p.Message("&T/CmdBind [shortcut] [command]");
-            p.Message("&HBinds [shortcut] to [command]");
-            p.Message("&H  Use with \"&T/[shortcut]&H\" &f(example: &T/2&f)");
-            p.Message("&T/CmdBind [shortcut]");
-            p.Message("&HLists the command currently bound to [shortcut]");
-            p.Message("&T/CmdBind &H");
-            p.Message("&HLists all currently bound commands");
+            p.Message(Locale.Get("cmdbind.help1", p));
+            p.Message(Locale.Get("cmdbind.help2", p));
+            p.Message(Locale.Get("cmdbind.help3", p));
+            p.Message(Locale.Get("cmdbind.help4", p));
+            p.Message(Locale.Get("cmdbind.help5", p));
+            p.Message(Locale.Get("cmdbind.help6", p));
+            p.Message(Locale.Get("cmdbind.help7", p));
         }
     }
 }

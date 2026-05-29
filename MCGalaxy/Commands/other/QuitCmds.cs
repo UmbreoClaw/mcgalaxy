@@ -34,8 +34,8 @@ namespace MCGalaxy.Commands.Misc
         }
 
         public override void Help(Player p) {
-            p.Message("&T/RageQuit");
-            p.Message("&HMakes you ragequit");
+            p.Message(Locale.Get("ragequit.help1", p));
+            p.Message(Locale.Get("ragequit.help2", p));
         }
     }
     
@@ -48,14 +48,14 @@ namespace MCGalaxy.Commands.Misc
         public override bool UseableWhenFrozen { get { return true; } }
         
         public override void Use(Player p, string message, CommandData data) {
-            string msg = message.Length > 0 ? "Left the game: " + message : "Left the game.";
-            if (p.muted) msg = "Left the game.";
+            string msg = message.Length > 0 ? Locale.Get("quit.left_reason") + ": " + message : Locale.Get("quit.left");
+            if (p.muted) msg = Locale.Get("quit.left");
             p.Leave(msg);
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Quit <reason>");
-            p.Message("&HLeave the server.");
+            p.Message(Locale.Get("quit.help1", p));
+            p.Message(Locale.Get("quit.help2", p));
         }
     }
     
@@ -76,8 +76,8 @@ namespace MCGalaxy.Commands.Misc
         }
         
         public override void Help(Player p) {
-            p.Message("&T/CrashServer");
-            p.Message("&HCrash the server with a generic error");
+            p.Message(Locale.Get("crashserver.help1", p));
+            p.Message(Locale.Get("crashserver.help2", p));
         }
     }
     
@@ -92,7 +92,7 @@ namespace MCGalaxy.Commands.Misc
 
         public override void Use(Player p, string message, CommandData data) {
             if (message.Length > 0) {
-                p.Message("&WIncorrect syntax. Abuse detected.");
+                p.Message(Locale.Get("hacks.abuse", p));
                 Thread.Sleep(3000);
             }
             
@@ -101,8 +101,8 @@ namespace MCGalaxy.Commands.Misc
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Hacks");
-            p.Message("&HPerforms various server hacks. OPERATORS ONLY!!!");
+            p.Message(Locale.Get("hacks.help1", p));
+            p.Message(Locale.Get("hacks.help2", p));
         }
     }
 }

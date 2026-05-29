@@ -16,6 +16,7 @@
     permissions and limitations under the Licenses.
  */
 using System;
+using MCGalaxy.Localization;
 using MCGalaxy.Tasks;
 
 namespace MCGalaxy.Commands.World {
@@ -49,11 +50,11 @@ namespace MCGalaxy.Commands.World {
             lvl.PhysicsPaused = !lvl.PhysicsPaused;
             
             if (enabled) {
-                Chat.MessageGlobal("Physics on {0} &Swere re-enabled.", lvl.ColoredName);
+                Chat.MessageGlobal(Locale.Get("pause.reenabled"), lvl.ColoredName);
             } else {
                 Server.MainScheduler.QueueOnce(PauseCallback, lvl.name,
                                                TimeSpan.FromSeconds(seconds));
-                Chat.MessageGlobal("Physics on {0} &Swere temporarily disabled.", lvl.ColoredName);
+                Chat.MessageGlobal(Locale.Get("pause.disabled"), lvl.ColoredName);
             }
         }
         
@@ -63,14 +64,14 @@ namespace MCGalaxy.Commands.World {
             if (lvl == null) return;
             
             lvl.PhysicsPaused = false;
-            Chat.MessageGlobal("Physics on {0} &Swere re-enabled.", lvl.ColoredName);
+            Chat.MessageGlobal(Locale.Get("pause.reenabled"), lvl.ColoredName);
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Pause [level] [seconds]");
-            p.Message("&HPauses physics on the given level for the given number of seconds.");
-            p.Message("&H  If [level] is not given, pauses physics on the current level.");
-            p.Message("&H  If [seconds] is not given, pauses physics for 30 seconds.");
+            p.Message(Locale.Get("pause.help1", p));
+            p.Message(Locale.Get("pause.help2", p));
+            p.Message(Locale.Get("pause.help3", p));
+            p.Message(Locale.Get("pause.help4", p));
         }
     }
 }

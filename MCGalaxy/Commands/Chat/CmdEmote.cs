@@ -31,12 +31,12 @@ namespace MCGalaxy.Commands.Chatting
             if (!addToList) Server.noEmotes.Remove(p.name);
             else Server.noEmotes.Add(p.name);
             Server.noEmotes.Save();
-            p.Message("Emote parsing is {0}.", p.parseEmotes ? "enabled" : "disabled");
+            p.Message(Locale.Get("emote.status", p), p.parseEmotes ? Locale.Get("emote.enabled", p) : Locale.Get("emote.disabled", p));
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Emote");
-            p.Message("&HEnables or disables emoticon parsing");
+            p.Message(Locale.Get("emote.help1", p));
+            p.Message(Locale.Get("emote.help2", p));
         }
     }
 }

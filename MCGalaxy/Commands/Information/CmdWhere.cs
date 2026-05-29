@@ -38,7 +38,7 @@ namespace MCGalaxy.Commands.Info
                 target = PlayerInfo.FindMatches(p, message);
                 if (target == null) return;
                 if (IGame.GameOn(target.Level) != null && !(p.IsSuper || p.Game.Referee)) {
-                    p.Message("You can only use /where on people in games when you are in referee mode."); return;
+                    p.Message(Locale.Get("where.game_referee_only", p)); return;
                 }
                 targetName = p.FormatNick((Player)target);
             }
@@ -47,10 +47,10 @@ namespace MCGalaxy.Commands.Info
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Where [name]");
-            p.Message("&HDisplays level, position, and orientation of that player.");
-            p.Message("&T/Where bot [name]");
-            p.Message("&HDisplays level, position, and orientation of that bot.");
+            p.Message(Locale.Get("where.help1", p));
+            p.Message(Locale.Get("where.help2", p));
+            p.Message(Locale.Get("where.help3", p));
+            p.Message(Locale.Get("where.help4", p));
         }
     }
 }

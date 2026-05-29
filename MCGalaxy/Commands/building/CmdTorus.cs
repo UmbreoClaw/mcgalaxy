@@ -43,10 +43,10 @@ namespace MCGalaxy.Commands.Building {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Torus <brush args>");
+            p.Message(Locale.Get("cmd.torus.help1", p));
             p.Message("&HDraws a torus(circular tube), with the first point as the centre, " +
                            "and second being the radius.");
-            p.Message("   &HNote: radius of the tube itself is the vertical difference between the two points.");            
+            p.Message(Locale.Get("cmd.torus.msg1", p));            
             p.Message(BrushHelpLine);
         }
     }
