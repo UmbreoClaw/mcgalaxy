@@ -163,6 +163,7 @@ namespace MCGalaxy
             ImagePalette.Load();
             
             SrvProperties.Load();
+            Locale.Load();
             if (commands) Command.InitAll();
             AuthService.UpdateList();
             Heartbeat.ReloadDefault();

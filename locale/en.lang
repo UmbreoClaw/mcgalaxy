@@ -1,0 +1,101 @@
+# MCGalaxy English locale file (en)
+# Format: key = value
+# Lines starting with # are comments and are ignored.
+# {0}, {1}, {2} are positional format placeholders — keep them in translated strings.
+# &X are colour codes (&S = server colour, &H = help, &T = text, &W = warning, &a = lime, &c = red, etc.)
+# λNICK, λFULL, λSHORT are player name tokens used in broadcast messages — do not translate these tokens.
+
+# ── Login / connection ───────────────────────────────────────────────────────
+
+login.first_visit = Welcome {0}&S! This is your first visit.
+login.return = Welcome back {0}&S! You've been here {1} times!
+login.first_connection = λNICK &Shas connected for the first time!
+login.rules_agree = &9You must read the &c/Rules &9and &c/Agree &9to them before you can build and use commands!
+login.inbox_messages = You have &a{0} &Smessages in &T/Inbox
+login.lowlag_on = Lowlag mode is currently &aON.
+login.hidden_reminder = &8Reminder: You are still hidden.
+login.still_muted = λNICK &Wis still muted from previously.
+login.still_frozen = λNICK &Wis still frozen from previously.
+login.already_logged_in = Already logged in!
+login.reconnecting = (Reconnecting)
+login.reconnecting_diff_ip = (Reconnecting from a different IP)
+login.alts_known_as = λNICK &Sis lately known as: {0}
+
+# ── Block interaction ────────────────────────────────────────────────────────
+
+block.must_agree = You must read /rules then agree to them with /agree!
+block.active_block = Block is active, you cannot disturb it.
+block.build_too_far = You can't build that far away.
+
+# ── Map navigation ───────────────────────────────────────────────────────────
+
+goto.already_joining = Cannot use /goto, already joining a map.
+
+# ── /Help command ────────────────────────────────────────────────────────────
+
+help.command_categories = &HCommand Categories:
+help.other_categories = &HOther Categories:
+help.view_category = &HTo view help for a category, type &T/Help CategoryName
+help.view_command = &HTo see detailed help for a command, type &T/Help CommandName
+help.view_info = &HTo see your stats, type &T/Info
+help.view_maps = &HTo see loaded maps, type &T/Maps
+help.view_realm = &HTo view your personal world options, use &T/Realm
+help.join_map = &HTo join a map, type &T/Goto WorldName
+help.private_msg = &HTo send private messages, type &T@PlayerName Message
+help.not_found = Could not find command, plugin or block specified.
+
+# ── /Ban command ─────────────────────────────────────────────────────────────
+
+ban.already_banned = {0} &Sis already banned.
+ban.help1 = &T/Ban [player] <reason>
+ban.help2 = &HBans a player (and kicks them if online).
+ban.help3 = &HFor <reason>, @number can be used as a shortcut for that rule.
+
+# ── /Kick command ────────────────────────────────────────────────────────────
+
+kick.cant_kick_self = You cannot kick yourself.
+kick.kick_failed = λNICK &Stried to kick {0} &Sbut failed.
+kick.help1 = &T/Kick [player] <reason>
+kick.help2 = &HKicks a player.
+kick.help3 = &HFor <reason>, @number can be used as a shortcut for that rule.
+
+# ── /Mute command ────────────────────────────────────────────────────────────
+
+mute.not_muted = {0}&S is not muted.
+mute.already_muted = {0}&S is already muted.
+mute.unmute_hint = You may unmute them with &T/Unmute {0}
+mute.cant_unmute_self = You cannot unmute yourself.
+mute.help1 = &T/Mute [player] <timespan> <reason>
+mute.help2 = &H Mutes player for <timespan>, which defaults to
+mute.help3 = &H the auto-mute timespan.
+mute.help4 = &H If <timespan> is 0, the mute is permanent.
+mute.help5 = &H For <reason>, @1 substitutes for rule 1, @2 for rule 2, etc.
+mute.help6 = &T/Unmute [player] <reason>
+mute.help7 = &H Unmutes player with optional <reason>.
+
+# ── /Freeze command ──────────────────────────────────────────────────────────
+
+freeze.help1 = &T/Freeze [name] [timespan] <reason>
+freeze.help2 = &HPrevents [name] from moving for [timespan], or until manually unfrozen.
+freeze.help3 = &HFor <reason>, @number can be used as a shortcut for that rule.
+
+# ── /Language command ────────────────────────────────────────────────────────
+
+locale.current_server = Current server language: &T{0}
+locale.current_player = Your language: &T{0} &S(server default: &T{1}&S)
+locale.set_player = Your language has been set to &T{0}&S.
+locale.set_server = Server language set to &T{0}&S.
+locale.available = Available locales: &T{0}
+locale.none_loaded = No locale files found in the locale/ directory.
+locale.unknown = Unknown locale &T{0}&S. Use &T/Language list &Sto see available locales.
+locale.reloaded = Locale files reloaded.
+locale.help1 = &T/Language
+locale.help2 = &HShows your current language setting.
+locale.help3 = &T/Language list
+locale.help4 = &HLists all available locale codes.
+locale.help5 = &T/Language [code]
+locale.help6 = &HSets your personal display language.
+locale.help7 = &T/Language server [code]
+locale.help8 = &HSets the server default language (requires operator permission).
+locale.help9 = &T/Language reload
+locale.help10 = &HReloads all locale files from disk (requires operator permission).

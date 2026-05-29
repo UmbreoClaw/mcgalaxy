@@ -1,0 +1,101 @@
+# MCGalaxy Archivo de idioma Español (es)
+# Formato: clave = valor
+# Las líneas que empiezan con # son comentarios y se ignoran.
+# {0}, {1}, {2} son marcadores de posición — mantenlos en las traducciones.
+# &X son códigos de color (&S = color del servidor, &H = ayuda, &T = texto, &W = advertencia, &a = verde, &c = rojo, etc.)
+# λNICK, λFULL, λSHORT son tokens de nombre de jugador — NO los traduzcas.
+
+# ── Inicio de sesión / conexión ──────────────────────────────────────────────
+
+login.first_visit = ¡Bienvenido {0}&S! Esta es tu primera visita.
+login.return = ¡Bienvenido de nuevo {0}&S! Has visitado el servidor {1} veces.
+login.first_connection = λNICK &Sse ha conectado por primera vez.
+login.rules_agree = &9Debes leer las &c/Reglas &9y &c/Aceptarlas &9antes de poder construir y usar comandos.
+login.inbox_messages = Tienes &a{0} &Smensajes en &T/Inbox
+login.lowlag_on = El modo de bajo lag está actualmente &aACTIVO.
+login.hidden_reminder = &8Recordatorio: Todavía estás oculto.
+login.still_muted = λNICK &Wtodavía está silenciado de antes.
+login.still_frozen = λNICK &Wtodavía está congelado de antes.
+login.already_logged_in = ¡Ya has iniciado sesión!
+login.reconnecting = (Reconectando)
+login.reconnecting_diff_ip = (Reconectando desde una IP diferente)
+login.alts_known_as = λNICK &Ses conocido últimamente como: {0}
+
+# ── Interacción con bloques ──────────────────────────────────────────────────
+
+block.must_agree = ¡Debes leer /rules y aceptarlas con /agree!
+block.active_block = El bloque está activo, no puedes perturbarlo.
+block.build_too_far = No puedes construir tan lejos.
+
+# ── Navegación por mapas ─────────────────────────────────────────────────────
+
+goto.already_joining = No puedes usar /goto, ya te estás uniendo a un mapa.
+
+# ── Comando /Help ────────────────────────────────────────────────────────────
+
+help.command_categories = &HCategorías de comandos:
+help.other_categories = &HOtras categorías:
+help.view_category = &HPara ver la ayuda de una categoría, escribe &T/Help NombreCategoria
+help.view_command = &HPara ver ayuda detallada de un comando, escribe &T/Help NombreComando
+help.view_info = &HPara ver tus estadísticas, escribe &T/Info
+help.view_maps = &HPara ver los mapas cargados, escribe &T/Maps
+help.view_realm = &HPara ver las opciones de tu mundo personal, usa &T/Realm
+help.join_map = &HPara unirte a un mapa, escribe &T/Goto NombreMundo
+help.private_msg = &HPara enviar mensajes privados, escribe &T@NombreJugador Mensaje
+help.not_found = No se encontró el comando, plugin o bloque especificado.
+
+# ── Comando /Ban ─────────────────────────────────────────────────────────────
+
+ban.already_banned = {0} &Sya está baneado.
+ban.help1 = &T/Ban [jugador] <razón>
+ban.help2 = &HBanea a un jugador (y lo expulsa si está en línea).
+ban.help3 = &HPara <razón>, @número puede usarse como atajo para esa regla.
+
+# ── Comando /Kick ────────────────────────────────────────────────────────────
+
+kick.cant_kick_self = No puedes expulsarte a ti mismo.
+kick.kick_failed = λNICK &Sintentó expulsar a {0} &Spero falló.
+kick.help1 = &T/Kick [jugador] <razón>
+kick.help2 = &HExpulsa a un jugador.
+kick.help3 = &HPara <razón>, @número puede usarse como atajo para esa regla.
+
+# ── Comando /Mute ────────────────────────────────────────────────────────────
+
+mute.not_muted = {0}&S no está silenciado.
+mute.already_muted = {0}&S ya está silenciado.
+mute.unmute_hint = Puedes quitarle el silencio con &T/Unmute {0}
+mute.cant_unmute_self = No puedes quitarte el silencio a ti mismo.
+mute.help1 = &T/Mute [jugador] <duración> <razón>
+mute.help2 = &H Silencia al jugador por <duración>, que por defecto es
+mute.help3 = &H el tiempo de silencio automático.
+mute.help4 = &H Si <duración> es 0, el silencio es permanente.
+mute.help5 = &H Para <razón>, @1 sustituye a la regla 1, @2 a la regla 2, etc.
+mute.help6 = &T/Unmute [jugador] <razón>
+mute.help7 = &H Quita el silencio al jugador con <razón> opcional.
+
+# ── Comando /Freeze ──────────────────────────────────────────────────────────
+
+freeze.help1 = &T/Freeze [nombre] [duración] <razón>
+freeze.help2 = &HImpide que [nombre] se mueva durante [duración], o hasta que sea descongelado manualmente.
+freeze.help3 = &HPara <razón>, @número puede usarse como atajo para esa regla.
+
+# ── Comando /Language ────────────────────────────────────────────────────────
+
+locale.current_server = Idioma actual del servidor: &T{0}
+locale.current_player = Tu idioma: &T{0} &S(idioma del servidor: &T{1}&S)
+locale.set_player = Tu idioma ha sido cambiado a &T{0}&S.
+locale.set_server = Idioma del servidor cambiado a &T{0}&S.
+locale.available = Idiomas disponibles: &T{0}
+locale.none_loaded = No se encontraron archivos de idioma en la carpeta locale/.
+locale.unknown = Idioma desconocido &T{0}&S. Usa &T/Language list &Spara ver los idiomas disponibles.
+locale.reloaded = Los archivos de idioma han sido recargados.
+locale.help1 = &T/Language
+locale.help2 = &HMuestra tu configuración de idioma actual.
+locale.help3 = &T/Language list
+locale.help4 = &HLista todos los códigos de idioma disponibles.
+locale.help5 = &T/Language [código]
+locale.help6 = &HEstablece tu idioma de visualización personal.
+locale.help7 = &T/Language server [código]
+locale.help8 = &HEstablece el idioma predeterminado del servidor (requiere permiso de operador).
+locale.help9 = &T/Language reload
+locale.help10 = &HRecarga todos los archivos de idioma del disco (requiere permiso de operador).

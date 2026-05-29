@@ -297,6 +297,7 @@
     <Compile Include="Commands\other\CmdTimer.cs" />
     <Compile Include="Commands\other\CmdTp.cs" />
     <Compile Include="Commands\other\CmdTpA.cs" />
+    <Compile Include="Commands\other\CmdLanguage.cs" />
     <Compile Include="Commands\other\QuitCmds.cs" />
     <Compile Include="Commands\Overseer.cs" />
     <Compile Include="Commands\Scripting\CmdCmdLoad.cs" />
@@ -700,6 +701,7 @@
     <Compile Include="util\Formatting\Matcher.cs" />
     <Compile Include="util\Formatting\Paginator.cs" />
     <Compile Include="util\IO\FileIO.cs" />
+    <Compile Include="Locale\Locale.cs" />
     <Compile Include="Server\Paths.cs" />
     <Compile Include="util\IO\TextFile.cs" />
     <Compile Include="util\Math\AABB.cs" />

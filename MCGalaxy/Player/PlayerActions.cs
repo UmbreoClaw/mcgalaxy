@@ -48,7 +48,7 @@ namespace MCGalaxy
         
         static bool ChangeMap(Player p, Level lvl, string name) {
             if (Interlocked.CompareExchange(ref p.UsingGoto, 1, 0) == 1) {
-                p.Message("Cannot use /goto, already joining a map."); return false;
+                p.Message(Locale.Get("goto.already_joining", p)); return false;
             }
             Level oldLevel = p.level;
             bool didJoin   = false;

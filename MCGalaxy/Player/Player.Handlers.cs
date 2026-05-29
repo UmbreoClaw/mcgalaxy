@@ -35,8 +35,6 @@ namespace MCGalaxy
 {
     public partial class Player : IDisposable
     {
-        const string mustAgreeMsg = "You must read /rules then agree to them with /agree!";
-        
         readonly object blockchangeLock = new object();
         internal bool HasBlockChange() { return Blockchange != null; }
         
@@ -57,7 +55,7 @@ namespace MCGalaxy
             
             if (jailed || frozen || possessed) { RevertBlock(x, y, z); return; }
             if (!agreed) {
-                Message(mustAgreeMsg);
+                Message(Locale.Get("block.must_agree", this));
                 RevertBlock(x, y, z); return;
             }
             
@@ -79,7 +77,7 @@ namespace MCGalaxy
             if (cancel) return;
 
             if (old >= Block.Air_Flood && old <= Block.Door_Air_air) {
-                Message("Block is active, you cannot disturb it.");
+                Message(Locale.Get("block.active_block", this));
                 RevertBlock(x, y, z); return;
             }
             
@@ -95,7 +93,7 @@ namespace MCGalaxy
                 
                 if (diff > ReachDistance + 4) {
                     Logger.Log(LogType.Warning, "{0} attempted to build with a {1} distance offset", name, diff);
-                    Message("You can't build that far away.");
+                    Message(Locale.Get("block.build_too_far", this));
                     RevertBlock(x, y, z); return;
                 }
             }
