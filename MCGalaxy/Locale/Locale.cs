@@ -112,15 +112,25 @@ namespace MCGalaxy
             catch { return dict; }
 
             foreach (string line in lines) {
-                string trimmed = line.Trim();
-                if (trimmed.Length == 0 || trimmed[0] == '#') continue;
+                // Skip blank lines and comments. Only leading whitespace is ignored
+                // here - the value itself must keep any indentation it has.
+                int start = 0;
+                while (start < line.Length && (line[start] == ' ' || line[start] == '\t')) start++;
+                if (start >= line.Length || line[start] == '#') continue;
 
-                int eq = trimmed.IndexOf('=');
+                int eq = line.IndexOf('=');
                 if (eq < 0) continue;
 
-                string key   = trimmed.Substring(0, eq).Trim();
-                string value = trimmed.Substring(eq + 1).Trim();
-                if (key.Length > 0) dict[key] = value;
+                string key = line.Substring(0, eq).Trim();
+                if (key.Length == 0) continue;
+
+                // The canonical separator is " = " (one space each side). Strip exactly
+                // one leading separator space so intentional indentation in help text
+                // (e.g. "  &HsubItem") is preserved rather than trimmed away.
+                string value = line.Substring(eq + 1);
+                if (value.Length > 0 && value[0] == ' ') value = value.Substring(1);
+
+                dict[key] = value;
             }
 
             return dict;

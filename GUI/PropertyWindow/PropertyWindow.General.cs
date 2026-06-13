@@ -29,6 +29,16 @@ namespace MCGalaxy.Gui {
             srv_numPort.Value = Server.Config.Port;
             srv_txtOwner.Text = Server.Config.OwnerName;
             srv_chkPublic.Checked = Server.Config.Public;
+
+            srv_cmbLanguage.Items.Clear();
+            var locales = Locale.AvailableLocales();
+            locales.Sort();
+            foreach (string code in locales)
+                srv_cmbLanguage.Items.Add(code);
+            if (locales.Count == 0) srv_cmbLanguage.Items.Add("en");
+            string current = Server.Config.Language;
+            int idx = srv_cmbLanguage.Items.IndexOf(current);
+            srv_cmbLanguage.SelectedIndex = idx >= 0 ? idx : 0;
             
             srv_numPlayers.Value = Server.Config.MaxPlayers;
             srv_numGuests.Value = Server.Config.MaxGuests;
@@ -52,6 +62,8 @@ namespace MCGalaxy.Gui {
             Server.Config.Port = (int)srv_numPort.Value;
             Server.Config.OwnerName = srv_txtOwner.Text;
             Server.Config.Public = srv_chkPublic.Checked;
+            if (srv_cmbLanguage.SelectedItem != null)
+                Server.Config.Language = srv_cmbLanguage.SelectedItem.ToString();
             
             Server.Config.MaxPlayers = (int)srv_numPlayers.Value;
             Server.Config.MaxGuests = (int)srv_numGuests.Value;

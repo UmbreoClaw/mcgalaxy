@@ -108,6 +108,8 @@ namespace MCGalaxy.Gui
             this.srv_txtMOTD = new System.Windows.Forms.TextBox();
             this.srv_numPort = new System.Windows.Forms.NumericUpDown();
             this.srv_chkPublic = new System.Windows.Forms.CheckBox();
+            this.srv_lblLanguage = new System.Windows.Forms.Label();
+            this.srv_cmbLanguage = new System.Windows.Forms.ComboBox();
             this.rank_cbSilentAdmins = new System.Windows.Forms.CheckBox();
             this.rank_txtPrefix = new System.Windows.Forms.TextBox();
             this.rank_txtMOTD = new System.Windows.Forms.TextBox();
@@ -1298,7 +1300,26 @@ namespace MCGalaxy.Gui
             this.srv_chkPublic.Text = "Public";
             this.toolTip.SetToolTip(this.srv_chkPublic, "Whether or not the server will appear on the server list.");
             this.srv_chkPublic.UseVisualStyleBackColor = true;
-            // 
+            //
+            // srv_lblLanguage
+            //
+            this.srv_lblLanguage.AutoSize = true;
+            this.srv_lblLanguage.Location = new System.Drawing.Point(6, 154);
+            this.srv_lblLanguage.Name = "srv_lblLanguage";
+            this.srv_lblLanguage.Size = new System.Drawing.Size(59, 13);
+            this.srv_lblLanguage.TabIndex = 105;
+            this.srv_lblLanguage.Text = "Language:";
+            //
+            // srv_cmbLanguage
+            //
+            this.srv_cmbLanguage.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.srv_cmbLanguage.FormattingEnabled = true;
+            this.srv_cmbLanguage.Location = new System.Drawing.Point(83, 151);
+            this.srv_cmbLanguage.Name = "srv_cmbLanguage";
+            this.srv_cmbLanguage.Size = new System.Drawing.Size(160, 21);
+            this.srv_cmbLanguage.TabIndex = 6;
+            this.toolTip.SetToolTip(this.srv_cmbLanguage, "The default language for the server. Players can override this with /language.");
+            //
             // rank_cbSilentAdmins
             // 
             this.rank_cbSilentAdmins.AutoSize = true;
@@ -2922,9 +2943,11 @@ namespace MCGalaxy.Gui
             this.srv_grp.Controls.Add(this.srv_lblOwner);
             this.srv_grp.Controls.Add(this.srv_txtOwner);
             this.srv_grp.Controls.Add(this.srv_chkPublic);
+            this.srv_grp.Controls.Add(this.srv_lblLanguage);
+            this.srv_grp.Controls.Add(this.srv_cmbLanguage);
             this.srv_grp.Location = new System.Drawing.Point(8, 6);
             this.srv_grp.Name = "srv_grp";
-            this.srv_grp.Size = new System.Drawing.Size(483, 148);
+            this.srv_grp.Size = new System.Drawing.Size(483, 176);
             this.srv_grp.TabIndex = 41;
             this.srv_grp.TabStop = false;
             this.srv_grp.Text = "General Configuration";
@@ -6233,6 +6256,8 @@ namespace MCGalaxy.Gui
         private System.Windows.Forms.TextBox rank_txtPrefix;
         private System.Windows.Forms.Label rank_lblPrefix;
         private System.Windows.Forms.Label srv_lblOwner;
+        private System.Windows.Forms.Label srv_lblLanguage;
+        private System.Windows.Forms.ComboBox srv_cmbLanguage;
         private System.Windows.Forms.GroupBox rank_grpMisc;
         private System.Windows.Forms.GroupBox rank_grpGeneral;
         
