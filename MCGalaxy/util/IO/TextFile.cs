@@ -31,16 +31,11 @@ namespace MCGalaxy.Util
         public TextFileChanged OnTextChanged;
         // Optional provider for default text resolved at creation time (e.g. so the
         // content can depend on the configured server language). Takes priority over DefaultText.
-        public readonly Func<string[]> DefaultTextProvider;
+        public Func<string[]> DefaultTextProvider;
 
         public TextFile(string filename, params string[] defaultText) {
             Filename    = filename;
             DefaultText = defaultText;
-        }
-
-        public TextFile(string filename, Func<string[]> defaultProvider) {
-            Filename            = filename;
-            DefaultTextProvider = defaultProvider;
         }
 
         public void EnsureExists() {
@@ -92,7 +87,7 @@ namespace MCGalaxy.Util
                                         "// Lines should be formatted like this:",
                                         "// $website:http://example.org",
                                         "// That would replace '$website' in any message to 'http://example.org'") },
-            { "Welcome", new TextFile(Paths.WelcomeFile, () => new string[] { Locale.Get("welcome.default") }) },
+            { "Welcome", new TextFile(Paths.WelcomeFile) { DefaultTextProvider = () => new string[] { Locale.Get("welcome.default") } } },
             { "Eat", new TextFile(Paths.EatMessagesFile, "guzzled a grape", "chewed a cherry", "ate an avocado") },
             { "Profanity filter", new TextFile(Paths.BadWordsFile,
                                                "# This file is a list of words to remove via the profanity filter",
