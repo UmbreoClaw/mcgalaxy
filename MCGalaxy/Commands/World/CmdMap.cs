@@ -16,7 +16,6 @@
     permissions and limitations under the Licenses.
  */
 using System;
-using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.World {
     public sealed class CmdMap : Command2 {

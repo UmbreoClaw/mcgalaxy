@@ -19,7 +19,6 @@ using System;
 using MCGalaxy.Bots;
 using MCGalaxy.Generator;
 using MCGalaxy.Levels.IO;
-using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.World {
     public sealed class CmdResizeLvl : Command2 {

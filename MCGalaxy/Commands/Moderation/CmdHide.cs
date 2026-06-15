@@ -18,7 +18,6 @@
 using System.IO;
 using MCGalaxy.DB;
 using MCGalaxy.Events.PlayerEvents;
-using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.Moderation {
     public sealed class CmdHide : Command2 {

@@ -17,7 +17,6 @@
  */
 using System;
 using MCGalaxy.Games;
-using MCGalaxy.Localization;
 namespace MCGalaxy.Commands.World {
     public sealed class CmdReload : Command2 {
         public override string name { get { return "Reload"; } }

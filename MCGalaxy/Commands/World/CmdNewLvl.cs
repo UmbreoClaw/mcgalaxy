@@ -18,7 +18,6 @@
 using System;
 using System.Threading;
 using MCGalaxy.Generator;
-using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.World {
     public sealed class CmdNewLvl : Command2 {

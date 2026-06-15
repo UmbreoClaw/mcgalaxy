@@ -18,7 +18,6 @@
 using System;
 using System.Collections.Generic;
 using MCGalaxy.Eco;
-using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.Eco 
 {

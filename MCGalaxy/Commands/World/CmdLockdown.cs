@@ -17,7 +17,6 @@
  */
 using System.IO;
 using System.Threading;
-using MCGalaxy.Localization;
 namespace MCGalaxy.Commands.World {
     
     public sealed class CmdLockdown : Command2 {

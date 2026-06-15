@@ -18,7 +18,6 @@
 using System;
 using System.IO;
 using MCGalaxy.Levels.IO;
-using MCGalaxy.Localization;
 using MCGalaxy.Network;
 
 namespace MCGalaxy.Commands.World {

@@ -17,7 +17,6 @@
  */
 using System;
 using System.Collections.Generic;
-using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.World {
     public sealed partial class CmdOverseer : Command2 {

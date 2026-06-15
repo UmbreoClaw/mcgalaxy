@@ -19,7 +19,6 @@ using System;
 using System.IO;
 using System.Threading;
 using MCGalaxy.Levels.IO;
-using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.World {
     public sealed class CmdMuseum : Command2 {

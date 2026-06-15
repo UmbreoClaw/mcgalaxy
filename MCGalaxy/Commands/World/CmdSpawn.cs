@@ -17,7 +17,6 @@
  */
 using MCGalaxy.Events.PlayerEvents;
 using MCGalaxy.Games;
-using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.World {
     public sealed class CmdSpawn : Command2 {

@@ -18,7 +18,6 @@
 using System;
 using System.Collections.Generic;
 using MCGalaxy.Blocks;
-using MCGalaxy.Localization;
 using BlockID = System.UInt16;
 
 namespace MCGalaxy.Commands.World {

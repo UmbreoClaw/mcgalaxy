@@ -17,7 +17,6 @@
  */
 
 using System;
-using MCGalaxy.Localization;
 namespace MCGalaxy.Commands.Moderation {
     
     public sealed class CmdPossess : Command2 {

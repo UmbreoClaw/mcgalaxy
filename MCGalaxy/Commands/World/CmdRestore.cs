@@ -17,7 +17,6 @@
  */
 using System;
 using System.IO;
-using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.World {
     public sealed class CmdRestore : Command2 {        

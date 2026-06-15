@@ -16,7 +16,6 @@
     permissions and limitations under the Licenses.
  */
 using System;
-using MCGalaxy.Localization;
 using BlockID = System.UInt16;
 
 namespace MCGalaxy.Commands.World {

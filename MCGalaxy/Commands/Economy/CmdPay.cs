@@ -18,7 +18,6 @@
 using System;
 using MCGalaxy.Eco;
 using MCGalaxy.Events.EconomyEvents;
-using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.Eco {
     public sealed class CmdPay : MoneyCmd {

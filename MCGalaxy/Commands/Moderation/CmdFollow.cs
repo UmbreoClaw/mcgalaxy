@@ -16,7 +16,6 @@
     permissions and limitations under the Licenses.
  */
 using System;
-using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.Moderation {
     public sealed class CmdFollow : Command2 {

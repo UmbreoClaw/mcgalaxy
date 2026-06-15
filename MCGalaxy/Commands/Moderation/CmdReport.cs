@@ -22,7 +22,6 @@ using System.Collections.Generic;
 using System.IO;
 using MCGalaxy.DB;
 using MCGalaxy.Events;
-using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.Moderation {
     public sealed class CmdReport : Command2 {

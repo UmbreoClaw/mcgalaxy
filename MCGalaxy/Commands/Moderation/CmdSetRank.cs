@@ -19,7 +19,6 @@ using System;
 using System.IO;
 using MCGalaxy.Events;
 using MCGalaxy.Events.GroupEvents;
-using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.Moderation {
     public sealed class CmdSetRank : Command2 {

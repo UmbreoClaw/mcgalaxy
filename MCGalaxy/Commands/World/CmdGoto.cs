@@ -19,7 +19,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using MCGalaxy.Commands.Info;
-using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.World {
     public sealed class CmdGoto : Command2 {

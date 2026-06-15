@@ -17,7 +17,6 @@
 */
 using MCGalaxy.DB;
 using MCGalaxy.Events;
-using MCGalaxy.Localization;
 
 namespace MCGalaxy.Commands.Moderation {    
     public sealed class CmdWarn : Command2 {        
