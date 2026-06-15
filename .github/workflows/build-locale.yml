@@ -1,0 +1,118 @@
+name: Build locale branch
+# Auto-compiles on every push to the Spanish-locale feature branch and uploads
+# ready-to-run builds as downloadable artifacts (same style as the ClassiCube
+# build workflow). Also runs on manual dispatch.
+on:
+  push:
+    branches:
+      - claude/mcgalaxy-spanish-locale-ZlMdu
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.ref }}-locale
+  cancel-in-progress: true
+
+jobs:
+#============================================
+# ====== GUI + CLI build (Mono / msbuild) ===
+# ===========================================
+# Produces the WinForms GUI (MCGalaxy.exe) where the new language selector
+# lives, plus the console build (MCGalaxyCLI.exe). Runnable via Mono on
+# Linux/macOS or natively on Windows.
+  build-gui-mono:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compile solution (GUI + CLI) using mono
+        id: compile
+        shell: bash
+        run: |
+          msbuild MCGalaxy.sln /p:Configuration=Release
+
+      - name: Package runnable build
+        if: ${{ steps.compile.outcome == 'success' }}
+        shell: bash
+        run: |
+          mkdir -p package
+          # Compiled assemblies (MCGalaxy.exe GUI, MCGalaxyCLI.exe, MCGalaxy_.dll)
+          cp -r bin/Release/* package/
+          # Translations - required at runtime, looked up in ./locale
+          cp -r locale package/locale
+          # Native + support libraries that msbuild does not auto-copy
+          cp sqlite3.dll sqlite3_x32.dll sqlite3_x64.dll package/ 2>/dev/null || true
+          cp System.Data.SQLite.dll MySql.Data.dll package/ 2>/dev/null || true
+          ls -R package
+
+      - uses: ./.github/actions/upload_build
+        if: ${{ always() && steps.compile.outcome == 'success' }}
+        with:
+          SOURCE_FILE: 'package'
+          DEST_NAME: 'MCGalaxy-GUI-mono'
+
+#============================================
+# ========= Cross-platform CLI (.NET 8) =====
+# ===========================================
+# Framework-dependent CLI build plus self-contained single-file binaries for
+# Windows / Linux / macOS so the server can be tested without installing .NET.
+  build-cli-dotnet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Build (framework-dependent)
+        id: compile
+        run: dotnet build CLI/MCGalaxyCLI_dotnet8.csproj -c Release
+
+      - name: Package framework-dependent build
+        if: ${{ steps.compile.outcome == 'success' }}
+        run: |
+          mkdir -p cli-net8
+          cp -r CLI/bin/Release/net8.0/* cli-net8/
+          cp -r locale cli-net8/locale
+
+      - uses: ./.github/actions/upload_build
+        if: ${{ always() && steps.compile.outcome == 'success' }}
+        with:
+          SOURCE_FILE: 'cli-net8'
+          DEST_NAME: 'MCGalaxy-CLI-net8.0'
+
+      # ---- self-contained single-file binaries (no .NET install needed) ----
+      - name: Publish standalone binaries
+        if: ${{ steps.compile.outcome == 'success' }}
+        shell: bash
+        run: |
+          publish() {
+            rid=$1; name=$2
+            dotnet publish CLI/MCGalaxyCLI_dotnet8.csproj -c Release \
+              -r "$rid" --self-contained \
+              -p:PublishSingleFile=true -p:PublishTrimmed=false \
+              -o "out/$name"
+            cp -r locale "out/$name/locale"
+          }
+          publish linux-x64 linux64
+          publish win-x64   win64
+          publish osx-x64    mac64
+
+      - uses: ./.github/actions/upload_build
+        if: ${{ always() && steps.compile.outcome == 'success' }}
+        with:
+          SOURCE_FILE: 'out/linux64'
+          DEST_NAME: 'MCGalaxy-linux64-standalone'
+
+      - uses: ./.github/actions/upload_build
+        if: ${{ always() && steps.compile.outcome == 'success' }}
+        with:
+          SOURCE_FILE: 'out/win64'
+          DEST_NAME: 'MCGalaxy-win64-standalone'
+
+      - uses: ./.github/actions/upload_build
+        if: ${{ always() && steps.compile.outcome == 'success' }}
+        with:
+          SOURCE_FILE: 'out/mac64'
+          DEST_NAME: 'MCGalaxy-mac64-standalone'
