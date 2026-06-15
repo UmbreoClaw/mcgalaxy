@@ -71,7 +71,7 @@ namespace MCGalaxy.Commands
         }
               
         public void MessageCannotUse(Player p) {
-            p.Message("Only {0} {1}", Describe(), Desc);
+            p.Message(Locale.Get("perms.cannot_use_extra", p), Describe(), Desc);
         }
         
 

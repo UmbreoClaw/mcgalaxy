@@ -210,11 +210,11 @@ namespace MCGalaxy.Core {
         static void DoRank(ModAction e) {
             Player who = PlayerInfo.FindExact(e.Target);
             Group newRank = (Group)e.Metadata;
-            string action = newRank.Permission >= e.TargetGroup.Permission ? "promoted to " : "demoted to ";
-            LogAction(e, who, action + newRank.ColoredName);
+            string action = newRank.Permission >= e.TargetGroup.Permission ? Locale.Get("modaction.promoted_to") : Locale.Get("modaction.demoted_to");
+            LogAction(e, who, action + " " + newRank.ColoredName);
             
             if (who != null && e.Announce) {
-                who.Message("You are now ranked " + newRank.ColoredName + "&S, type /Help for your new set of commands.");
+                who.Message(Locale.Get("rank.now_ranked", who), newRank.ColoredName);
             }
             if (Server.tempRanks.Remove(e.Target)) {
                 ModerationTasks.TemprankCalcNextRun();

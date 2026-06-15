@@ -70,9 +70,9 @@ namespace MCGalaxy.Authentication
         
         public override void NeedVerification(Player p) {
             if (!HasPassword(p.name)) {
-                p.Message("&WPlease set your account verification password with &T/SetPass [password]");
+                p.Message(Locale.Get("pass.set_password", p));
             } else {
-                p.Message("&WPlease complete account verification with &T/Pass [password]");
+                p.Message(Locale.Get("pass.complete_verification", p));
             }
         }
         
@@ -194,7 +194,7 @@ namespace MCGalaxy.Authentication
                 return;
             }
             if (data.Rank < Server.Config.ResetPasswordRank) {
-                p.Message("Only {0}&S+ can reset verification passwords",
+                p.Message(Locale.Get("pass.cannot_reset", p),
                           Group.GetColoredName(Server.Config.ResetPasswordRank));
                 return;
             }

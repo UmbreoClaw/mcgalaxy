@@ -59,7 +59,7 @@ namespace MCGalaxy.Events
             if (Duration.Ticks != 0) suffix += " for " + Duration.Shorten();
             
             suffix += "." + ReasonSuffixed;
-            return target + " &Swas " + action + " &Sby " + Actor.ColoredName + suffix;
+            return string.Format(Locale.Get("modaction.message"), target, action, Actor.ColoredName, suffix);
         }
         
         

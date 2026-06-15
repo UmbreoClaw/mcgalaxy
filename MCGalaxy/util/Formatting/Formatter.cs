@@ -71,7 +71,7 @@ namespace MCGalaxy
         }
         
         public static void MessageNeedMinPerm(Player p, string action, LevelPermission perm) {
-            p.Message("Only {0}&S{1}", Group.GetColoredName(perm), action);
+            p.Message(Locale.Get("perms.need_min", p), Group.GetColoredName(perm), action);
         }
         
         
