@@ -61,13 +61,13 @@ namespace MCGalaxy {
         protected override string MaxCmd { get { return null; } }
 
         
-        protected override void ApplyChanges(Player p, Level lvl, string msg) {
+        protected override void ApplyChanges(Player p, Level lvl, string chatMsg, string logMsg) {
             lvl.Save(true);
-            msg += " &Sin " + ColoredName;
-            Logger.Log(LogType.UserActivity, "{0} &Son {1}", msg, lvl.name);
-            
-            lvl.Message(Chat.LocalPrefix+msg);           
-            if (p.level != lvl) p.Message("{0} &Son {1} &Sby you", msg, lvl.ColoredName);
+            Logger.Log(LogType.UserActivity, "{0} on {1} in zone {2}", logMsg, lvl.name, cfg.Name);
+
+            chatMsg += " &Sin " + ColoredName;
+            lvl.Message(Chat.LocalPrefix + chatMsg);
+            if (p.level != lvl) p.Message("{0} &Son {1} &Sby you", chatMsg, lvl.ColoredName);
         }
     }
     

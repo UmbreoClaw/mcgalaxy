@@ -44,6 +44,10 @@ namespace MCGalaxy.Core {
         }
         
         static void LogAction(ModAction e, Player target, string action) {
+            LogAction(e, target, action, action);
+        }
+
+        static void LogAction(ModAction e, Player target, string chatAction, string logAction) {
             // TODO should use per-player nick settings
             string targetNick = e.Actor.FormatNick(e.Target);
 
@@ -51,19 +55,19 @@ namespace MCGalaxy.Core {
                 // TODO: Chat.MessageFrom if target is online?
                 Player who = PlayerInfo.FindExact(e.Target);
                 // TODO: who.SharesChatWith
-                Chat.Message(ChatScope.Global, e.FormatMessage(targetNick, action),
+                Chat.Message(ChatScope.Global, e.FormatMessage(targetNick, chatAction),
                              null, null, true);
             } else {
-                Chat.Message(ChatScope.Perms, "To Ops: " + e.FormatMessage(targetNick, action),
+                Chat.Message(ChatScope.Perms, "To Ops: " + e.FormatMessage(targetNick, chatAction),
             	             Chat.OpchatPerms, null, true);
             }
-            
-            action = Colors.StripUsed(action);
+
+            logAction = Colors.StripUsed(logAction);
             string suffix = "";
             if (e.Duration.Ticks != 0) suffix = " &Sfor " + e.Duration.Shorten();
-            
+
             Logger.Log(LogType.UserActivity, "{0} was {1} by {2}",
-                       e.Target, action, e.Actor.name + suffix);
+                       e.Target, logAction, e.Actor.name + suffix);
         }
 
         
@@ -210,8 +214,10 @@ namespace MCGalaxy.Core {
         static void DoRank(ModAction e) {
             Player who = PlayerInfo.FindExact(e.Target);
             Group newRank = (Group)e.Metadata;
-            string action = newRank.Permission >= e.TargetGroup.Permission ? Locale.Get("modaction.promoted_to") : Locale.Get("modaction.demoted_to");
-            LogAction(e, who, action + " " + newRank.ColoredName);
+            bool promoting = newRank.Permission >= e.TargetGroup.Permission;
+            string chatAction = Locale.Get(promoting ? "modaction.promoted_to" : "modaction.demoted_to") + " " + newRank.ColoredName;
+            string logAction  = (promoting ? "promoted to" : "demoted to") + " " + Colors.StripUsed(newRank.ColoredName);
+            LogAction(e, who, chatAction, logAction);
             
             if (who != null && e.Announce) {
                 who.Message(Locale.Get("rank.now_ranked", who), newRank.ColoredName);

@@ -192,22 +192,25 @@ namespace MCGalaxy {
 
 
         public void OnPermissionChanged(Player p, Level lvl, Group grp, string type) {
-            string msg = string.Format(Locale.Get("access.rank_changed", p), type, LType(p), grp.ColoredName);
-            ApplyChanges(p, lvl, msg);
+            string chatMsg = string.Format(Locale.Get("access.rank_changed", p), type, LType(p), grp.ColoredName);
+            string logMsg  = string.Format("{0} rank changed to {1}", Type, Colors.StripUsed(grp.ColoredName));
+            ApplyChanges(p, lvl, chatMsg, logMsg);
         }
-        
+
         public void OnListChanged(Player p, Level lvl, string name, bool whitelist, bool removedFromOpposite) {
             string nick = p.FormatNick(name);
-            string msg;
+            string chatMsg, logMsg;
             if (removedFromOpposite) {
-                msg = string.Format(Locale.Get(whitelist ? "access.removed_blacklist" : "access.removed_whitelist", p), nick, LType(p));
+                chatMsg = string.Format(Locale.Get(whitelist ? "access.removed_blacklist" : "access.removed_whitelist", p), nick, LType(p));
+                logMsg  = string.Format("{0} was removed from {1} {2}list", name, Type, whitelist ? "black" : "white");
             } else {
-                msg = string.Format(Locale.Get(whitelist ? "access.was_whitelisted" : "access.was_blacklisted", p), nick, LType(p));
+                chatMsg = string.Format(Locale.Get(whitelist ? "access.was_whitelisted" : "access.was_blacklisted", p), nick, LType(p));
+                logMsg  = string.Format("{0} was {1} {2}listed", name, Type, whitelist ? "white" : "black");
             }
-            ApplyChanges(p, lvl, msg);
+            ApplyChanges(p, lvl, chatMsg, logMsg);
         }
-        
-        protected abstract void ApplyChanges(Player p, Level lvl, string msg);
+
+        protected abstract void ApplyChanges(Player p, Level lvl, string chatMsg, string logMsg);
         
         bool CheckRank(Player p, LevelPermission plRank, LevelPermission perm, bool max) {
             string mode = Locale.Get(max ? "access.mode_max" : "access.mode_min", p);
@@ -285,13 +288,13 @@ namespace MCGalaxy {
         protected override string MaxCmd { get { return isVisit ? "PerVisit" : "PerBuild"; } }
 
         
-        protected override void ApplyChanges(Player p, Level lvl, string msg) {
+        protected override void ApplyChanges(Player p, Level lvl, string chatMsg, string logMsg) {
             Update(lvl);
-            Logger.Log(LogType.UserActivity, "{0} &Son {1}", msg, lvlName);            
-            if (lvl != null) lvl.Message(Chat.LocalPrefix + msg);
-            
+            Logger.Log(LogType.UserActivity, "{0} on {1}", logMsg, lvlName);
+            if (lvl != null) lvl.Message(Chat.LocalPrefix + chatMsg);
+
             if (p != Player.Console && p.level != lvl) {
-                p.Message(Locale.Get("access.by_you", p), msg, ColoredName);
+                p.Message(Locale.Get("access.by_you", p), chatMsg, ColoredName);
             }
         }
         
