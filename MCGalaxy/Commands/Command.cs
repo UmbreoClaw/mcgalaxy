@@ -158,7 +158,7 @@ namespace MCGalaxy
                          new CmdFakeRank(),  new CmdFly(),        new CmdHackRank(),   new CmdInvincible(), 
                          new CmdKill(),      new CmdRide(),       new CmdSendCmd(),    new CmdSummon(), 
                          new CmdTimer(),     new CmdTp(),         new CmdTpA(),        new CmdRagequit(), 
-                         new CmdQuit(),      new CmdCrashServer(),new CmdHacks());
+                         new CmdQuit(),      new CmdCrashServer(),new CmdHacks(),      new CmdLanguage());
 
             RegisterCore(new CmdCmdLoad(),   new CmdCmdUnload(),  new CmdPlugin());
 
