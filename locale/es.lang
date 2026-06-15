@@ -2375,6 +2375,7 @@ warn.help5 = &HEnumera advertencias para [jugador].
 warn.not_warned = {0}&S no ha sido advertido antes.
 warn.warned = {0}&S ha sido advertido: {1}
 warn.warned_times = {0}&S ha sido advertido {1} veces.
+welcome.default = ¡Bienvenido a mi servidor!
 where.game_referee_only = Solo puedes usar /where con personas en partidas cuando estás en modo árbitro.
 where.help1 = &T/Where [nombre]
 where.help2 = &HMuestra el nivel, posición y orientación de ese jugador.

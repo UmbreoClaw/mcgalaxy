@@ -27,23 +27,32 @@ namespace MCGalaxy.Util
     public sealed class TextFile 
     {
         public readonly string Filename;
-        public readonly string[] DefaultText;        
+        public readonly string[] DefaultText;
         public TextFileChanged OnTextChanged;
-        
+        // Optional provider for default text resolved at creation time (e.g. so the
+        // content can depend on the configured server language). Takes priority over DefaultText.
+        public readonly Func<string[]> DefaultTextProvider;
+
         public TextFile(string filename, params string[] defaultText) {
             Filename    = filename;
             DefaultText = defaultText;
         }
-        
+
+        public TextFile(string filename, Func<string[]> defaultProvider) {
+            Filename            = filename;
+            DefaultTextProvider = defaultProvider;
+        }
+
         public void EnsureExists() {
             if (File.Exists(Filename)) return;
-            
-            Logger.Log(LogType.SystemActivity, Filename + " does not exist, creating");
-            using (StreamWriter w = new StreamWriter(Filename)) {
-                if (DefaultText == null) return;
 
-                for (int i = 0; i < DefaultText.Length; i++) {
-                    w.WriteLine(DefaultText[i]);
+            Logger.Log(LogType.SystemActivity, Filename + " does not exist, creating");
+            string[] defaultText = DefaultTextProvider != null ? DefaultTextProvider() : DefaultText;
+            using (StreamWriter w = new StreamWriter(Filename)) {
+                if (defaultText == null) return;
+
+                for (int i = 0; i < defaultText.Length; i++) {
+                    w.WriteLine(defaultText[i]);
                 }
             }
         }
@@ -83,7 +92,7 @@ namespace MCGalaxy.Util
                                         "// Lines should be formatted like this:",
                                         "// $website:http://example.org",
                                         "// That would replace '$website' in any message to 'http://example.org'") },
-            { "Welcome", new TextFile(Paths.WelcomeFile, "Welcome to my server!") },
+            { "Welcome", new TextFile(Paths.WelcomeFile, () => new string[] { Locale.Get("welcome.default") }) },
             { "Eat", new TextFile(Paths.EatMessagesFile, "guzzled a grape", "chewed a cherry", "ate an avocado") },
             { "Profanity filter", new TextFile(Paths.BadWordsFile,
                                                "# This file is a list of words to remove via the profanity filter",
