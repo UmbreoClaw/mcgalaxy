@@ -188,7 +188,7 @@ namespace MCGalaxy.Eco
             }
             
             if (shortcuts.Count == 0) return;
-            p.Message("Shortcuts: &T{0}", shortcuts.Join());
+            p.Message(Locale.Get("help.shortcuts", p) + " &T{0}", shortcuts.Join());
         }
     }
 }
