@@ -84,6 +84,24 @@ Compiling - .NET 6 / .NET 7 / .NET 8
 * Compiling for .NET 7: Navigate into `CLI` directory, and then run `dotnet build MCGalaxyCLI_dotnet7.csproj`
 * Compiling for .NET 8: Navigate into `CLI` directory, and then run `dotnet build MCGalaxyCLI_dotnet8.csproj`
 
+Internationalization (i18n)
+-----------------
+MCGalaxy supports multiple display languages. All player-facing messages are stored in UTF-8 `.lang` files inside the `locale/` folder next to the server executable.
+
+**Built-in locales:** English (`en`) and Spanish (`es`).
+
+**Changing the language**
+* In the GUI: open **Settings → Server → General Configuration** and pick a language from the dropdown.
+* In-game: `/Language [code]` sets your personal language; `/Language server [code]` sets the server default (requires Operator).
+* In `properties/server.properties`: set `language = es` (or any locale code).
+
+**Adding a new language**
+1. Copy `locale/en.lang` to `locale/fr.lang` (use your [BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag) language code).
+2. Translate the values — leave the keys and `{0}`/`{1}` placeholders unchanged.
+3. Drop the file into the `locale/` folder and run `/Language reload` in-game (no restart needed).
+
+See **[LOCALES.md](LOCALES.md)** for a full translation cheat sheet.
+
 Copyright/License
 -----------------
 See LICENSE for MCGalaxy license, and license.txt for code used from other software.

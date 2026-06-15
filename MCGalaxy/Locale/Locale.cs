@@ -96,10 +96,12 @@ namespace MCGalaxy
                 Logger.Log(LogType.SystemActivity, "Loaded {0} locale(s)", loaded.Count);
         }
 
-        /// <summary> Reloads all locale files from disk. </summary>
+        /// <summary> Reloads all locale files from disk without a gap where keys go missing. </summary>
         public static void Reload()
         {
-            locales = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+            // Load() builds a fresh dictionary then atomically swaps it in via the
+            // volatile field — no need to clear first, which would cause a brief window
+            // where Get() returns raw key names instead of translations.
             Load();
         }
 
