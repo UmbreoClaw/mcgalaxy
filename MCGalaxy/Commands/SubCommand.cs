@@ -145,15 +145,15 @@ namespace MCGalaxy.Commands {
             }
             
             if (alertNoneFound) {
-                p.Message("There is no {0} command \"{1}\".", parentCommandName, message);
-                p.Message("See &T/help {0}&S for all {0} commands.", parentCommandName);
+                p.Message(Locale.Get("subcmd.no_command", p), parentCommandName, message);
+                p.Message(Locale.Get("subcmd.see_help", p), parentCommandName);
             }
             return UsageResult.NoneFound;
         }
 
         public void DisplayAvailable(Player p) {
-            p.Message("&HCommands: &S{0}", subCommands.Join(grp => grp.Name));
-            p.Message("&HUse &T/Help {0} [command] &Hfor more details", parentCommandName);
+            p.Message(Locale.Get("subcmd.available", p), subCommands.Join(grp => grp.Name));
+            p.Message(Locale.Get("subcmd.use_help", p), parentCommandName);
         }
 
         public void DisplayHelpFor(Player p, string message) {
@@ -167,7 +167,7 @@ namespace MCGalaxy.Commands {
                 subCmd.DisplayHelp(p, helpArgs);
                 return;
             }
-            p.Message("There is no {0} command \"{1}\".", parentCommandName, subCmdName);
+            p.Message(Locale.Get("subcmd.no_command", p), parentCommandName, subCmdName);
         }
     }
 }
