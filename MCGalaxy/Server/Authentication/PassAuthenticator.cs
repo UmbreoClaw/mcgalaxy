@@ -55,7 +55,7 @@ namespace MCGalaxy.Authentication
         public abstract void AutoVerify(Player p, string mppass);
         
         protected void Verify(Player p) {
-            p.Message("You are now &averified &Sand can now &ause commands, modify blocks, and chat.");
+            p.Message(Locale.Get("pass.now_verified", p));
             p.verifiedPass = true;
             p.Unverified   = false;
         }
@@ -65,7 +65,7 @@ namespace MCGalaxy.Authentication
     public abstract class PassAuthenticator : ExtraAuthenticator
     {
         public override void RequiresVerification(Player p, string action) {
-            p.Message("&WYou must first verify with &T/Pass [password] &Wbefore you can {0}", action);
+            p.Message(Locale.Get("pass.must_verify", p), action);
         }
         
         public override void NeedVerification(Player p) {
@@ -132,7 +132,7 @@ namespace MCGalaxy.Authentication
 
         void ExecPassCommand(Player p, string message, CommandData data) {
             if (!Server.Config.verifyadmins) {
-                p.Message("Password verification is not currently enabled."); return;
+                p.Message(Locale.Get("pass.not_enabled", p)); return;
             }
             if (data.Rank < Server.Config.VerifyAdminsRank) {
                 Formatter.MessageNeedMinPerm(p, "+ require password verification",
@@ -153,13 +153,13 @@ namespace MCGalaxy.Authentication
         }
         
         void DoVerifyPassword(Player p, string password) {
-            if (!p.Unverified) { p.Message("&WYou are already verified."); return; }
-            if (p.passtries >= 3) { p.Kick("Did you really think you could keep on guessing?"); return; }
-            if (password.IndexOf(' ') >= 0) { p.Message("Your password must be &Wone &Sword!"); return; }
+            if (!p.Unverified) { p.Message(Locale.Get("pass.already_verified", p)); return; }
+            if (p.passtries >= 3) { p.Kick(Locale.Get("pass.guess_kick", p)); return; }
+            if (password.IndexOf(' ') >= 0) { p.Message(Locale.Get("pass.one_word", p)); return; }
 
             if (!HasPassword(p.name)) {
-                p.Message("You have not &Wset a verification password yet, &Suse &T/SetPass [password] &Wto set one");
-                p.Message("Make sure to use a different password than your Minecraft one!");
+                p.Message(Locale.Get("pass.not_set_yet", p));
+                p.Message(Locale.Get("pass.different_pass", p));
                 return;
             }
             if (VerifyPassword(p.name, password)) {
@@ -167,22 +167,22 @@ namespace MCGalaxy.Authentication
             }
             
             p.passtries++;
-            p.Message("&WWrong Password. &SRemember your password is &Wcase sensitive.");
-            p.Message("Forgot your password? Contact &W{0} &Sto &Wreset it.", Server.Config.OwnerName);
+            p.Message(Locale.Get("pass.wrong", p));
+            p.Message(Locale.Get("pass.forgot", p), Server.Config.OwnerName);
         }
         
         void DoSetPassword(Player p, string password) {
             if (p.Unverified && HasPassword(p.name)) {
                 RequiresVerification(p, "can change your verification password");
-                p.Message("Forgot your password? Contact &W{0} &Sto &Wreset it.", Server.Config.OwnerName);
+                p.Message(Locale.Get("pass.forgot", p), Server.Config.OwnerName);
                 return;
             }
             if (password.IndexOf(' ') >= 0) { 
-                p.Message("&WPassword must be one word."); return; 
+                p.Message(Locale.Get("pass.must_one_word", p)); return; 
             }
             
             StorePassword(p.name, password);
-            p.Message("Your verification password was &aset to: &c" + password);
+            p.Message(Locale.Get("pass.set_to", p), password);
         }
         
         void DoResetPassword(Player p, string name, CommandData data) {
@@ -200,22 +200,22 @@ namespace MCGalaxy.Authentication
             }
             
             if (ResetPassword(target)) {
-                p.Message("Reset verification password for {0}", p.FormatNick(target));
+                p.Message(Locale.Get("pass.reset_for", p), p.FormatNick(target));
             } else {
-                p.Message("{0} &Sdoes not have a verification password.", p.FormatNick(target));
+                p.Message(Locale.Get("pass.no_password", p), p.FormatNick(target));
             }
         }
         
         static void PrintHelp(Player p) {
-            p.Message("&T/Pass reset [player] &H- Resets the password for that player");
-            p.Message("&H Note that only {0}&S+ can reset passwords",
+            p.Message(Locale.Get("pass.help1", p));
+            p.Message(Locale.Get("pass.help2", p),
                       Group.GetColoredName(Server.Config.ResetPasswordRank));
-            p.Message("&T/Pass set [password] &H- Sets your password to [password]");
-            p.Message("&H Note: &WDo NOT set this as your Minecraft password!");
-            p.Message("&T/Pass [password]");
-            p.Message("&H If you are {0}&H+, use this command to verify your login.",
+            p.Message(Locale.Get("pass.help3", p));
+            p.Message(Locale.Get("pass.help4", p));
+            p.Message(Locale.Get("pass.help5", p));
+            p.Message(Locale.Get("pass.help6", p),
                       Group.GetColoredName(Server.Config.VerifyAdminsRank));
-            p.Message("&H You must be verified to use commands, modify blocks, and chat");
+            p.Message(Locale.Get("pass.help7", p));
         }
     }
     

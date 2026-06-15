@@ -63,7 +63,7 @@ namespace MCGalaxy
             bool deletingBlock = !painting && !placing;
 
             if (Unverified) {
-                ExtraAuthenticator.Current.RequiresVerification(this, "modify blocks");
+                ExtraAuthenticator.Current.RequiresVerification(this, Locale.Get("pass.action_modify_blocks", this));
                 RevertBlock(x, y, z); return;
             }
 
@@ -631,7 +631,7 @@ namespace MCGalaxy
                 Message("You cannot use any commands while jailed."); return false;
             }
             if (Unverified && !(cmd == "pass" || cmd == "setpass")) {
-                ExtraAuthenticator.Current.RequiresVerification(this, "use /" + cmd);
+                ExtraAuthenticator.Current.RequiresVerification(this, string.Format(Locale.Get("pass.action_use_cmd", this), cmd));
                 return false;
             }
             
