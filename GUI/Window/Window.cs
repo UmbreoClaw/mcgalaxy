@@ -136,7 +136,19 @@ Trying to mix two versions is unsupported - you may experience issues";
 
             Server.OnURLChange += UpdateUrl;
             Server.OnSettingsUpdate += SettingsUpdate;
+            Server.StartupLanguageSelector = SelectStartupLanguage;
             Server.Background.QueueOnce(InitServerTask);
+        }
+
+        // Invoked on first-time startup (background thread) - marshal to the UI
+        // thread to show the language picker, blocking startup until it is answered.
+        string SelectStartupLanguage(List<string> locales) {
+            try {
+                object result = Invoke(new Func<List<string>, string>(LanguagePrompt.Show), locales);
+                return (string)result;
+            } catch {
+                return null; // window handle not ready / closed - keep default
+            }
         }
         
         // cache LogMessage, avoids new object being allocated every time

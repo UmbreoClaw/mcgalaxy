@@ -162,8 +162,11 @@ namespace MCGalaxy
             BlockDefinition.LoadGlobal();
             ImagePalette.Load();
             
+            // First run = no server.properties yet (SrvProperties.Load creates it).
+            bool firstRun = !File.Exists(Paths.ServerPropsFile);
             SrvProperties.Load();
             Locale.Load();
+            if (firstRun) SelectStartupLanguage();
             if (commands) Command.InitAll();
             AuthService.UpdateList();
             Heartbeat.ReloadDefault();
@@ -188,7 +191,28 @@ namespace MCGalaxy
             
             OnConfigUpdatedEvent.Call();
         }
-        
+
+        static void SelectStartupLanguage() {
+            Func<List<string>, string> selector = StartupLanguageSelector;
+            if (selector == null) return;
+
+            List<string> locales = Locale.AvailableLocales();
+            if (locales.Count < 2) return; // nothing meaningful to choose between
+            locales.Sort();
+
+            try {
+                string code = selector(locales);
+                if (string.IsNullOrEmpty(code) || !locales.CaselessContains(code)) return;
+                if (code.CaselessEq(Config.Language)) return;
+
+                Config.Language = code;
+                SrvProperties.Save();
+                Logger.Log(LogType.SystemActivity, "Server language set to '{0}'", code);
+            } catch (Exception ex) {
+                Logger.LogError("Selecting startup language", ex);
+            }
+        }
+
 
         static readonly object stopLock = new object();
         static volatile Thread stopThread;
