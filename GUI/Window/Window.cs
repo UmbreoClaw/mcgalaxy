@@ -248,10 +248,33 @@ Trying to mix two versions is unsupported - you may experience issues";
             OnLevelRemovedEvent.Register(Level_LevelRemoved, Priority.Low);
             OnPhysicsLevelChangedEvent.Register(Level_PhysicsLevelChanged, Priority.Low);
 
-            RunOnUI_Async(() => main_btnProps.Enabled = true);
+            RunOnUI_Async(() => { main_btnProps.Enabled = true; LocalizeUI(); });
         }
 
         public void RunOnUI_Async(UIAction act) { BeginInvoke(act); }
+
+        // Localizes the high-visibility parts of the main window using the server's
+        // configured language. Run after the server has loaded settings.
+        void LocalizeUI() {
+            tp_Main.Text    = Locale.Get("gui.tab_main");
+            logs_tp.Text    = Locale.Get("gui.tab_logs");
+            tp_Maps.Text    = Locale.Get("gui.tab_maps");
+            tp_Players.Text = Locale.Get("gui.tab_players");
+
+            main_btnProps.Text       = Locale.Get("gui.btn_settings");
+            main_btnRestart.Text     = Locale.Get("gui.btn_restart");
+            main_btnClose.Text       = Locale.Get("gui.btn_close");
+            main_btnSaveAll.Text     = Locale.Get("gui.btn_save_all");
+            main_btnKillPhysics.Text = Locale.Get("gui.btn_kill_physics");
+            main_btnUnloadEmpty.Text = Locale.Get("gui.btn_unload_empty");
+
+            main_colLvlName.HeaderText    = Locale.Get("gui.col_name");
+            main_colLvlPlayers.HeaderText = Locale.Get("gui.col_players");
+            main_colLvlPhysics.HeaderText = Locale.Get("gui.col_physics");
+            main_colPlName.HeaderText     = Locale.Get("gui.col_name");
+            main_colPlMap.HeaderText      = Locale.Get("gui.col_map");
+            main_colPlRank.HeaderText     = Locale.Get("gui.col_rank");
+        }
         
         void Player_PlayerConnect(Player p) {
             RunOnUI_Async(() => {
