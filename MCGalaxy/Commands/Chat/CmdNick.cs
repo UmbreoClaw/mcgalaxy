@@ -45,7 +45,7 @@ namespace MCGalaxy.Commands.Chatting
             
             if (nick.Length == 0) {
                 bot.DisplayName = bot.name;
-                p.level.Message(Locale.Get("nick.bot_reverted"), bot.ColoredName);
+                p.level.Message(string.Format(Locale.Get("nick.bot_reverted", p), bot.ColoredName));
             } else {
                 string nameTag = nick.CaselessEq("empty") ? "" : nick;
                 if (nick.Length > 62) { p.Message(Locale.Get("nick.too_long", p)); return; }

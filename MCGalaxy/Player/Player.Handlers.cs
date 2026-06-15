@@ -625,7 +625,7 @@ namespace MCGalaxy
         bool CheckCommand(string cmd) {
             if (cmd.Length == 0) { Message("No command entered."); return false; }
             if (Server.Config.AgreeToRulesOnEntry && !agreed && !(cmd == "agree" || cmd == "rules" || cmd == "disagree" || cmd == "pass" || cmd == "setpass")) {
-                Message(mustAgreeMsg); return false;
+                Message(Locale.Get("block.must_agree", this)); return false;
             }
             if (jailed) {
                 Message("You cannot use any commands while jailed."); return false;

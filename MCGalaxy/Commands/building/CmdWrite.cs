@@ -50,7 +50,7 @@ namespace MCGalaxy.Commands.Building {
        
         protected override void GetMarks(DrawArgs dArgs, ref Vec3S32[] m) {
             if (m[0].X != m[1].X || m[0].Z != m[1].Z) return; 
-            dArgs.Player.Message(Locale.Get("cmd.write.msg2", p));
+            dArgs.Player.Message(Locale.Get("cmd.write.msg2", dArgs.Player));
             m = null;
         }
         
