@@ -51,46 +51,46 @@ namespace MCGalaxy.DB
         }
         
         internal static void CommonCoreLine(Player p, string fullName, string name, Group grp, int messages) {
-            p.Message("{0} &S({1}) has:", fullName, name);
-            p.Message("  Rank of {0}&S, wrote &a{1} &Smessages", grp.ColoredName, messages);
+            p.Message(Locale.Get("whois.has", p), fullName, name);
+            p.Message(Locale.Get("whois.rank", p), grp.ColoredName, messages);
 
             List<Pronouns> pros = Pronouns.GetFor(name);
             if (pros[0] == Pronouns.Default) { return; }
-            p.Message("  Pronouns: &a{0}", pros.Join((pro) => pro.Name, ", "));
+            p.Message(Locale.Get("whois.pronouns", p), pros.Join((pro) => pro.Name, ", "));
         }
         
         public static void MiscLine(Player p, string name, int deaths, int money) {
             if (Economy.Enabled) {
-                p.Message("  &a{0} &cdeaths&S, &a{2} &S{3}, &f{1} &Sawards",
+                p.Message(Locale.Get("whois.deaths_money", p),
                                deaths, PlayerAwards.Summarise(name), money, Server.Config.Currency);
             } else {
-                p.Message("  &a{0} &cdeaths&S, &f{1} &Sawards",
+                p.Message(Locale.Get("whois.deaths", p),
                                deaths, PlayerAwards.Summarise(name));
             }
         }
         
         public static void BlocksModifiedLine(Player p, Player who) {
-            p.Message("  Modified &a{0} &Sblocks, &a{1} &Ssince login", who.TotalModified, who.SessionModified);
+            p.Message(Locale.Get("whois.modified", p), who.TotalModified, who.SessionModified);
         }
         
         public static void BlockStatsLine(Player p, long placed, long deleted, long drawn) {
-            p.Message("    &a{0} &Splaced, &a{1} &Sdeleted, &a{2} &Sdrawn",
+            p.Message(Locale.Get("whois.block_stats", p),
                            placed, deleted, drawn);
         }
         
         public static void TimeSpentLine(Player p, Player who) {
             TimeSpan timeOnline = DateTime.UtcNow - who.SessionStartTime;
-            p.Message("  Spent &a{0} &Son the server, &a{1} &Sthis session",
+            p.Message(Locale.Get("whois.time_spent", p),
                            who.TotalTime.Shorten(), timeOnline.Shorten());
         }
         
         public static void LoginLine(Player p, Player who) {
-            p.Message("  First login &a{0}&S, and is currently &aonline",
+            p.Message(Locale.Get("whois.first_login_online", p),
                            who.FirstLogin.ToString("yyyy-MM-dd"));
         }
         
         public static void LoginsLine(Player p, int logins, int kicks) {
-            p.Message("  Logged in &a{0} &Stimes, &c{1} &Sof which ended in a kick", logins, kicks);
+            p.Message(Locale.Get("whois.logins", p), logins, kicks);
         }
         
         public static void BanLine(Player p, string name) {
@@ -100,9 +100,9 @@ namespace MCGalaxy.DB
             Ban.GetBanData(name, out banner, out reason, out time, out prevRank);
             
             if (banner != null) {
-                p.Message("  Banned for {0} by {1}", reason, p.FormatNick(banner));
+                p.Message(Locale.Get("whois.banned_by", p), reason, p.FormatNick(banner));
             } else {
-                p.Message("  Is banned");
+                p.Message(Locale.Get("whois.is_banned", p));
             }
         }
         
@@ -112,9 +112,9 @@ namespace MCGalaxy.DB
             owner = Server.ToRawUsername(Server.Config.OwnerName);
             
             if (Server.Devs.CaselessContains(name))
-                p.Message("  Player is an &9{0} Developer", Server.SoftwareName);
+                p.Message(Locale.Get("whois.is_dev", p), Server.SoftwareName);
             if (owner.CaselessEq(name))
-                p.Message("  Player is the &cServer owner");
+                p.Message(Locale.Get("whois.is_owner", p));
         }
         
         public static void IPLine(Player p, string name, string ip) {
@@ -122,19 +122,19 @@ namespace MCGalaxy.DB
             if (!seeIpPerms.UsableBy(p)) return;
             
             string ipMsg = ip;
-            if (Server.bannedIP.Contains(ip)) ipMsg = "&8" + ip + ", which is banned";
+            if (Server.bannedIP.Contains(ip)) ipMsg = "&8" + ip + Locale.Get("whois.ip_banned_suffix", p);
             
-            p.Message("  The IP of " + ipMsg);
+            p.Message(Locale.Get("whois.ip", p), ipMsg);
             if (Server.Config.WhitelistedOnly && Server.whiteList.Contains(name))
-                p.Message("  Player is &fWhitelisted");
+                p.Message(Locale.Get("whois.whitelisted", p));
         }
                 
         public static void IdleLine(Player p, Player who) {
             TimeSpan idleTime = DateTime.UtcNow - who.LastAction;
             if (who.afkMessage != null) {
-                p.Message("  Idle for {0} (AFK {1}&S)", idleTime.Shorten(), who.afkMessage);
+                p.Message(Locale.Get("whois.idle_afk", p), idleTime.Shorten(), who.afkMessage);
             } else if (idleTime.TotalMinutes >= 1) {
-                p.Message("  Idle for {0}", idleTime.Shorten());
+                p.Message(Locale.Get("whois.idle", p), idleTime.Shorten());
             }
         }
         
@@ -145,7 +145,7 @@ namespace MCGalaxy.DB
             
             if (hasSkin && hasModel) {
                 //We only want do display skin and model on the same line if they actually fit on one line
-                string format = String.Format("  Skin: &f{0} &SModel: &f{1}", who.SkinName, who.Model);
+                string format = String.Format(Locale.Get("whois.skin_model", p), who.SkinName, who.Model);
                 if (format.Length <= NetUtils.StringSize - 2) { //-2 to account for "> " in line wrap
                     p.Message(format);
                     //One line OK, exit method
@@ -156,10 +156,10 @@ namespace MCGalaxy.DB
                 //}
             }
             if (hasSkin) {
-                p.Message("  Skin: &f{0}", who.SkinName);
+                p.Message(Locale.Get("whois.skin", p), who.SkinName);
             }
             if (hasModel) {
-                p.Message("  Model: &f{0}", who.Model);
+                p.Message(Locale.Get("whois.model", p), who.Model);
             }
         }
     }
