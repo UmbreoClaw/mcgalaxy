@@ -1,7 +1,7 @@
 # MCGalaxy English locale file
 # Format: key = value
 # {0}, {1}, ... are positional placeholders
-# &X are colour codes. λNICK/λFULL/λSHORT are player name tokens.
+# &X are colour codes. λNICK/λFULL are player name tokens.
 8ball.help1 = &T/8ball [yes or no question]
 8ball.help2 = &HGet an answer from the all-knowing 8-Ball!
 8ball.recharging = The 8-ball is still recharging, wait another {0} seconds.

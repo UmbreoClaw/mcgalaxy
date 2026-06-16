@@ -73,8 +73,7 @@ rank.now_ranked = You have been ranked to {0}&S!
 
 # Player name tokens (substituted by the chat formatter):
 #   λNICK  — the player's display/nick name
-#   λFULL  — rank colour + name
-#   λSHORT — shortened name
+#   λFULL  — rank colour + prefix + name (e.g. &aAdmin Umbre)
 chat.global = λFULL&S: {0}
 ```
 

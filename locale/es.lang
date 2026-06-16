@@ -1,7 +1,7 @@
 # MCGalaxy Archivo de idioma Español (es)
 # Formato: clave = valor
 # {0}, {1}, {2} son marcadores de posición — mantenlos en las traducciones.
-# &X son códigos de color. λNICK, λFULL, λSHORT son tokens de nombre de jugador — NO los traduzcas.
+# &X son códigos de color. λNICK, λFULL son tokens de nombre de jugador — NO los traduzcas.
 
 8ball.help1 = &T/8ball [pregunta de sí o no]
 8ball.help2 = &HObtén una respuesta del omnisciente 8-Ball!
