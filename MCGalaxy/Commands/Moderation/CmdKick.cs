@@ -39,9 +39,9 @@ namespace MCGalaxy.Commands.Moderation {
                 kickMsg += "&f: " + reason; 
             }
 
-            if (p == who) { p.Message("You cannot kick yourself."); return; }
+            if (p == who) { p.Message(Locale.Get("kick.cant_kick_self", p)); return; }
             if (who.Rank >= data.Rank) {
-                Chat.MessageFrom(p, "λNICK &Stried to kick " + who.ColoredName + " &Sbut failed.");
+                Chat.MessageFrom(p, string.Format(Locale.Get("kick.kick_failed"), who.ColoredName));
                 return;
             }
             
@@ -51,9 +51,9 @@ namespace MCGalaxy.Commands.Moderation {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Kick [player] <reason>");
-            p.Message("&HKicks a player.");
-            p.Message("&HFor <reason>, @number can be used as a shortcut for that rule.");
+            p.Message(Locale.Get("kick.help1", p));
+            p.Message(Locale.Get("kick.help2", p));
+            p.Message(Locale.Get("kick.help3", p));
         }
     }
 }

@@ -28,8 +28,8 @@ namespace MCGalaxy.Commands.Chatting
         public override bool UseableWhenFrozen { get { return true; } }
         
         public override void Use(Player p, string message, CommandData data) {
-            if (message.Length == 0) { p.Message("You"); return; }
-            if (p.joker) { p.Message("Cannot use /me while jokered."); return; }         
+            if (message.Length == 0) { p.Message(Locale.Get("me.you", p)); return; }
+            if (p.joker) { p.Message(Locale.Get("me.jokered", p)); return; }         
             if (!MessageCmd.CanSpeak(p, "Me")) return;
             
             string msg = p.color + "*" + Colors.StripUsed(p.DisplayName) + " " + message;
@@ -37,7 +37,7 @@ namespace MCGalaxy.Commands.Chatting
         }
         
         public override void Help(Player p) {
-            p.Message("What do you need help with, m'boy?! Are you stuck down a well?!");
+            p.Message(Locale.Get("me.help1", p));
         }
     }
 }

@@ -51,7 +51,7 @@ namespace MCGalaxy.Commands.World
             string mode = include ? "whitelist" : "blacklist";
             name = name.Substring(1);
             if (name.Length == 0) {
-                p.Message("You must provide a player name to {0}.", mode);
+                p.Message(Locale.Get("permissioncmds.need_player_name", p), mode);
                 return false;
             }
             
@@ -59,7 +59,7 @@ namespace MCGalaxy.Commands.World
             if (name == null) return false;
             
             if (!include && name.CaselessEq(p.name)) {
-                p.Message("&WYou cannot blacklist yourself."); return false;
+                p.Message(Locale.Get("permissioncmds.no_blacklist_self", p)); return false;
             }
             
             if (include) {
@@ -120,14 +120,14 @@ namespace MCGalaxy.Commands.World
             string action = IsVisit ? "visit" : "build on";
             string verb   = IsVisit ? "visit" : "build";
 
-            p.Message("&T/{0} [level] [rank]", name);
-            p.Message("&HSets the lowest rank able to {0} the given level.", action);
-            p.Message("&T/{0} -max [level] [Rank]", name);
-            p.Message("&HSets the highest rank able to {0} the given level.", action);
-            p.Message("&T/{0} [level] +[name]", name);
-            p.Message("&HAllows [name] to {0}, even if their rank cannot.", verb);
-            p.Message("&T/{0} [level] -[name]", name);
-            p.Message("&HPrevents [name] from {0}ing, even if their rank can.", verb);
+            p.Message(Locale.Get("permissioncmds.help1", p), name);
+            p.Message(Locale.Get("permissioncmds.help2", p), action);
+            p.Message(Locale.Get("permissioncmds.help3", p), name);
+            p.Message(Locale.Get("permissioncmds.help4", p), action);
+            p.Message(Locale.Get("permissioncmds.help5", p), name);
+            p.Message(Locale.Get("permissioncmds.help6", p), verb);
+            p.Message(Locale.Get("permissioncmds.help7", p), name);
+            p.Message(Locale.Get("permissioncmds.help8", p), verb);
         }
     }
     

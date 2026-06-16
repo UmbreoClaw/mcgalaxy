@@ -32,16 +32,15 @@ namespace MCGalaxy.Commands.Maintenance {
         public override void Use(Player p, string message, CommandData data) {
             if (message.CaselessEq("abort") || message.CaselessEq("cancel")) {
                 if (shutdownTask == null) {
-                    p.Message("No server shutdown is in progress."); return;
+                    p.Message(Locale.Get("shutdown.no_shutdown", p)); return;
                 }
-                
-                Log("Shutdown aborted.");
+
+                Log(Locale.Get("shutdown.aborted"));
                 Server.MainScheduler.Cancel(shutdownTask);
                 shutdownTask = null;
             } else {
                 if (shutdownTask != null) {
-                    p.Message("Server is already shutting down, use " +
-                                   "&T/Shutdown abort &Sto abort the shutdown."); return;
+                    p.Message(Locale.Get("shutdown.already_shutting", p)); return;
                 }
                 
                 if (message.Length == 0) message = "10";
@@ -58,7 +57,7 @@ namespace MCGalaxy.Commands.Maintenance {
                 }
                 
                 int delaySec = (int)delay.TotalSeconds;
-                if (delaySec <= 0) { p.Message("Countdown time must be greater than zero"); return; } 
+                if (delaySec <= 0) { p.Message(Locale.Get("shutdown.delay_positive", p)); return; }
                 DoShutdown(delaySec, reason);
             }
         }
@@ -69,8 +68,8 @@ namespace MCGalaxy.Commands.Maintenance {
             args.Reason = reason;
             
             if (reason.Length > 0) reason = ": " + reason;
-            Log("Server shutdown started" + reason);
-            Log("Server shutdown in " + delay + " seconds");
+            Log(Locale.Get("shutdown.started") + reason);
+            Log(string.Format(Locale.Get("shutdown.in_seconds"), delay));
             
             shutdownTask = Server.MainScheduler.QueueRepeat(
                 ShutdownCallback, args, TimeSpan.FromSeconds(1));
@@ -89,7 +88,7 @@ namespace MCGalaxy.Commands.Maintenance {
                 if (reason.Length == 0) reason = Server.Config.DefaultShutdownMessage;
                 Server.Stop(false, reason);
             } else {
-                Log("Server shutdown in " + args.Delay + " seconds");
+                Log(string.Format(Locale.Get("shutdown.in_seconds"), args.Delay));
                 args.Delay--;
             }
         }
@@ -100,12 +99,12 @@ namespace MCGalaxy.Commands.Maintenance {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Shutdown [delay] <reason>");
-            p.Message("&HShuts the server down after [delay]");
-            p.Message("&T/Shutdown <reason>");
-            p.Message("&HShuts the server down after 10 seconds");
-            p.Message("&T/Shutdown abort");
-            p.Message("&HAborts the current server shutdown.");
+            p.Message(Locale.Get("shutdown.help1", p));
+            p.Message(Locale.Get("shutdown.help2", p));
+            p.Message(Locale.Get("shutdown.help3", p));
+            p.Message(Locale.Get("shutdown.help4", p));
+            p.Message(Locale.Get("shutdown.help5", p));
+            p.Message(Locale.Get("shutdown.help6", p));
         }
     }
 }

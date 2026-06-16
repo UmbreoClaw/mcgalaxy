@@ -48,7 +48,7 @@ namespace MCGalaxy
         
         static bool ChangeMap(Player p, Level lvl, string name) {
             if (Interlocked.CompareExchange(ref p.UsingGoto, 1, 0) == 1) {
-                p.Message("Cannot use /goto, already joining a map."); return false;
+                p.Message(Locale.Get("goto.already_joining", p)); return false;
             }
             Level oldLevel = p.level;
             bool didJoin   = false;
@@ -156,8 +156,9 @@ namespace MCGalaxy
             if (!announce || !Server.Config.ShowWorldChanges) return;
             
             announce = !p.hidden && Server.Config.IRCShowWorldChanges;
-            string msg = p.level.IsMuseum ? "λNICK &Swent to the " : "λNICK &Swent to ";
-            Chat.MessageFrom(ChatScope.All, p, msg + lvl.ColoredName,
+            string key = p.level.IsMuseum ? "goto.went_to_museum" : "goto.went_to";
+            string msg = string.Format(Locale.Get(key), lvl.ColoredName);
+            Chat.MessageFrom(ChatScope.All, p, msg,
                              null, FilterGoto(p, prev, lvl), announce);
         }
         

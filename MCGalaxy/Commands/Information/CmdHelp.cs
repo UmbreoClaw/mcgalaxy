@@ -47,22 +47,22 @@ namespace MCGalaxy.Commands.Info
             } else {
                 if (CmdCommands.ListCommands(p, message)) return;
                 if (ParseCommand(p, message) || ParseBlock(p, message) || ParsePlugin(p, message)) return;
-                p.Message("Could not find command, plugin or block specified.");
+                p.Message(Locale.Get("help.not_found", p));
             }
         }
         
         static void PrintHelpMenu(Player p) {
-            p.Message("&HCommand Categories:");
+            p.Message(Locale.Get("help.command_categories", p));
             p.Message("  &T{0}", CmdCommands.GetCategories());
-            p.Message("&HOther Categories:");
+            p.Message(Locale.Get("help.other_categories", p));
             p.Message("  &TRanks Colors Emotes Shortcuts Commands");
-            p.Message("&HTo view help for a category, type &T/Help CategoryName");
-            p.Message("&HTo see detailed help for a command, type &T/Help CommandName");
-            p.Message("&HTo see your stats, type &T/Info");
-            p.Message("&HTo see loaded maps, type &T/Maps");
-            p.Message("&HTo view your personal world options, use &T/Realm");
-            p.Message("&HTo join a map, type &T/Goto WorldName");
-            p.Message("&HTo send private messages, type &T@PlayerName Message");
+            p.Message(Locale.Get("help.view_category", p));
+            p.Message(Locale.Get("help.view_command", p));
+            p.Message(Locale.Get("help.view_info", p));
+            p.Message(Locale.Get("help.view_maps", p));
+            p.Message(Locale.Get("help.view_realm", p));
+            p.Message(Locale.Get("help.join_map", p));
+            p.Message(Locale.Get("help.private_msg", p));
         }
         
         static void PrintRanks(Player p) {

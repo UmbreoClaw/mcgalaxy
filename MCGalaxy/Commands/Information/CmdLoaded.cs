@@ -27,10 +27,10 @@ namespace MCGalaxy.Commands.Info
         
         public override void Use(Player p, string message, CommandData data) {
             Level[] loaded = LevelInfo.Loaded.Items;
-            p.Message("Loaded levels [physics level] (&c[no] &Sif not visitable): ");
+            p.Message(Locale.Get("loaded.header", p));
             Paginator.Output(p, loaded, (lvl) => FormatMap(p, lvl),
                              "Levels", "levels", message);
-            p.Message("Use &T/Levels &Sfor all levels.");
+            p.Message(Locale.Get("loaded.use_levels", p));
         }
         
         static string FormatMap(Player p, Level lvl) {            
@@ -41,8 +41,8 @@ namespace MCGalaxy.Commands.Info
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Loaded");
-            p.Message("&HLists loaded levels and their physics levels.");
+            p.Message(Locale.Get("loaded.help1", p));
+            p.Message(Locale.Get("loaded.help2", p));
         }
     }
 }

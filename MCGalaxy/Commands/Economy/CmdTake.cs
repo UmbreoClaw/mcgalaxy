@@ -63,10 +63,10 @@ namespace MCGalaxy.Commands.Eco {
         }
         
         public override void Help(Player p){
-            p.Message("&T/Take [player] [amount] <reason>");
-            p.Message("&HTakes [amount] of &3" + Server.Config.Currency + " &Sfrom [player]");
-            p.Message("&T/Take [player] all <reason>");
-            p.Message("&HTakes all the &3" + Server.Config.Currency + " &Sfrom [player]");
+            p.Message(Locale.Get("take.help1", p));
+            p.Message(Locale.Get("take.help2", p), Server.Config.Currency);
+            p.Message(Locale.Get("take.help3", p));
+            p.Message(Locale.Get("take.help4", p), Server.Config.Currency);
         }
     }
 }

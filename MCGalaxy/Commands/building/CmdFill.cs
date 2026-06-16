@@ -33,7 +33,7 @@ namespace MCGalaxy.Commands.Building {
                 
         protected override int MarksCount { get { return 1; } }
         protected override string SelectionType { get { return "origin"; } }
-        protected override string PlaceMessage { get { return "Place or break a block to mark the area you wish to fill."; } }
+        protected override string PlaceMessage { get { return "fill.place_msg"; } }
         
         protected override DrawMode GetMode(string[] parts) {
             string msg = parts[0];            
@@ -70,8 +70,8 @@ namespace MCGalaxy.Commands.Building {
             
             bool confirmed = IsConfirmed(dArgs.Message), success = true;
             if (count < p.group.DrawLimit && count > p.level.ReloadThreshold && !confirmed) {
-                p.Message("This fill would affect {0} blocks.", count);
-                p.Message("If you still want to fill, type &T/Fill {0} confirm", dArgs.Message);
+                p.Message(Locale.Get("fill.would_affect", p), count);
+                p.Message(Locale.Get("fill.confirm_hint", p), dArgs.Message);
             } else {
                 success = base.DoDraw(p, marks, state, block);
             }
@@ -95,10 +95,10 @@ namespace MCGalaxy.Commands.Building {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Fill <brush args>");
-            p.Message("&HFills the area specified with the output of your current brush.");
-            p.Message("&T/Fill [mode] <brush args>");
-            p.Message("&HModes: &fnormal/up/down/layer/vertical_x/vertical_z/2d");
+            p.Message(Locale.Get("fill.help1", p));
+            p.Message(Locale.Get("fill.help2", p));
+            p.Message(Locale.Get("fill.help3", p));
+            p.Message(Locale.Get("fill.help4", p));
             p.Message(BrushHelpLine);
         }
     }

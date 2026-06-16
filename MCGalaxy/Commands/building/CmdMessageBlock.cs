@@ -51,7 +51,7 @@ namespace MCGalaxy.Commands.Building {
             if (allMessage) {
                 mbArgs.Message = message;
             } else if (args.Length == 1) {
-                p.Message("You need to provide text to put in the messageblock."); return;
+                p.Message(Locale.Get("mb.need_text", p)); return;
             } else {
                 mbArgs.Message = args[1];
             }
@@ -59,7 +59,7 @@ namespace MCGalaxy.Commands.Building {
             bool allCmds = HasExtraPerm(p, data.Rank, 1);
             if (!MessageBlock.Validate(p, mbArgs.Message, allCmds)) return;
 
-            p.Message("Place where you wish the message block to go.");
+            p.Message(Locale.Get("mb.place_block", p));
             p.MakeSelection(1, mbArgs, PlacedMark);
         }
 
@@ -96,12 +96,12 @@ namespace MCGalaxy.Commands.Building {
             if (p.level.CheckAffect(p, x, y, z, old, args.Block)) {
                 p.level.UpdateBlock(p, x, y, z, args.Block);
                 UpdateDatabase(p, args, x, y, z);
-                p.Message("Message block created.");
+                p.Message(Locale.Get("mb.created", p));
                 if (!p.staticCommands) {
-                    p.Message("To delete message blocks, toggle &T/delete &Smode.");
+                    p.Message(Locale.Get("mb.delete_hint", p));
                 }
             } else {
-                p.Message("Failed to create a message block.");
+                p.Message(Locale.Get("mb.failed", p));
             }
             return true;
         }
@@ -131,7 +131,7 @@ namespace MCGalaxy.Commands.Building {
                 }
             }
 
-            p.Message("Now {0} &SMBs.",
+            p.Message(Locale.Get("mb.now_showing", p),
                            p.showMBs ? "showing &a" + coords.Count : "hiding");
         }
 
@@ -159,14 +159,14 @@ namespace MCGalaxy.Commands.Building {
         }
 
         public override void Help(Player p) {
-            p.Message("&T/MB [block] [message]");
-            p.Message("&HPlaces a message in your next block.");
+            p.Message(Locale.Get("mb.help1", p));
+            p.Message(Locale.Get("mb.help2", p));
             List<string> names = SupportedBlocks(p);
-            p.Message("&H  Supported blocks: &S{0}", names.Join());
-            p.Message("&H  Use | to separate commands, e.g. /say 1 |/say 2");
-            p.Message("&H  Note: \"@p\" is a placeholder for player who clicked.");
-            p.Message("&T/MB show &H- Shows or hides message blocks on the map");
-            p.Message("&H  (green = valid message block, black = queued for removal)");
+            p.Message(Locale.Get("mb.help3", p), names.Join());
+            p.Message(Locale.Get("mb.help4", p));
+            p.Message(Locale.Get("mb.help5", p));
+            p.Message(Locale.Get("mb.help6", p));
+            p.Message(Locale.Get("mb.help7", p));
         }
     }
 }

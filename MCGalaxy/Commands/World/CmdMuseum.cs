@@ -40,10 +40,10 @@ namespace MCGalaxy.Commands.World {
                 path = LevelInfo.MapPath(mapArg);
                 if (!LevelInfo.MapExists(mapArg)) {
                     if (Directory.Exists(LevelInfo.BackupBasePath(mapArg))) {
-                        p.Message("&WLevel \"{0}\" does not currently exist, &Showever:", mapArg);
+                        p.Message(Locale.Get("museum.level_no_exist_backups", p), mapArg);
                         LevelOperations.OutputBackups(p, mapArg, LevelInfo.GetConfig(mapArg));
                     } else {
-                        p.Message("&WLevel \"{0}\" does not exist and no backups could be found.", mapArg);
+                        p.Message(Locale.Get("museum.level_no_exist", p), mapArg);
                     }
                     return;
                 }
@@ -59,10 +59,10 @@ namespace MCGalaxy.Commands.World {
             }
             
             if (p.level.name.CaselessEq(formattedMuseumName)) {
-                p.Message("You are already in this museum."); return;
+                p.Message(Locale.Get("museum.already_in", p)); return;
             }
             if (Interlocked.CompareExchange(ref p.LoadingMuseum, 1, 0) == 1) {
-                p.Message("You are already loading a museum level."); return;
+                p.Message(Locale.Get("museum.already_loading", p)); return;
             }
             
             try {
@@ -74,13 +74,13 @@ namespace MCGalaxy.Commands.World {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Museum <level> [backup]");
-            p.Message("&HVisits the [backup] of <level>");
-            p.Message("&T/Museum <level> {0}", LevelInfo.LATEST_MUSEUM_FLAG);
-            p.Message("&HVisits the latest backup of <level>");
-            p.Message("&T/Museum <level> {0}", CURRENT_FLAG);
-            p.Message("&HVisits <level> as it is currently stored on disk.");
-            p.Message("&HIf <level> is not given, the current level is used.");
+            p.Message(Locale.Get("museum.help1", p));
+            p.Message(Locale.Get("museum.help2", p));
+            p.Message(Locale.Get("museum.help3", p), LevelInfo.LATEST_MUSEUM_FLAG);
+            p.Message(Locale.Get("museum.help4", p));
+            p.Message(Locale.Get("museum.help5", p), CURRENT_FLAG);
+            p.Message(Locale.Get("museum.help6", p));
+            p.Message(Locale.Get("museum.help7", p));
         }
     }
 }

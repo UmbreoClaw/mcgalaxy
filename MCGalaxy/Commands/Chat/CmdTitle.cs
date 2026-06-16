@@ -43,11 +43,11 @@ namespace MCGalaxy.Commands.Chatting
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Title <title>");
-            p.Message("&H Sets your title");
-            p.Message("&T/OTitle [player] <title>");
-            p.Message("&H Sets the title of other player");
-            p.Message("&H  Leave title blank to remove it.");
+            p.Message(Locale.Get("title.help1", p));
+            p.Message(Locale.Get("title.help2", p));
+            p.Message(Locale.Get("title.help3", p));
+            p.Message(Locale.Get("title.help4", p));
+            p.Message(Locale.Get("title.help5", p));
         }
     }
 }

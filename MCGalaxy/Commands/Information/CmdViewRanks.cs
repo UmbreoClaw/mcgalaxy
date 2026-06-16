@@ -32,8 +32,8 @@ namespace MCGalaxy.Commands.Info
 
         public override void Use(Player p, string message, CommandData data) {
             string[] args = message.SplitSpaces(2);
-            if (message.Length == 0) { 
-                p.Message("Available ranks: " + Group.GroupList.Join(g => g.ColoredName)); return; 
+            if (message.Length == 0) {
+                p.Message(Locale.Get("viewranks.available_ranks", p), Group.GroupList.Join(g => g.ColoredName)); return;
             }
             string rankName = args[0];
             Group grp;
@@ -49,7 +49,7 @@ namespace MCGalaxy.Commands.Info
                 if (!CommandParser.GetInt(p, rankName, "Permission level", ref perm)) return;
 
                 grp = Group.Find((LevelPermission)perm);
-                if (grp == null) p.Message("&WThere is no rank with permission level \"{0}\"", rankName);
+                if (grp == null) p.Message(Locale.Get("viewranks.no_rank_at_perm", p), rankName);
             }
             
             if (grp == null) return;
@@ -59,9 +59,9 @@ namespace MCGalaxy.Commands.Info
         }
         
         public override void Help(Player p) {
-            p.Message("&T/viewranks [rank] &H- Shows all players who have [rank]");
-            p.Message("&T/viewranks banned &H- Shows all players who are banned");
-            p.Message("Available ranks: " + Group.GroupList.Join(g => g.ColoredName));
+            p.Message(Locale.Get("viewranks.help1", p));
+            p.Message(Locale.Get("viewranks.help2", p));
+            p.Message(Locale.Get("viewranks.available_ranks", p), Group.GroupList.Join(g => g.ColoredName));
         }
     }
 }

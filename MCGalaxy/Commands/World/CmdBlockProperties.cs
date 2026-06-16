@@ -56,12 +56,12 @@ namespace MCGalaxy.Commands.World {
             if (scope.CaselessEq("core") || scope.CaselessEq("global")) return Block.Props;
 
             if (scope.CaselessEq("level")) {
-                if (p.IsSuper) { p.Message("Cannot use level scope from {0}.", p.SuperName); return null; }
+                if (p.IsSuper) { p.Message(Locale.Get("blockprops.no_level_scope", p), p.SuperName); return null; }
                 if (!LevelInfo.Check(p, data.Rank, p.level, "change properties of blocks in this level")) return null;
                 return p.level.Props;
             }
-            
-            p.Message("&WScope must be: global or level");
+
+            p.Message(Locale.Get("blockprops.invalid_scope", p));
             return null;
         }
         
@@ -70,7 +70,7 @@ namespace MCGalaxy.Commands.World {
             BlockID block = Block.Parse(pScope, str);
             
             if (block == Block.Invalid) {
-                p.Message("&WThere is no block \"{0}\".", str);
+                p.Message(Locale.Get("blockprops.no_block", p), str);
             }
             return block;
         }
@@ -78,40 +78,40 @@ namespace MCGalaxy.Commands.World {
         internal static void Detail(Player p, BlockProps[] scope, BlockID block) {
             BlockProps props = scope[block];
             string name = BlockProps.ScopedName(scope, p, block);
-            p.Message("&TProperties of {0}:", name);
+            p.Message(Locale.Get("cmd.blockproperties.help1", p), name);
             
-            if (props.KillerBlock)          p.Message("  Kills players who collide with this block");
+            if (props.KillerBlock)          p.Message(Locale.Get("cmd.blockproperties.msg1", p));
             if (props.DeathMessage != null) p.Message("  Death message: &S" + props.DeathMessage);
             
-            if (props.IsDoor)  p.Message("  Is an ordinary door");
-            if (props.IsTDoor) p.Message("  Is a tdoor (allows other blocks through when open)");
+            if (props.IsDoor)  p.Message(Locale.Get("cmd.blockproperties.msg2", p));
+            if (props.IsTDoor) p.Message(Locale.Get("cmd.blockproperties.msg3", p));
             if (props.oDoorBlock != Block.Invalid) 
-                p.Message("  Is an odoor (can be toggled by doors, and toggles other odoors)");
+                p.Message(Locale.Get("cmd.blockproperties.msg4", p));
             
-            if (props.IsPortal)       p.Message("  Can be used as a &T/Portal");
-            if (props.IsMessageBlock) p.Message("  Can be used as a &T/MessageBlock");
+            if (props.IsPortal)       p.Message(Locale.Get("cmd.blockproperties.msg5", p));
+            if (props.IsMessageBlock) p.Message(Locale.Get("cmd.blockproperties.msg6", p));
             
-            if (props.WaterKills) p.Message("  Is destroyed by flooding water");
-            if (props.LavaKills)  p.Message("  Is destroyed by flooding lava");
+            if (props.WaterKills) p.Message(Locale.Get("cmd.blockproperties.msg7", p));
+            if (props.LavaKills)  p.Message(Locale.Get("cmd.blockproperties.msg8", p));
             
-            if (props.OPBlock) p.Message("  Is not affected by explosions");
-            if (props.IsRails) p.Message("  Can be used as rails for &T/Train");
+            if (props.OPBlock) p.Message(Locale.Get("cmd.blockproperties.msg9", p));
+            if (props.IsRails) p.Message(Locale.Get("cmd.blockproperties.msg10", p));
             
             if (props.AnimalAI != AnimalAI.None) {
-                p.Message("  Has the {0} AI behaviour", props.AnimalAI);
+                p.Message(Locale.Get("cmd.blockproperties.msg11", p), props.AnimalAI);
             }
             if (props.StackBlock != Block.Air) {
-                p.Message("  Stacks as {0} when placed on top of itself", 
+                p.Message(Locale.Get("cmd.blockproperties.msg12", p), 
                           BlockProps.ScopedName(scope, p, props.StackBlock));
             }
-            if (props.Drownable) p.Message("&H  Players can drown in this block");
+            if (props.Drownable) p.Message(Locale.Get("cmd.blockproperties.help2", p));
             
             if (props.GrassBlock != Block.Invalid) {
-                p.Message("  Grows into {0} when in sunlight", 
+                p.Message(Locale.Get("cmd.blockproperties.msg13", p), 
                           BlockProps.ScopedName(scope, p, props.GrassBlock));
             }
             if (props.DirtBlock != Block.Invalid) {
-                p.Message("  Decays into {0} when in shadow", 
+                p.Message(Locale.Get("cmd.blockproperties.msg14", p), 
                           BlockProps.ScopedName(scope, p, props.DirtBlock));
             }
         }
@@ -144,7 +144,7 @@ namespace MCGalaxy.Commands.World {
             scope[dst] = scope[block];
             scope[dst].ChangedScope |= BlockProps.ScopeId(scope);
             
-            p.Message("Copied properties of {0} to {1}",
+            p.Message(Locale.Get("blockprops.copied", p),
                       BlockProps.ScopedName(scope, p, block),
                       BlockProps.ScopedName(scope, p, dst));
             BlockProps.ApplyChanges(scope, p.level, block, true);
@@ -154,7 +154,7 @@ namespace MCGalaxy.Commands.World {
             scope[block] = BlockProps.MakeDefault(scope, p.level, block);
             string name  = BlockProps.ScopedName(scope, p, block);
             
-            p.Message("Reset properties of {0} to default", name);
+            p.Message(Locale.Get("blockprops.reset", p), name);
             BlockProps.ApplyChanges(scope, p.level, block, true);
         }
         
@@ -169,29 +169,29 @@ namespace MCGalaxy.Commands.World {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/BlockProps global/level list");
-            p.Message("&HLists blocks which have non-default properties");
-            p.Message("&T/BlockProps global/level [id/name] copy [new id]");
-            p.Message("&HCopies properties of that block to another");
-            p.Message("&T/BlockProps global/level [id/name] reset");
-            p.Message("&HResets properties of that block to their default");
-            p.Message("&T/BlockProps global/level [id/name] [property] <value>");
-            p.Message("&HSets various properties of that block");
-            p.Message("&H  Use &T/Help BlockProps props &Hfor a list of properties");
+            p.Message(Locale.Get("blockprops.help1", p));
+            p.Message(Locale.Get("blockprops.help2", p));
+            p.Message(Locale.Get("blockprops.help3", p));
+            p.Message(Locale.Get("blockprops.help4", p));
+            p.Message(Locale.Get("blockprops.help5", p));
+            p.Message(Locale.Get("blockprops.help6", p));
+            p.Message(Locale.Get("blockprops.help7", p));
+            p.Message(Locale.Get("blockprops.help8", p));
+            p.Message(Locale.Get("blockprops.help9", p));
         }
-        
+
         public override void Help(Player p, string message) {
             if (message.CaselessEq("props") || message.CaselessEq("properties")) {
-                p.Message("&HProperties: &f{0}", BlockOptions.Options.Join(o => o.Name));
-                p.Message("&HUse &T/Help BlockProps [property] &Hfor more details");
+                p.Message(Locale.Get("cmd.blockproperties.help3", p), BlockOptions.Options.Join(o => o.Name));
+                p.Message(Locale.Get("blockprops.help_props_more", p));
                 return;
             }
-            
+
             BlockOption opt = BlockOptions.Find(message);
             if (opt != null) {
                 p.Message(opt.Help);
             } else {
-                p.Message("&WUnrecognised property \"{0}\"", message);
+                p.Message(Locale.Get("blockprops.unrecognised", p), message);
             }
         }
     }

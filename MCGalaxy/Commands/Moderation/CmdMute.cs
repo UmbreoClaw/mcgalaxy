@@ -42,7 +42,7 @@ namespace MCGalaxy.Commands.Moderation
                 if (target == null) return;
 
                 if (!Server.muted.Contains(target)) {
-                    p.Message("{0}&S is not muted.", p.FormatNick(target));
+                    p.Message(Locale.Get("mute.not_muted", p), p.FormatNick(target));
                     return;
                 }
                 
@@ -54,8 +54,8 @@ namespace MCGalaxy.Commands.Moderation
             if (target == null) return;
 
             if (Server.muted.Contains(target)) {
-                p.Message("{0}&S is already muted.", p.FormatNick(target));
-                p.Message("You may unmute them with &T/Unmute {0}", target);
+                p.Message(Locale.Get("mute.already_muted", p), p.FormatNick(target));
+                p.Message(Locale.Get("mute.unmute_hint", p), target);
             } else {            
                 Group group = ModActionCmd.CheckTarget(p, data, "mute", target);
                 if (group == null) return;
@@ -81,20 +81,20 @@ namespace MCGalaxy.Commands.Moderation
         void DoUnmute(Player p, string target, string reason) {
             reason = ModActionCmd.ExpandReason(p, reason);
             if (reason == null) return;
-            if (p.name == target) { p.Message("You cannot unmute yourself."); return; }
+            if (p.name == target) { p.Message(Locale.Get("mute.cant_unmute_self", p)); return; }
             
             ModAction action = new ModAction(target, p, ModActionType.Unmuted, reason);
             OnModActionEvent.Call(action);
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Mute [player] <timespan> <reason>");
-            p.Message("&H Mutes player for <timespan>, which defaults to");
-            p.Message("&H the auto-mute timespan.");
-            p.Message("&H If <timespan> is 0, the mute is permanent.");
-            p.Message("&H For <reason>, @1 substitutes for rule 1, @2 for rule 2, etc.");
-            p.Message("&T/Unmute [player] <reason>");
-            p.Message("&H Unmutes player with optional <reason>.");
+            p.Message(Locale.Get("mute.help1", p));
+            p.Message(Locale.Get("mute.help2", p));
+            p.Message(Locale.Get("mute.help3", p));
+            p.Message(Locale.Get("mute.help4", p));
+            p.Message(Locale.Get("mute.help5", p));
+            p.Message(Locale.Get("mute.help6", p));
+            p.Message(Locale.Get("mute.help7", p));
         }
     }
 }

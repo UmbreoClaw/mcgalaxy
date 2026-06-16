@@ -34,15 +34,15 @@ namespace MCGalaxy.Commands.Eco
             if (!Economy.CheckIsEnabled(p, this)) return;
             
             if (message.Length == 0 || IsListModifier(message)) {
-                Paginator.Output(p, Economy.GetEnabledItems(), 
+                Paginator.Output(p, Economy.GetEnabledItems(),
                                  PrintItemOverview, "Store", "enabled Items", message);
-                p.Message("&HUse &T/Store [item] &Hto see more information about that item.");
+                p.Message(Locale.Get("store.more_info", p));
             } else {
                 Item item = Economy.GetItem(message);
                 if (item == null) { Help(p); return; }                
 
                 if (!item.Enabled) {
-                    p.Message("&WThe " + item.ShopName + " item is not currently buyable."); return;
+                    p.Message(Locale.Get("store.not_buyable", p), item.ShopName); return;
                 }
                 item.OnStoreCommand(p);
             }
@@ -53,11 +53,11 @@ namespace MCGalaxy.Commands.Eco
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Store [item]");
-            p.Message("&HViews information about the specific item, such as its cost.");
-            p.Message("&T/Store");
-            p.Message("&HViews information about all enabled items.");
-            p.Message("&H  Available items: &S" + Economy.EnabledItemNames());
+            p.Message(Locale.Get("store.help1", p));
+            p.Message(Locale.Get("store.help2", p));
+            p.Message(Locale.Get("store.help3", p));
+            p.Message(Locale.Get("store.help4", p));
+            p.Message(Locale.Get("store.help5", p), Economy.EnabledItemNames());
         }
     }
 }

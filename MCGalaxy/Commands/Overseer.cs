@@ -43,7 +43,7 @@ namespace MCGalaxy.Commands.World {
         }
         
         static void AnnounceRenamed(Player p, string oldName, string newName) {
-            p.Message("Note that &T/{0} {1}&S has been renamed to &T/{0} {2}", 
+            p.Message(Locale.Get("cmd.overseer.msg1", p), 
                       commandShortcut, oldName, newName);
         }
         
@@ -75,7 +75,7 @@ namespace MCGalaxy.Commands.World {
                 }
             }
 
-            p.Message("You have reached the limit for your overseer maps.");
+            p.Message(Locale.Get("cmd.overseer.msg2", p));
             return null;
         }
 
@@ -88,7 +88,7 @@ namespace MCGalaxy.Commands.World {
         };
         static void HandleAdd(Player p, string message) {
             if (p.group.OverseerMaps == 0) {
-                p.Message("Your rank is not allowed to create any /{0} maps.", commandShortcut); return;
+                p.Message(Locale.Get("cmd.overseer.msg3", p), commandShortcut); return;
             }
 
             string level = NextLevel(p);
@@ -104,7 +104,7 @@ namespace MCGalaxy.Commands.World {
             if (lvl == null) return;
 
             MapGen.SetRealmPerms(p, lvl);
-            p.Message("Use &T/{0} allow [name] &Sto allow other players to build in the map.", commandShortcut);
+            p.Message(Locale.Get("cmd.overseer.msg4", p), commandShortcut);
 
             try {
                 lvl.Save(true);
@@ -123,9 +123,9 @@ namespace MCGalaxy.Commands.World {
             if (message.CaselessStarts(CmdDeleteLvl.BACKUP_FLAG)) {
                 string[] args = message.SplitSpaces(2); //"flag", "other args"
                 if (args.Length == 1) {
-                    p.Message("You must provide a backup to delete.");
-                    p.Message("A backup is usually a number, but may also be named.");
-                    p.Message("See &T/{0} restore &7to display backups.", commandShortcut);
+                    p.Message(Locale.Get("cmd.overseer.msg5", p));
+                    p.Message(Locale.Get("cmd.overseer.msg6", p));
+                    p.Message(Locale.Get("cmd.overseer.msg7", p), commandShortcut);
                     return;
                 }
                 CmdDeleteLvl.UseBackup(p, p.level.MapName +" "+ args[1], true);
@@ -133,7 +133,7 @@ namespace MCGalaxy.Commands.World {
             }
 
             if (message.Length > 0) {
-                p.Message("To delete your current map, type &T/{0} delete", commandShortcut);
+                p.Message(Locale.Get("cmd.overseer.msg8", p), commandShortcut);
                 return;
             }
             UseCommand(p, "DeleteLvl", p.level.name);
@@ -168,7 +168,7 @@ namespace MCGalaxy.Commands.World {
             _HandlePerm(p, message, "unban", "pervisit", "+");
         }
         static void _HandlePerm(Player p, string message, string action, string cmd, string prefix) {
-            if (message.Length == 0) { p.Message("&WYou need to type a player name to {0}.", action); return; }
+            if (message.Length == 0) { p.Message(Locale.Get("cmd.overseer.msg9", p), action); return; }
             UseCommand(p, cmd, prefix + message);
         }
 
@@ -234,14 +234,14 @@ namespace MCGalaxy.Commands.World {
             "&T/os kick [name] &H- Removes that player from your map.",
         };
         static void HandleKick(Player p, string name) {
-            if (name.Length == 0) { p.Message("You must specify a player to kick."); return; }
+            if (name.Length == 0) { p.Message(Locale.Get("cmd.overseer.msg10", p)); return; }
             Player pl = PlayerInfo.FindMatches(p, name);
             if (pl == null) return;
 
             if (pl.level == p.level) {
                 PlayerActions.ChangeMap(pl, Server.mainLevel);
             } else {
-                p.Message("Player is not on your level!");
+                p.Message(Locale.Get("cmd.overseer.msg11", p));
             }
         }
 
@@ -283,16 +283,16 @@ namespace MCGalaxy.Commands.World {
 
             LevelOption opt = LevelOptions.Find(cmd);
             if (opt == null) {
-                p.Message("Could not find map option \"{0}\".", cmd);
-                p.Message("Use &T/help map options &Sto see all.");
+                p.Message(Locale.Get("cmd.overseer.msg12", p), cmd);
+                p.Message(Locale.Get("cmd.overseer.msg13", p));
                 return;
             }
             if (DisallowedMapOption(opt.Name)) {
-                p.Message("&WYou cannot change the {0} map option via /{1} map.", opt.Name, commandShortcut);
+                p.Message(Locale.Get("cmd.overseer.msg14", p), opt.Name, commandShortcut);
                 return;
             }
             if (!LevelInfo.IsRealmOwner(p.level, p.name)) {
-                p.Message("You may only use &T/{0} map {1}&S after you join your map.", commandShortcut, opt.Name);
+                p.Message(Locale.Get("cmd.overseer.msg15", p), commandShortcut, opt.Name);
                 return;
             }
             opt.SetFunc(p, p.level, value);
@@ -308,7 +308,7 @@ namespace MCGalaxy.Commands.World {
         static void MapMoved(Player p, string message, string name, SubCommand.Behavior behaviour, bool mapOnly = true) {
             AnnounceRenamed(p, "map " + name, name);
             if (mapOnly && !LevelInfo.IsRealmOwner(p.level, p.name)) {
-                p.Message("You may only use &T/{0} {1}&S after you join your map.", commandShortcut, name);
+                p.Message(Locale.Get("cmd.overseer.msg16", p), commandShortcut, name);
                 return;
             }
             behaviour(p, message);
@@ -353,8 +353,8 @@ namespace MCGalaxy.Commands.World {
             message = p.level.name + " " + message;
             string[] args = message.SplitSpaces();
             if (args.Length < 4) {
-                p.Message("Not enough args provided! Usage:");
-                p.Message("&T/{0} resize [width] [height] [length]", commandShortcut);
+                p.Message(Locale.Get("cmd.overseer.msg17", p));
+                p.Message(Locale.Get("cmd.overseer.help1", p), commandShortcut);
                 return;
             }
 
@@ -362,7 +362,7 @@ namespace MCGalaxy.Commands.World {
             if (CmdResizeLvl.DoResize(p, args, p.DefaultCmdData, out needConfirm)) return;
 
             if (!needConfirm) return;
-            p.Message("Type &T/{0} resize {1} {2} {3} confirm &Sif you're sure.",
+            p.Message(Locale.Get("cmd.overseer.msg18", p),
                       commandShortcut, args[1], args[2], args[3]);
         }
 
@@ -378,7 +378,7 @@ namespace MCGalaxy.Commands.World {
                 access.Whitelist(Player.Console, LevelPermission.Console, p.level, p.name);
             }
             if (message.Length == 0) {
-                p.Message("See &T/help pervisit &Sfor how to use this command, but don't include [level].");
+                p.Message(Locale.Get("cmd.overseer.msg19", p));
                 return;
             }
             message = p.level.name + " " + message;
@@ -391,7 +391,7 @@ namespace MCGalaxy.Commands.World {
         };
         static void HandlePerbuild(Player p, string message) {
             if (message.Length == 0) {
-                p.Message("See &T/help perbuild &Sfor how to use this command, but don't include [level].");
+                p.Message(Locale.Get("cmd.overseer.msg20", p));
                 return;
             }
             message = p.level.name + " " + message;
@@ -437,8 +437,8 @@ namespace MCGalaxy.Commands.World {
 
             if (args.Length == 1) {
                 HandlePlotHelp(p, raw);
-                //p.Message("This command is the &T/{0} &Sversion of &T/zone&S.", commandShortcut);
-                //p.Message("To learn how to use it, read &T/help zone&S");
+                //p.Message(Locale.Get("cmd.overseer.msg21", p), commandShortcut);
+                //p.Message(Locale.Get("cmd.overseer.msg22", p));
             } else {
                 UseCommand(p, "Zone", args[0] + " " + args[1]);
             }
@@ -462,7 +462,7 @@ namespace MCGalaxy.Commands.World {
         };
         static void HandleRename(Player p, string args) {
             if (!Server.Config.OSRenameAllowed) {
-                p.Message("This server does not allow renaming os realms.");
+                p.Message(Locale.Get("cmd.overseer.msg23", p));
                 return;
             }
 
@@ -471,7 +471,7 @@ namespace MCGalaxy.Commands.World {
             }
             const int MAX_LENGTH = 16;
             if (args.Length > MAX_LENGTH) {
-                p.Message("Your os name must be {0} characters or fewer.", MAX_LENGTH);
+                p.Message(Locale.Get("cmd.overseer.msg24", p), MAX_LENGTH);
                 return;
             }
             UseCommand(p, "RenameLvl", p.level.name + " " + GetLevelName(p, args));
@@ -516,8 +516,8 @@ namespace MCGalaxy.Commands.World {
                 if (arg.CaselessEq("prev") || arg.CaselessEq("previous") || arg.CaselessEq("back")) {
                     direction = -1;
                 } else {
-                    p.Message("To visit the next os map, use &T/os tour");
-                    p.Message("To go backwards, use &T/os tour prev");
+                    p.Message(Locale.Get("cmd.overseer.msg25", p));
+                    p.Message(Locale.Get("cmd.overseer.msg26", p));
                     return;
                 }
             }
@@ -529,10 +529,10 @@ namespace MCGalaxy.Commands.World {
                 if (curLevel.name.CaselessStarts(owner)) { curLevelOwner = owner; break; }
             }
             if (curLevelOwner == null) {
-                p.Message("&HTo use &T/os tour&H, first join any player's personal realm.");
-                p.Message("&S(to join your own, use &T/os go&S)");
-                p.Message("&HOnce you are in someone's realm, use &T/os tour <prev/next>");
-                p.Message("&Hto easily join other realms owned by that player.");
+                p.Message(Locale.Get("cmd.overseer.help2", p));
+                p.Message(Locale.Get("cmd.overseer.msg27", p));
+                p.Message(Locale.Get("cmd.overseer.help3", p));
+                p.Message(Locale.Get("cmd.overseer.help4", p));
                 return;
             }
 
@@ -553,7 +553,7 @@ namespace MCGalaxy.Commands.World {
             if (curIndex >= realms.Count || curIndex < 0) {
                 string who = curLevelOwner == p.name ? "your" : p.FormatNick(curLevelOwner) + "&S's";
 
-                p.Message("You are in {0} {1} {2}realm.",
+                p.Message(Locale.Get("cmd.overseer.msg28", p),
                     who,
                     direction == 1 ? "last" : "first",
                     blockedFromJoining ? "accessible " : "");
@@ -622,15 +622,15 @@ namespace MCGalaxy.Commands.World {
                 AnnounceRenamed(p, old, "unban");
                 HandleUnban(p, name);
             } else if (cmd == "LIST") {
-                p.Message("To see a list of zones in a level, use &T/zonelist");
+                p.Message(Locale.Get("cmd.overseer.msg29", p));
                 UseCommand(p, "ZoneList", name);
             } else if (cmd == "BLACKLIST") {
-                p.Message("To see who is disallowed from visiting, use &T/mapinfo");
+                p.Message(Locale.Get("cmd.overseer.msg30", p));
             } else {
-                p.Message("&T  /{0} zone &Hwas used for managing permissions in your map.", commandShortcut);
-                p.Message("&H  It has now been replaced by the following &T/{0} &Hcommands:", commandShortcut);
-                p.Message("&T  Allow, Disallow, Ban, Unban");
-                p.Message("&H  To manage zoned areas in your map, use &T/{0} plot", commandShortcut);
+                p.Message(Locale.Get("cmd.overseer.help5", p), commandShortcut);
+                p.Message(Locale.Get("cmd.overseer.help6", p), commandShortcut);
+                p.Message(Locale.Get("cmd.overseer.help7", p));
+                p.Message(Locale.Get("cmd.overseer.help8", p), commandShortcut);
             }
         }
         

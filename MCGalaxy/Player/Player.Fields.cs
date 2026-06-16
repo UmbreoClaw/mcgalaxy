@@ -45,6 +45,8 @@ namespace MCGalaxy {
         /// <summary> Account name of the user </summary>
         /// <remarks> Use 'truename' for displaying/logging, use 'name' for storing data </remarks>
         public string truename;
+        /// <summary> Player's preferred locale code (e.g. "es"). Empty string means use the server default. </summary>
+        public string Language = "";
         /// <summary> The underlying socket for sending/receiving raw data </summary>
         public INetSocket Socket;
         public IGameSession Session;

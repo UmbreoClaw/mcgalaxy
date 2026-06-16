@@ -35,8 +35,6 @@ namespace MCGalaxy
 {
     public partial class Player : IDisposable
     {
-        const string mustAgreeMsg = "You must read /rules then agree to them with /agree!";
-        
         readonly object blockchangeLock = new object();
         internal bool HasBlockChange() { return Blockchange != null; }
         
@@ -57,7 +55,7 @@ namespace MCGalaxy
             
             if (jailed || frozen || possessed) { RevertBlock(x, y, z); return; }
             if (!agreed) {
-                Message(mustAgreeMsg);
+                Message(Locale.Get("block.must_agree", this));
                 RevertBlock(x, y, z); return;
             }
             
@@ -65,7 +63,7 @@ namespace MCGalaxy
             bool deletingBlock = !painting && !placing;
 
             if (Unverified) {
-                ExtraAuthenticator.Current.RequiresVerification(this, "modify blocks");
+                ExtraAuthenticator.Current.RequiresVerification(this, Locale.Get("pass.action_modify_blocks", this));
                 RevertBlock(x, y, z); return;
             }
 
@@ -79,7 +77,7 @@ namespace MCGalaxy
             if (cancel) return;
 
             if (old >= Block.Air_Flood && old <= Block.Door_Air_air) {
-                Message("Block is active, you cannot disturb it.");
+                Message(Locale.Get("block.active_block", this));
                 RevertBlock(x, y, z); return;
             }
             
@@ -95,7 +93,7 @@ namespace MCGalaxy
                 
                 if (diff > ReachDistance + 4) {
                     Logger.Log(LogType.Warning, "{0} attempted to build with a {1} distance offset", name, diff);
-                    Message("You can't build that far away.");
+                    Message(Locale.Get("block.build_too_far", this));
                     RevertBlock(x, y, z); return;
                 }
             }
@@ -627,13 +625,13 @@ namespace MCGalaxy
         bool CheckCommand(string cmd) {
             if (cmd.Length == 0) { Message("No command entered."); return false; }
             if (Server.Config.AgreeToRulesOnEntry && !agreed && !(cmd == "agree" || cmd == "rules" || cmd == "disagree" || cmd == "pass" || cmd == "setpass")) {
-                Message(mustAgreeMsg); return false;
+                Message(Locale.Get("block.must_agree", this)); return false;
             }
             if (jailed) {
                 Message("You cannot use any commands while jailed."); return false;
             }
             if (Unverified && !(cmd == "pass" || cmd == "setpass")) {
-                ExtraAuthenticator.Current.RequiresVerification(this, "use /" + cmd);
+                ExtraAuthenticator.Current.RequiresVerification(this, string.Format(Locale.Get("pass.action_use_cmd", this), cmd));
                 return false;
             }
             
@@ -672,7 +670,7 @@ namespace MCGalaxy
                     command = modeCmd;
                 } else {
                     Logger.Log(LogType.CommandUsage, "{0} tried to use unknown command: /{1} {2}", name, cmdName, cmdArgs);
-                    Message("Unknown command \"{0}\".", cmdName); return null;
+                    Message(Locale.Get("command.unknown", this), cmdName); return null;
                 }
             }
 

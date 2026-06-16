@@ -40,7 +40,7 @@ namespace MCGalaxy.Commands.Moderation {
 
         public override void Use(Player p, string message, CommandData data) {
             if (message.Length > 0 && p.possess.Length > 0) {
-                p.Message("Stop your current possession first."); return;
+                p.Message(Locale.Get("hide.stop_possession", p)); return;
             }
             bool silent = false;
             if (message.CaselessEq("silent")) {
@@ -55,7 +55,7 @@ namespace MCGalaxy.Commands.Moderation {
             p.hidden = !p.hidden;
             if (p.hidden) {
                 p.hideRank = data.Rank;
-                AnnounceOps(p, "To Ops -λNICK&S- is now &finvisible");               
+                AnnounceOps(p, Locale.Get("hide.now_invisible"));
                 
                 if (!silent) {
                     string leaveMsg = "&c- λFULL &S" + PlayerInfo.GetLogoutMessage(p);
@@ -66,7 +66,7 @@ namespace MCGalaxy.Commands.Moderation {
                 Server.hidden.Add(p.name);
                 OnPlayerActionEvent.Call(p, PlayerAction.Hide);
             } else {
-                AnnounceOps(p, "To Ops -λNICK&S- is now &fvisible");
+                AnnounceOps(p, Locale.Get("hide.now_visible"));
                 p.hideRank = LevelPermission.Banned;
                 
                 if (!silent) {
@@ -86,9 +86,9 @@ namespace MCGalaxy.Commands.Moderation {
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Hide &H- Toggles your visibility to other players, also toggles opchat.");
-            p.Message("&T/Hide silent &H- Hides without showing join/leave message");
-            p.Message("&HUse &T/OHide &Hto hide other players.");
+            p.Message(Locale.Get("hide.help1", p));
+            p.Message(Locale.Get("hide.help2", p));
+            p.Message(Locale.Get("hide.help3", p));
         }
     }
 }

@@ -30,15 +30,15 @@ namespace MCGalaxy.Commands.Misc {
             if (target == null) return;
             
             if (!CheckRank(p, data, target, "send commands for", true)) return;
-            if (args.Length == 1) { p.Message("No command name given."); return; }
-            
+            if (args.Length == 1) { p.Message(Locale.Get("sendcmd.no_cmd", p)); return; }
+
             string cmdName = args[1];
             string cmdArgs = args.Length > 2 ? args[2] : "";
             Command.Search(ref cmdName, ref cmdArgs);
-            
+
             Command cmd = Command.Find(cmdName);
             if (cmd == null) {
-                p.Message("Unknown command \"{0}\".", cmdName); return;
+                p.Message(Locale.Get("sendcmd.unknown_cmd", p), cmdName); return;
             }
             
             data.Context = CommandContext.SendCmd;
@@ -47,9 +47,9 @@ namespace MCGalaxy.Commands.Misc {
         }
 
         public override void Help(Player p) {
-            p.Message("&T/SendCmd [player] [command] <arguments>");
-            p.Message("&HMake another user use a command. (e.g &T/SendCmd bob tp bob2&H)");
-            p.Message("  &WNote [player] uses the command as if they had your rank");
+            p.Message(Locale.Get("sendcmd.help1", p));
+            p.Message(Locale.Get("sendcmd.help2", p));
+            p.Message(Locale.Get("sendcmd.help3", p));
         }
     }
 }

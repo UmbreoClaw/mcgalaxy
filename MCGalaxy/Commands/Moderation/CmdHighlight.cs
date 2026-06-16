@@ -55,7 +55,7 @@ namespace MCGalaxy.Commands.Moderation {
                 Vec3S32[] marks = new Vec3S32[] { Vec3U16.MinVal, Vec3U16.MaxVal };
                 HighlightPlayer(p, delta, parts[0], ids, marks);
             } else {
-                p.Message("Place or break two blocks to determine the edges.");
+                p.Message(Locale.Get("cmd.highlight.msg1", p));
                 HighlightAreaArgs args = new HighlightAreaArgs();
                 args.ids = ids; args.who = parts[0]; args.delta = delta;
                 p.MakeSelection(2,  "Selecting region for &SHighlight", args, DoHighlightArea);
@@ -86,22 +86,22 @@ namespace MCGalaxy.Commands.Moderation {
             buffer.Flush();
             
             if (op.totalChanges > 0) {
-                p.Message("Highlighting &T{0}&S changes by {1}&S in the past &b{2}",
+                p.Message(Locale.Get("cmd.highlight.msg2", p),
                            op.totalChanges.ToString("N0"), p.FormatNick(who), delta.Shorten(true));
-                p.Message("&WUse /reload to un-highlight");
+                p.Message(Locale.Get("cmd.highlight.msg3", p));
             } else {
-                p.Message("No changes found by {1} &Sin the past &b{0}",
+                p.Message(Locale.Get("cmd.highlight.msg4", p),
                            delta.Shorten(true), p.FormatNick(who));
             }
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Highlight [player] <timespan>");
-            p.Message("&HHighlights blocks changed by [player] in the past <timespan>");
-            p.Message("&T/Highlight area [player] <timespan>");
-            p.Message("&HOnly highlights in the specified region.");
-            p.Message("&H If <timespan> is not given, highlights for last 100 days");
-            p.Message("&W/Highlight cannot be disabled, use /reload to un-highlight");
+            p.Message(Locale.Get("cmd.highlight.help1", p));
+            p.Message(Locale.Get("cmd.highlight.help2", p));
+            p.Message(Locale.Get("cmd.highlight.help3", p));
+            p.Message(Locale.Get("cmd.highlight.help4", p));
+            p.Message(Locale.Get("cmd.highlight.help5", p));
+            p.Message(Locale.Get("cmd.highlight.msg5", p));
         }
     }
 }

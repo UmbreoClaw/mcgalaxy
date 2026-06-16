@@ -66,9 +66,9 @@ namespace MCGalaxy.Commands.Moderation {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Freeze [name] [timespan] <reason>");
-            p.Message("&HPrevents [name] from moving for [timespan], or until manually unfrozen.");
-            p.Message("&HFor <reason>, @number can be used as a shortcut for that rule.");
+            p.Message(Locale.Get("freeze.help1", p));
+            p.Message(Locale.Get("freeze.help2", p));
+            p.Message(Locale.Get("freeze.help3", p));
         }
     }
 }

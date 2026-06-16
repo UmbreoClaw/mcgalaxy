@@ -39,24 +39,24 @@ namespace MCGalaxy.Commands.Info
             BlockID block;
             
             if (type.Length == 0 || type.CaselessEq("basic")) {
-                p.Message("Basic blocks: ");
+                p.Message(Locale.Get("blocks.basic_header", p));
                 OutputBlocks(p, "basic", modifier,
                              b => !Block.IsPhysicsType(b));
             } else if (type.CaselessEq("all") || type.CaselessEq("complex")) {
-                p.Message("Complex blocks: ");
+                p.Message(Locale.Get("blocks.complex_header", p));
                 OutputBlocks(p, "complex", modifier,
                              b => Block.IsPhysicsType(b));
             } else if ((block = Block.Parse(p, type)) != Block.Invalid) {
                 OutputBlockInfo(p, block);
             } else if (Group.Find(type) != null) {
                 Group grp = Group.Find(type);
-                p.Message("Blocks which {0} &Scan place: ", grp.ColoredName);
+                p.Message(Locale.Get("blocks.rank_can_place", p), grp.ColoredName);
                 OutputBlocks(p, type, modifier,
                              b => grp.CanPlace[b]);
             } else if (args.Length > 1) {
                 Help(p);
             } else {
-                p.Message("Unable to find block or rank");
+                p.Message(Locale.Get("blocks.not_found", p));
             }
         }
         
@@ -77,42 +77,42 @@ namespace MCGalaxy.Commands.Info
             CmdBlockProperties.Detail(p, scope, block);
             
             if (Block.IsPhysicsType(block)) {
-                p.Message("&bComplex information for \"{0}\":", name);
+                p.Message(Locale.Get("blocks.complex_info", p), name);
                 OutputPhysicsInfo(p, scope, block); return;
             }
-            
+
             string msg = "";
-            for (BlockID b = Block.CPE_COUNT; b < Block.CORE_COUNT; b++) 
+            for (BlockID b = Block.CPE_COUNT; b < Block.CORE_COUNT; b++)
             {
                 if (Block.Convert(b) != block) continue;
                 msg += Block.GetColoredName(p, b) + ", ";
             }
 
             if (msg.Length > 0) {
-                p.Message("Blocks which look like \"{0}\":", name);
+                p.Message(Locale.Get("blocks.look_like", p), name);
                 p.Message(msg.Remove(msg.Length - 2));
             } else {
-                p.Message("No complex blocks look like \"{0}\"", name);
+                p.Message(Locale.Get("blocks.no_complex_look_like", p), name);
             }
         }
         
         static void OutputPhysicsInfo(Player p, BlockProps[] scope, BlockID b) {
             BlockID conv = Block.Convert(b);
-            p.Message("&c  Appears as a \"{0}\" block", Block.GetName(p, conv));
+            p.Message(Locale.Get("blocks.appears_as", p), Block.GetName(p, conv));
 
             // TODO: Use scope[b] instead of hardcoded global
-            if (Block.LightPass(b))   p.Message("  Allows light through");
-            if (Block.NeedRestart(b)) p.Message("  The block's physics will auto-start");
-            
+            if (Block.LightPass(b))   p.Message(Locale.Get("blocks.allows_light", p));
+            if (Block.NeedRestart(b)) p.Message(Locale.Get("blocks.auto_start", p));
+
             if (Physics(scope, b)) {
-                p.Message("  Affects physics in some way");
+                p.Message(Locale.Get("blocks.affects_physics", p));
             } else {
-                p.Message("  Does not affect physics in any way");
+                p.Message(Locale.Get("blocks.no_physics", p));
             }
 
-            if (Block.AllowBreak(b))     p.Message("  Anybody can activate this block");
-            if (Block.Walkthrough(conv)) p.Message("  Can be walked through");
-            if (Mover(scope, conv))      p.Message("  Can be activated by walking through it");
+            if (Block.AllowBreak(b))     p.Message(Locale.Get("blocks.anyone_activate", p));
+            if (Block.Walkthrough(conv)) p.Message(Locale.Get("blocks.walkthrough", p));
+            if (Mover(scope, conv))      p.Message(Locale.Get("blocks.walkthrough_activate", p));
         }
         
         static bool Mover(BlockProps[] scope, BlockID conv) {
@@ -129,11 +129,11 @@ namespace MCGalaxy.Commands.Info
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Blocks &H- Lists all basic blocks");
-            p.Message("&T/Blocks complex &H- Lists all complex blocks");
-            p.Message("&T/Blocks [block] &H- Lists information about that block");
-            p.Message("&T/Blocks [rank] &H- Lists all blocks [rank] can use");
-            p.Message("&HTo see available ranks, type &T/ViewRanks");
+            p.Message(Locale.Get("blocks.help1", p));
+            p.Message(Locale.Get("blocks.help2", p));
+            p.Message(Locale.Get("blocks.help3", p));
+            p.Message(Locale.Get("blocks.help4", p));
+            p.Message(Locale.Get("blocks.help5", p));
         }
     }
 }

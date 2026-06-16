@@ -37,41 +37,41 @@ namespace MCGalaxy.Commands.Chatting
             string action = args[0].ToLower();
             
             if (action == "all") {
-                Toggle(p, ref p.Ignores.All, "{0} ignoring all chat"); return;
+                Toggle(p, ref p.Ignores.All, Locale.Get("ignore.toggle_all", p)); return;
             } else if (action == "irc") {
-                if (args.Length > 1) { IgnoreIRCNick(p, args[1]); } 
-                else { Toggle(p, ref p.Ignores.IRC, "{0} ignoring IRC chat"); }
+                if (args.Length > 1) { IgnoreIRCNick(p, args[1]); }
+                else { Toggle(p, ref p.Ignores.IRC, Locale.Get("ignore.toggle_irc", p)); }
                 return;
             } else if (action == "titles") {
-                Toggle(p, ref p.Ignores.Titles, "{1}Player titles {0} show before names in chat"); return;
+                Toggle(p, ref p.Ignores.Titles, Locale.Get("ignore.toggle_titles", p)); return;
             } else if (action == "nicks") {
-                Toggle(p, ref p.Ignores.Nicks, "{1}Custom player nicks {0} show in chat");
+                Toggle(p, ref p.Ignores.Nicks, Locale.Get("ignore.toggle_nicks", p));
                 TabList.Update(p, true); return;
             } else if (action == "8ball") {
-                Toggle(p, ref p.Ignores.EightBall, "{0} ignoring &T/8ball"); return;
+                Toggle(p, ref p.Ignores.EightBall, Locale.Get("ignore.toggle_8ball", p)); return;
             } else if (action == "drawoutput") {
-                Toggle(p, ref p.Ignores.DrawOutput, "{0} ignoring draw command output"); return;
+                Toggle(p, ref p.Ignores.DrawOutput, Locale.Get("ignore.toggle_drawoutput", p)); return;
             } else if (action == "worldchanges") {
-                Toggle(p, ref p.Ignores.WorldChanges, "{0} ignoring world changes"); return;
+                Toggle(p, ref p.Ignores.WorldChanges, Locale.Get("ignore.toggle_worldchanges", p)); return;
             } else if (IsListAction(action)) {
                 p.Ignores.Output(p); return;
             }
             
             if (p.Ignores.Names.CaselessRemove(action)) {
-                p.Message("&aNo longer ignoring {0}", action);
+                p.Message(Locale.Get("ignore.no_longer", p), action);
             } else {
                 int matches;
                 Player target = PlayerInfo.FindMatches(p, action, out matches);
                 if (target == null) {
-                    if (matches == 0) p.Message("You must use the full name when unignoring offline players.");
+                    if (matches == 0) p.Message(Locale.Get("ignore.full_name_required", p));
                     return;
                 }
-                
+
                 if (p.Ignores.Names.CaselessRemove(target.name)) {
-                    p.Message("&aNo longer ignoring {0}", p.FormatNick(target));
+                    p.Message(Locale.Get("ignore.no_longer", p), p.FormatNick(target));
                 } else {
                     p.Ignores.Names.Add(target.name);
-                    p.Message("&cNow ignoring {0}", p.FormatNick(target));
+                    p.Message(Locale.Get("ignore.now_ignoring", p), p.FormatNick(target));
                 }
             }
             p.Ignores.Save(p);
@@ -89,33 +89,33 @@ namespace MCGalaxy.Commands.Chatting
         
         static void IgnoreIRCNick(Player p, string nick) {
             if (p.Ignores.IRCNicks.CaselessRemove(nick)) {
-                p.Message("&aNo longer ignoring IRC nick: {0}", nick);
+                p.Message(Locale.Get("ignore.no_longer_irc", p), nick);
             } else {
                 p.Ignores.IRCNicks.Add(nick);
-                p.Message("&cNow ignoring IRC nick: {0}", nick);
+                p.Message(Locale.Get("ignore.now_irc", p), nick);
             }
             p.Ignores.Save(p);
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Ignore [name]");
-            p.Message("&HSee &T/Help ignore special &Hfor special names when ignoring.");
-            p.Message("&HOtherwise, all chat from the player with [name] is ignored.");
-            p.Message("&HUsing the same [name] again will unignore.");
-            p.Message("&T/Ignore list &H- display what you're currently ignoring.");
+            p.Message(Locale.Get("ignore.help1", p));
+            p.Message(Locale.Get("ignore.help2", p));
+            p.Message(Locale.Get("ignore.help3", p));
+            p.Message(Locale.Get("ignore.help4", p));
+            p.Message(Locale.Get("ignore.help5", p));
         }
-        
+
         public override void Help(Player p, string message) {
             if (!message.CaselessEq("special")) { Help(p); return; }
-            p.Message("&HSpecial names for &T/Ignore [name]");
-            p.Message("&H all - all chat is ignored.");
-            p.Message("&H irc - IRC chat is ignored.");
-            p.Message("&H irc [nick] - IRC chat by that IRC nick ignored.");
-            p.Message("&H titles - player titles before names are ignored.");
-            p.Message("&H nicks - custom player nicks do not show in chat.");
-            p.Message("&H 8ball - &T/8ball &His ignored.");
-            p.Message("&H drawoutput - drawing command output is ignored.");
-            p.Message("&H worldchanges - world change messages are ignored.");  
+            p.Message(Locale.Get("ignore.help_special1", p));
+            p.Message(Locale.Get("ignore.help_special2", p));
+            p.Message(Locale.Get("ignore.help_special3", p));
+            p.Message(Locale.Get("ignore.help_special4", p));
+            p.Message(Locale.Get("ignore.help_special5", p));
+            p.Message(Locale.Get("ignore.help_special6", p));
+            p.Message(Locale.Get("ignore.help_special7", p));
+            p.Message(Locale.Get("ignore.help_special8", p));
+            p.Message(Locale.Get("ignore.help_special9", p));
         }
     }
 }

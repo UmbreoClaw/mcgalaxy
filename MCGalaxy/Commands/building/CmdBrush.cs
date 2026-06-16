@@ -34,7 +34,7 @@ namespace MCGalaxy.Commands.Building
 
         public override void Use(Player p, string message, CommandData data) {
             if (message.Length == 0) {
-                p.Message("Your current brush is: " + p.BrushName); return;
+                p.Message(Locale.Get("brush.current_brush", p), p.BrushName); return;
             }
         	
             string[] args = message.SplitSpaces(2);
@@ -45,19 +45,18 @@ namespace MCGalaxy.Commands.Building
             BrushFactory brush = BrushFactory.FindMatch(p, args[0]);
             if (brush == null) return;
             
-            p.Message("Set your brush to: " + brush.Name);
+            p.Message(Locale.Get("brush.set_brush", p), brush.Name);
             p.BrushName = brush.Name;
             p.DefaultBrushArgs = args.Length > 1 ? args[1] : "";
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Brush [name] <default brush args>");
-            p.Message("&HSets your current brush to the brush with that name.");
-            p.Message("&T/Help Brush [name]");
-            p.Message("&HOutputs the help for the brush with that name.");
+            p.Message(Locale.Get("brush.help1", p));
+            p.Message(Locale.Get("brush.help2", p));
+            p.Message(Locale.Get("brush.help3", p));
+            p.Message(Locale.Get("brush.help4", p));
             BrushFactory.List(p);
-            p.Message("&H- If \"skip\" is used for a block name, " +
-                      "existing blocks in the map will not be replaced by this block.");
+            p.Message(Locale.Get("brush.help5", p));
         }
 
         public override void Help(Player p, string message) {

@@ -43,12 +43,12 @@ namespace MCGalaxy.Commands.Building
             p.DefaultBrushArgs = "";
             
             if (p.weapon != null) p.weapon.Disable();
-            p.Message("Every toggle or action was aborted.");
+            p.Message(Locale.Get("abort.aborted", p));
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Abort");
-            p.Message("&HCancels an action.");
+            p.Message(Locale.Get("abort.help1", p));
+            p.Message(Locale.Get("abort.help2", p));
         }
     }
 }

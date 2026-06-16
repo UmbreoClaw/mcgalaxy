@@ -52,15 +52,15 @@ namespace MCGalaxy.DB
         }
         
         public static void BlocksModifiedLine(Player p, PlayerData who) {
-            p.Message("  Modified &a{0} &Sblocks", who.TotalModified);
+            p.Message(Locale.Get("whois.modified_offline", p), who.TotalModified);
         }
         
         public static void TimeSpentLine(Player p, PlayerData who) {
-            p.Message("  Spent &a{0} &Son the server", who.TotalTime.Shorten());
+            p.Message(Locale.Get("whois.time_spent_offline", p), who.TotalTime.Shorten());
         }
                 
         public static void LoginLine(Player p, PlayerData who) {
-            p.Message("  First login &a{0}&S, last login &a{1}",
+            p.Message(Locale.Get("whois.first_login_last", p),
                                  who.FirstLogin.ToString("yyyy-MM-dd"), who.LastLogin.ToString("yyyy-MM-dd"));
         }
     }

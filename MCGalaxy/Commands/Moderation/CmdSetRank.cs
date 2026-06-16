@@ -50,7 +50,7 @@ namespace MCGalaxy.Commands.Moderation {
             
             if (target == null) return;
             if (p.name.CaselessEq(target)) {
-                p.Message("Cannot change your own rank."); return;
+                p.Message(Locale.Get("setrank.no_self_rank", p)); return;
             }
             
             Group curRank = PlayerInfo.GetGroup(target);
@@ -58,7 +58,7 @@ namespace MCGalaxy.Commands.Moderation {
             if (newRank == null) return;
             
             if (curRank == newRank) {
-                p.Message("{0} &Sis already ranked {1}",
+                p.Message(Locale.Get("setrank.already_ranked", p),
                           p.FormatNick(target), curRank.ColoredName);
                 return;
             }
@@ -81,19 +81,19 @@ namespace MCGalaxy.Commands.Moderation {
             if (reason == null) return false;
             
             if (newRank == banned) {
-                p.Message("Use &T/Ban &Sto change a player's rank to {0}&S.", banned.ColoredName); return false;
+                p.Message(Locale.Get("setrank.use_ban", p), banned.ColoredName); return false;
             }
             if (curRank == banned) {
-                p.Message("Use &T/Unban &Sto change a player's rank from &S{0}.", banned.ColoredName); return false;
+                p.Message(Locale.Get("setrank.use_unban", p), banned.ColoredName); return false;
             }
             
             if (!CheckRank(p, data, name, curRank.Permission, "change the rank of", false)) return false;            
             if (newRank.Permission >= data.Rank) {
-                p.Message("Cannot rank a player to a rank equal to or higher than yours."); return false;
+                p.Message(Locale.Get("setrank.rank_too_high", p)); return false;
             }
             
             if (newRank.Permission == curRank.Permission) {
-                p.Message("{0} &Sis already ranked {1}.",
+                p.Message(Locale.Get("setrank.already_ranked2", p),
                           p.FormatNick(name), curRank.ColoredName); return false;
             }
             
@@ -114,7 +114,7 @@ namespace MCGalaxy.Commands.Moderation {
                 Group next = Group.GroupList[index - 1];
                 if (next.Permission > LevelPermission.Banned) return next;
             }
-            p.Message("No lower ranks exist"); return null;
+            p.Message(Locale.Get("setrank.no_lower_ranks", p)); return null;
         }
         
         static Group NextRankUp(Player p, Group curRank) {
@@ -123,14 +123,14 @@ namespace MCGalaxy.Commands.Moderation {
                 Group next = Group.GroupList[index + 1];
                 return next;
             }
-            p.Message("No higher ranks exist"); return null;
+            p.Message(Locale.Get("setrank.no_higher_ranks", p)); return null;
         }
         
         public override void Help(Player p) {
-            p.Message("&T/SetRank [player] [rank] <reason>");
-            p.Message("&HSets that player's rank/group, with an optional reason.");
-            p.Message("&HTo see available ranks, type &T/ViewRanks");
-            p.Message("&HFor <reason>, @number can be used as a shortcut for that rule.");
+            p.Message(Locale.Get("setrank.help1", p));
+            p.Message(Locale.Get("setrank.help2", p));
+            p.Message(Locale.Get("setrank.help3", p));
+            p.Message(Locale.Get("setrank.help4", p));
         }
     }
 }

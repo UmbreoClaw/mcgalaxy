@@ -23,12 +23,61 @@ namespace MCGalaxy.Gui {
     public partial class PropertyWindow : Form {
         bool warnDisabledVerification = true;
         
+        // Localizes the high-visibility parts of the settings window (tab strip and
+        // the Server tab). Uses the server's configured language.
+        void LocalizeUI() {
+            Text = Locale.Get("gui.settings_title");
+
+            pageServer.Text   = Locale.Get("gui.tab_server");
+            pageChat.Text     = Locale.Get("gui.tab_chat");
+            pageRelay.Text    = Locale.Get("gui.tab_irc");
+            pageEco.Text      = Locale.Get("gui.tab_eco");
+            pageMisc.Text     = Locale.Get("gui.tab_misc");
+            pageGames.Text    = Locale.Get("gui.tab_games");
+            pageRanks.Text    = Locale.Get("gui.tab_ranks");
+            pageCommands.Text = Locale.Get("gui.tab_commands");
+            pageBlocks.Text   = Locale.Get("gui.tab_blocks");
+            pageSecurity.Text = Locale.Get("gui.tab_security");
+
+            srv_grp.Text         = Locale.Get("gui.srv_general");
+            srv_lblName.Text     = Locale.Get("gui.srv_name");
+            srv_lblMotd.Text     = Locale.Get("gui.srv_motd");
+            srv_lblPort.Text     = Locale.Get("gui.srv_port");
+            srv_btnPort.Text     = Locale.Get("gui.srv_port_forward");
+            srv_lblOwner.Text    = Locale.Get("gui.srv_owner");
+            srv_chkPublic.Text   = Locale.Get("gui.srv_public");
+            srv_lblLanguage.Text = Locale.Get("gui.srv_language");
+
+            grpPlayers.Text      = Locale.Get("gui.players_group");
+            srv_lblPlayers.Text  = Locale.Get("gui.srv_max_players");
+            srv_lblGuests.Text   = Locale.Get("gui.srv_max_guests");
+            srv_cbMustAgree.Text = Locale.Get("gui.srv_must_agree");
+
+            lvl_grp.Text         = Locale.Get("gui.lvl_settings");
+            lvl_lblMain.Text     = Locale.Get("gui.lvl_main");
+            lvl_chkAutoload.Text = Locale.Get("gui.lvl_autoload");
+            lvl_chkWorld.Text    = Locale.Get("gui.lvl_world_chat");
+
+            adv_grp.Text       = Locale.Get("gui.adv_config");
+            srv_grpUpdate.Text = Locale.Get("gui.update_settings");
+        }
+
         void LoadGeneralProps() {
             srv_txtName.Text = Server.Config.Name;
             srv_txtMOTD.Text = Server.Config.MOTD;
             srv_numPort.Value = Server.Config.Port;
             srv_txtOwner.Text = Server.Config.OwnerName;
             srv_chkPublic.Checked = Server.Config.Public;
+
+            srv_cmbLanguage.Items.Clear();
+            var locales = Locale.AvailableLocales();
+            locales.Sort();
+            foreach (string code in locales)
+                srv_cmbLanguage.Items.Add(code);
+            if (locales.Count == 0) srv_cmbLanguage.Items.Add("en");
+            string current = Server.Config.Language;
+            int idx = srv_cmbLanguage.Items.IndexOf(current);
+            srv_cmbLanguage.SelectedIndex = idx >= 0 ? idx : 0;
             
             srv_numPlayers.Value = Server.Config.MaxPlayers;
             srv_numGuests.Value = Server.Config.MaxGuests;
@@ -52,6 +101,8 @@ namespace MCGalaxy.Gui {
             Server.Config.Port = (int)srv_numPort.Value;
             Server.Config.OwnerName = srv_txtOwner.Text;
             Server.Config.Public = srv_chkPublic.Checked;
+            if (srv_cmbLanguage.SelectedItem != null)
+                Server.Config.Language = srv_cmbLanguage.SelectedItem.ToString();
             
             Server.Config.MaxPlayers = (int)srv_numPlayers.Value;
             Server.Config.MaxGuests = (int)srv_numGuests.Value;

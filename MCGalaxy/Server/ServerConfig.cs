@@ -78,6 +78,8 @@ namespace MCGalaxy
         public bool restartOnError = true;
         [ConfigBool("software-staff-prefixes", "Other", true)]
         public bool SoftwareStaffPrefixes = true;
+        [ConfigString("language", "Other", "en")]
+        public string Language = "en";
         
         [ConfigInt("position-interval", "Other", 100, 20, 2000)]
         public int PositionUpdateInterval = 100;

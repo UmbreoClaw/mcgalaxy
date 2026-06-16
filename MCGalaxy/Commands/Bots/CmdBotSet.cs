@@ -74,10 +74,10 @@ namespace MCGalaxy.Commands.Bots
         }
         
         public override void Help(Player p) {
-            p.Message("&T/BotSet [bot] <AI script>");
-            p.Message("&HMakes [bot] do the instructions in <AI script>");
-            p.Message("&H  Special AI scripts: Kill and Hunt");
-            p.Message("&HIf <AI script> is not given, turns off the bot's AI.");
+            p.Message(Locale.Get("cmd.botset.help1", p));
+            p.Message(Locale.Get("cmd.botset.help2", p));
+            p.Message(Locale.Get("cmd.botset.help3", p));
+            p.Message(Locale.Get("cmd.botset.help4", p));
         }
     }
 }

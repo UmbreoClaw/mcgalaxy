@@ -31,7 +31,7 @@ namespace MCGalaxy.Commands.Building {
             p.staticCommands = !p.staticCommands;
             p.ClearBlockchange();
 
-            p.Message("Static mode: &a" + p.staticCommands);
+            p.Message(Locale.Get("static.mode", p), p.staticCommands ? "&aON" : "&cOFF");
             if (message.Length == 0 || !p.staticCommands) return;
             data.Context = CommandContext.Static;
 
@@ -41,9 +41,9 @@ namespace MCGalaxy.Commands.Building {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Static [command]");
-            p.Message("&HMakes every command a toggle.");
-            p.Message("&HIf [command] is given, then that command is used");
+            p.Message(Locale.Get("cmd.static.help1", p));
+            p.Message(Locale.Get("cmd.static.help2", p));
+            p.Message(Locale.Get("cmd.static.help3", p));
         }
     }
 }

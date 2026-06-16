@@ -43,14 +43,14 @@ namespace MCGalaxy.Commands.Misc {
                 string rankMsg   = who.ColoredName + direction + newRank.ColoredName + "&S. (" + reason + "&S)";
                 
                 Chat.MessageGlobal(rankMsg);
-                who.Message("You are now ranked {0}&S, type /Help for your new set of commands.", newRank.ColoredName);
+                who.Message(Locale.Get("fakerank.now_ranked", who), newRank.ColoredName);
             }
             who.UpdateColor(newRank.Color);         
         }
         
         public override void Help(Player p) {
-            p.Message("&T/FakeRank [player] [rank]");
-            p.Message("&HGives [player] the appearance of being ranked to [rank].");
+            p.Message(Locale.Get("fakerank.help1", p));
+            p.Message(Locale.Get("fakerank.help2", p));
         }
     }
 }

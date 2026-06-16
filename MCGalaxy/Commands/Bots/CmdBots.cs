@@ -59,9 +59,9 @@ namespace MCGalaxy.Commands.Bots
         
         public override void Help(Player p) {
             p.Message("&T/Bots");
-            p.Message("&HShows a list of bots on your level, and their AIs and levels");
-            p.Message("&T/Bots [level]");
-            p.Message("&HShows bots on the given level");
+            p.Message(Locale.Get("cmd.bots.help1", p));
+            p.Message(Locale.Get("cmd.bots.help2", p));
+            p.Message(Locale.Get("cmd.bots.help3", p));
         }
     }
 }

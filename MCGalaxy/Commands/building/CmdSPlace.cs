@@ -25,7 +25,7 @@ namespace MCGalaxy.Commands.Building {
         public override string shortcut { get { return "set"; } }
 
         protected override string SelectionType { get { return "points"; } }
-        protected override string PlaceMessage { get { return "Place or break two blocks to determine direction."; } }
+        protected override string PlaceMessage { get { return "splace.place_msg"; } }
         
         protected override DrawOp GetDrawOp(DrawArgs dArgs) {
             ushort distance = 0, interval = 0;
@@ -38,7 +38,7 @@ namespace MCGalaxy.Commands.Building {
             if (parts.Length > 1 && !CommandParser.GetUShort(p, parts[1], "Interval", ref interval, 1)) return null;
 
             if (interval >= distance) {
-                p.Message("&WThe Interval cannot be greater than the distance."); return null;
+                p.Message(Locale.Get("splace.interval_too_large", p)); return null;
             }
 
             SPlaceDrawOp op = new SPlaceDrawOp();
@@ -48,7 +48,7 @@ namespace MCGalaxy.Commands.Building {
         
         protected override void GetMarks(DrawArgs dArgs, ref Vec3S32[] m) {
             Player p = dArgs.Player;
-            if (m[0] == m[1]) { p.Message("No direction was selected"); m = null; }
+            if (m[0] == m[1]) { p.Message(Locale.Get("splace.no_direction", p)); m = null; }
         }
         
         protected override void GetBrush(DrawArgs dArgs) {
@@ -59,9 +59,9 @@ namespace MCGalaxy.Commands.Building {
         }
 
         public override void Help(Player p) {
-            p.Message("&T/SPlace [distance] <interval>");
-            p.Message("&HMeasures a set [distance] and places your held block at each end.");
-            p.Message("&HOptionally place a block at set <interval> between them.");
+            p.Message(Locale.Get("splace.help1", p));
+            p.Message(Locale.Get("splace.help2", p));
+            p.Message(Locale.Get("splace.help3", p));
         }
     }
 }

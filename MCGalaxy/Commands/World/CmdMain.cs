@@ -32,7 +32,7 @@ namespace MCGalaxy.Commands.World {
         public override void Use(Player p, string message, CommandData data) {
             if (message.Length == 0) {
                 if (p.IsSuper) {
-                    p.Message("Main level is {0}", Server.mainLevel.ColoredName);
+                    p.Message(Locale.Get("main.current_main", p), Server.mainLevel.ColoredName);
                 } else if (p.level == Server.mainLevel) {
                     if (!IGame.CheckAllowed(p, "use &T/Main")) return;
                     PlayerActions.Respawn(p);
@@ -44,7 +44,7 @@ namespace MCGalaxy.Commands.World {
                 if (!Formatter.ValidMapName(p, message)) return;
                 if (!LevelInfo.Check(p, data.Rank, Server.mainLevel, "set main to another map")) return;
                 if (data.Context == CommandContext.MessageBlock) {
-                    p.Message("&WSetting the main map with a message block is not allowed.", name);
+                    p.Message(Locale.Get("main.mb_not_allowed", p));
                     return;
                 }
 
@@ -56,16 +56,16 @@ namespace MCGalaxy.Commands.World {
                 Server.Config.MainLevel = map; 
                 SrvProperties.Save();
                 
-                p.Message("Set main level to {0}", 
+                p.Message(Locale.Get("main.set_main", p),
                           LevelInfo.GetConfig(map).Color + map);
             }
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Main");
-            p.Message("&HSends you to the main level.");
-            p.Message("&T/Main [level]");
-            p.Message("&HSets the main level to that level.");
+            p.Message(Locale.Get("main.help1", p));
+            p.Message(Locale.Get("main.help2", p));
+            p.Message(Locale.Get("main.help3", p));
+            p.Message(Locale.Get("main.help4", p));
         }
     }
 }

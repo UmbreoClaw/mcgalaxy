@@ -38,22 +38,22 @@ namespace MCGalaxy.Commands.Info
 
         public override void Use(Player p, string message, CommandData data) {
             int count = Database.CountRows("Players");
-            p.Message("About &b{0}&S", Server.Config.Name);
-            p.Message("  &a{0} &Splayers total. (&a{1} &Sonline, &8{2} banned&S)",
+            p.Message(Locale.Get("serverinfo.about", p), Server.Config.Name);
+            p.Message(Locale.Get("serverinfo.players", p),
                       count, PlayerInfo.GetOnlineCanSee(p, data.Rank).Count, Group.BannedRank.Players.Count);
-            p.Message("  &a{0} &Slevels total (&a{1} &Sloaded). Currency is &3{2}&S.",
+            p.Message(Locale.Get("serverinfo.levels", p),
                       LevelInfo.AllMapFiles().Length, LevelInfo.Loaded.Count, Server.Config.Currency);
 
             TimeSpan up = DateTime.UtcNow - Server.StartTime;
-            p.Message("  Been up for &a{0}&S, running &b{1} &a{2} &f" + Updater.SourceURL,
+            p.Message(Locale.Get("serverinfo.uptime", p) + " &f" + Updater.SourceURL,
                       up.Shorten(true), Server.SoftwareName, Server.Version);
 
             int updateInterval = 1000 / Server.Config.PositionUpdateInterval;
-            p.Message("  Player positions are updated &a{0} &Stimes/second", updateInterval);
+            p.Message(Locale.Get("serverinfo.pos_updates", p), updateInterval);
 
             string owner = Server.Config.OwnerName;
             if (!owner.CaselessEq("Notch") && !owner.CaselessEq("the owner")) {
-                p.Message("  Owner is &3{0}", owner);
+                p.Message(Locale.Get("serverinfo.owner", p), owner);
             }
 
             if (HasExtraPerm(p, data.Rank, 1)) OutputResourceUsage(p);
@@ -64,7 +64,7 @@ namespace MCGalaxy.Commands.Info
 
         static void OutputResourceUsage(Player p) {
             Process proc = Process.GetCurrentProcess();
-            p.Message("Measuring resource usage...one second");
+            p.Message(Locale.Get("serverinfo.measuring", p));
             IOperatingSystem os = IOperatingSystem.DetectOS();
 
             if (startTime == default(DateTime)) {
@@ -80,7 +80,7 @@ namespace MCGalaxy.Commands.Info
             ProcInfo endUsg = os.MeasureResourceUsage(proc, true);
             CPUTime allEnd  = os.MeasureAllCPUTime();
 
-            p.Message("&a{0}% &SCPU usage now, &a{1}% &Soverall",
+            p.Message(Locale.Get("serverinfo.cpu_usage", p),
                 MeasureCPU(begUsg.ProcessorTime,   endUsg.ProcessorTime, TimeSpan.FromSeconds(1)),
                 MeasureCPU(startUsg.ProcessorTime, endUsg.ProcessorTime, DateTime.UtcNow - startTime));
 
@@ -88,13 +88,13 @@ namespace MCGalaxy.Commands.Info
             ulong sys  = allEnd.ProcessorTime - allBeg.ProcessorTime;
             double cpu = sys * 100.0 / (sys + idl);
             int cores  = Environment.ProcessorCount;
-            p.Message("  &a{0}% &Sby all processes across {1} CPU core{2}", 
+            p.Message(Locale.Get("serverinfo.all_processes", p),
                 double.IsNaN(cpu) ? "(unknown)" : cpu.ToString("F2"),
                 cores, cores.Plural());
 
             // Private Bytes = memory the process has reserved just for itself
             int memory = (int)Math.Round(endUsg.PrivateMemorySize / 1048576.0);
-            p.Message("&a{0} &Sthreads, using &a{1} &Smegabytes of memory",
+            p.Message(Locale.Get("serverinfo.threads_memory", p),
                 endUsg.NumThreads, memory);
         }
 
@@ -108,8 +108,8 @@ namespace MCGalaxy.Commands.Info
         }
 
         public override void Help(Player p) {
-            p.Message("&T/ServerInfo");
-            p.Message("&HDisplays the server information.");
+            p.Message(Locale.Get("serverinfo.help1", p));
+            p.Message(Locale.Get("serverinfo.help2", p));
         }
     }
 }

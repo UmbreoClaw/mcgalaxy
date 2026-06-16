@@ -35,7 +35,7 @@ namespace MCGalaxy.Commands.Building
         public override void Use(Player p, string message, CommandData data) {
             if (message.CaselessEq("all")) {
                 if (!DoMark(p, 0, 0, 0)) {
-                    p.Message("Cannot mark, no selection in progress.");
+                    p.Message(Locale.Get("mark.no_selection", p));
                 } else {                    
                     Level lvl = p.level;
                     DoMark(p, lvl.MaxX, lvl.MaxY, lvl.MaxZ);
@@ -60,8 +60,7 @@ namespace MCGalaxy.Commands.Building
             if (handler != null) {
                 handler(p, old, mark.X, mark.Y, mark.Z);
             } else {
-                p.Message("Cannot mark, no selection in progress, " +
-                               "nor could the existing block at the coordinates be activated."); return;
+                p.Message(Locale.Get("mark.no_selection_no_block", p)); return;
             }
         }
         
@@ -96,7 +95,7 @@ namespace MCGalaxy.Commands.Building
         internal static bool DoMark(Player p, int x, int y, int z) {
             if (!p.HasBlockChange()) return false;
             if (!p.Ignores.DrawOutput) {
-                p.Message("Mark placed at &b({0}, {1}, {2})", x, y, z);
+                p.Message(Locale.Get("mark.placed", p), x, y, z);
             }
             
             BlockID block = p.GetHeldBlock();
@@ -105,13 +104,13 @@ namespace MCGalaxy.Commands.Building
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Mark <x y z> &H- Places a marker for selections, e.g for &T/z");
-            p.Message("&HUse ~ before a coordinate to mark relative to current position");
-            p.Message("&HIf no coordinates are given, marks at where you are standing");
-            p.Message("&HIf only x coordinate is given, it is used for y and z too");
-            p.Message("  &He.g. /mark 30 y 20 will mark at (30, last y, 20)");
-            p.Message("&T/Mark all &H- Places markers at min and max corners of the map");
-            p.Message("&HActivates the block (e.g. door) if no selection is in progress");
+            p.Message(Locale.Get("mark.help1", p));
+            p.Message(Locale.Get("mark.help2", p));
+            p.Message(Locale.Get("mark.help3", p));
+            p.Message(Locale.Get("mark.help4", p));
+            p.Message(Locale.Get("mark.help5", p));
+            p.Message(Locale.Get("mark.help6", p));
+            p.Message(Locale.Get("mark.help7", p));
         }
     }
 }

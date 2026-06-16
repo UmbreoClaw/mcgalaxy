@@ -32,8 +32,8 @@ namespace MCGalaxy.Commands.Chatting
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Say [message]");
-            p.Message("&HBroadcasts a global message to everyone in the server.");
+            p.Message(Locale.Get("say.help1", p));
+            p.Message(Locale.Get("say.help2", p));
         }
     }
 }

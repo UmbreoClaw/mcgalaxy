@@ -80,7 +80,7 @@ namespace MCGalaxy.Commands.World {
             }
             
             string formats = IMapImporter.Formats.Join(x => x.Extension);
-            p.Message("&WNo {0} file with that name was found in /extra/import folder.", formats);
+            p.Message(Locale.Get("import.no_file", p), formats);
         }
         
         
@@ -88,7 +88,7 @@ namespace MCGalaxy.Commands.World {
             IMapImporter imp = IMapImporter.GetFor(path);
             if (imp == null) {
                 string formats = IMapImporter.Formats.Join(x => x.Extension);
-                p.Message("&WCannot import {0} as only {1} formats are supported.", path, formats);
+                p.Message(Locale.Get("import.unsupported_format", p), path, formats);
                 return;
             }
             
@@ -98,7 +98,7 @@ namespace MCGalaxy.Commands.World {
         
         static void Import(Player p, IMapImporter importer, Stream src, string map) {
             if (LevelInfo.MapExists(map)) {
-                p.Message("&WMap {0} already exists. Rename the file to something else before importing", map);
+                p.Message(Locale.Get("import.map_exists", p), map);
                 return;
             }
             
@@ -112,25 +112,25 @@ namespace MCGalaxy.Commands.World {
                 }
             } catch (Exception ex) {
                 Logger.LogError("Error importing map " + map, ex);
-                p.Message("&WImporting map {0} failed. See error logs.", map);
+                p.Message(Locale.Get("import.failed", p), map);
                 return;
             }
-            p.Message("Successfully imported map {0}!", map);
+            p.Message(Locale.Get("import.success", p), map);
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Import all");
-            p.Message("&HImports every map in /extra/import/ folder");
-            p.Message("&T/Import [url/filename]");
-            p.Message("&HImports a map from a webpage or the /extra/import/ folder");
-            p.Message("&HSee &T/Help Import formats &Hfor supported formats"); 
+            p.Message(Locale.Get("import.help1", p));
+            p.Message(Locale.Get("import.help2", p));
+            p.Message(Locale.Get("import.help3", p));
+            p.Message(Locale.Get("import.help4", p));
+            p.Message(Locale.Get("import.help5", p));
         }
-        
+
         public override void Help(Player p, string message) {
             if (message.CaselessEq("formats")) {
-                p.Message("&HSupported formats:");
+                p.Message(Locale.Get("import.formats_header", p));
                 foreach (IMapImporter format in IMapImporter.Formats) {
-                    p.Message("  {0} ({1})", format.Extension, format.Description);
+                    p.Message(Locale.Get("cmd.import.msg1", p), format.Extension, format.Description);
                 }
             } else {
                 base.Help(p, message);

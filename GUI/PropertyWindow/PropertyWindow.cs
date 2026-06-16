@@ -28,6 +28,7 @@ namespace MCGalaxy.Gui
         
         public PropertyWindow() {
             InitializeComponent();
+            LocalizeUI();
             zsSettings.LoadFromServer();
             propsZG.SelectedObject = zsSettings;
         }

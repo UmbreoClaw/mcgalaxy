@@ -52,7 +52,7 @@ namespace MCGalaxy.Commands.Moderation {
                 if (zone == null) return;
                 
                 if (!zone.Access.CheckDetailed(p, data.Rank)) {
-                    p.Message("Hence, you cannot edit this zone."); return;
+                    p.Message(Locale.Get("cmd.zonecmds.msg1", p)); return;
                 } else if (opt.CaselessEq("perbuild")) {
                     EditZone(p, args, data, zone);
                 } else {
@@ -65,7 +65,7 @@ namespace MCGalaxy.Commands.Moderation {
         
         void CreateZone(Player p, string[] args, CommandData data, int offset) {
             if (p.level.FindZoneExact(args[offset]) != null) {
-                p.Message("A zone with that name already exists. Use &T/zedit &Sto change it.");
+                p.Message(Locale.Get("cmd.zonecmds.msg2", p));
                 return;
             }
             if (!LevelInfo.Check(p, data.Rank, p.level, "create zones in this level")) return;
@@ -80,7 +80,7 @@ namespace MCGalaxy.Commands.Moderation {
             if (!PermissionCmd.Do(p, args, offset + 1, false, z.Access, data, p.level)) return;
             
             p.Message("Creating zone " + z.ColoredName);
-            p.Message("Place or break two blocks to determine the edges.");
+            p.Message(Locale.Get("cmd.zonecmds.msg3", p));
             p.MakeSelection(2, "Selecting region for &SNew zone", z, AddZone);
         }
         
@@ -104,11 +104,11 @@ namespace MCGalaxy.Commands.Moderation {
             Zone zone = Matcher.FindZones(p, lvl, args[1]);
             if (zone == null) return;
             if (!zone.Access.CheckDetailed(p, data.Rank)) {
-                p.Message("Hence, you cannot delete this zone."); return;
+                p.Message(Locale.Get("cmd.zonecmds.msg4", p)); return;
             }
             
             zone.RemoveFrom(lvl);
-            p.Message("Zone {0} &Sdeleted", zone.ColoredName);
+            p.Message(Locale.Get("cmd.zonecmds.msg5", p), zone.ColoredName);
             lvl.Save(true);
         }
         
@@ -119,7 +119,7 @@ namespace MCGalaxy.Commands.Moderation {
         void SetZoneProp(Player p, string[] args, Zone zone) {
             ColorDesc desc = default(ColorDesc);
             if (args.Length < 4) { 
-                p.Message("No value provided. See &T/Help zone properties");
+                p.Message(Locale.Get("cmd.zonecmds.msg6", p));
                 return;
             }
             
@@ -164,27 +164,27 @@ namespace MCGalaxy.Commands.Moderation {
 
 
         internal static void HelpName(Player p, string cmdName) {
-            p.Message("&T/{0} add [name] <permissions>", cmdName);
-            p.Message("&HCreates a new zone, optionally also sets build permissions");
-            p.Message("&T/{0} del [name]", cmdName);
-            p.Message("&HDeletes the given zone");
-            p.Message("&T/{0} perbuild [name] [permissions]", cmdName);
-            p.Message("&HSets build permissions for the given zone");
-            p.Message("&H  For syntax of permissions, see &T/Help PerBuild");
-            p.Message("&T/{0} set [name] [property] [value]", cmdName);
-            p.Message("&HSets a property of this zone. See &T/Help {0} properties", cmdName);
+            p.Message(Locale.Get("cmd.zonecmds.help1", p), cmdName);
+            p.Message(Locale.Get("cmd.zonecmds.help2", p));
+            p.Message(Locale.Get("cmd.zonecmds.help3", p), cmdName);
+            p.Message(Locale.Get("cmd.zonecmds.help4", p));
+            p.Message(Locale.Get("cmd.zonecmds.help5", p), cmdName);
+            p.Message(Locale.Get("cmd.zonecmds.help6", p));
+            p.Message(Locale.Get("cmd.zonecmds.help7", p));
+            p.Message(Locale.Get("cmd.zonecmds.help8", p), cmdName);
+            p.Message(Locale.Get("cmd.zonecmds.help9", p), cmdName);
         }
         internal static void HelpName(Player p, string cmdName, string message) {
             if (message.CaselessEq("properties")) {
-                p.Message("&T/{0} set [name] alpha [value]", cmdName);
-                p.Message("&HSets how solid the box shown around the zone is");
-                p.Message("&H0 - not shown at all, 0.5 - half solid, 1 - fully solid");
-                p.Message("&T/{0} set [name] color [hex color]", cmdName);
-                p.Message("&HSets the color of the box shown around the zone");
-                p.Message("&T/{0} set [name] motd [value]", cmdName);
-                p.Message("&HSets the MOTD applied when in the zone. See &T/Help map motd");
-                p.Message("&T/{0} set [name] [env property] [value]", cmdName);
-                p.Message("&HSets an env setting applied when in the zone. See &T/Help env");
+                p.Message(Locale.Get("cmd.zonecmds.help10", p), cmdName);
+                p.Message(Locale.Get("cmd.zonecmds.help11", p));
+                p.Message(Locale.Get("cmd.zonecmds.help12", p));
+                p.Message(Locale.Get("cmd.zonecmds.help13", p), cmdName);
+                p.Message(Locale.Get("cmd.zonecmds.help14", p));
+                p.Message(Locale.Get("cmd.zonecmds.help15", p), cmdName);
+                p.Message(Locale.Get("cmd.zonecmds.help16", p));
+                p.Message(Locale.Get("cmd.zonecmds.help17", p), cmdName);
+                p.Message(Locale.Get("cmd.zonecmds.help18", p));
             } else {
                 HelpName(p, cmdName);
             }
@@ -198,7 +198,7 @@ namespace MCGalaxy.Commands.Moderation {
         public override bool SuperUseable { get { return false; } }
         
         public override void Use(Player p, string message, CommandData data) {
-            p.Message("Place or delete a block where you would like to check for zones.");
+            p.Message(Locale.Get("cmd.zonecmds.msg7", p));
             p.MakeSelection(1, "Selecting point for &SZone check", data, TestZone);
         }
         
@@ -216,15 +216,15 @@ namespace MCGalaxy.Commands.Moderation {
                 
                 AccessResult status = z.Access.Check(p.name, data.Rank);
                 bool allowed = z.Access.CheckAllowed(p);
-                p.Message("  Zone {0} &S- {1}{2}", z.ColoredName, allowed ? "&a" : "&c", status );
+                p.Message(Locale.Get("cmd.zonecmds.msg8", p), z.ColoredName, allowed ? "&a" : "&c", status );
             }
             
-            if (!found) { p.Message("No zones affect this block."); }
+            if (!found) { p.Message(Locale.Get("cmd.zonecmds.msg9", p)); }
             return true;
         }
         
         public override void Help(Player p) {
-            p.Message("&T/ZoneTest &H- Lists all zones affecting a block");
+            p.Message(Locale.Get("cmd.zonecmds.help19", p));
         }
     }
     
@@ -242,14 +242,14 @@ namespace MCGalaxy.Commands.Moderation {
         }
         
         static void PrintZone(Player p, Zone zone) {
-            p.Message("{0} &b- ({1}, {2}, {3}) to ({4}, {5}, {6})",
+            p.Message(Locale.Get("cmd.zonecmds.msg10", p),
                       zone.ColoredName, 
                       zone.MinX, zone.MinY, zone.MinZ,
                       zone.MaxX, zone.MaxY, zone.MaxZ);
         }
         
         public override void Help(Player p) {
-            p.Message("&T/ZoneList &H- Lists all zones in current level");
+            p.Message(Locale.Get("cmd.zonecmds.help20", p));
         }
     }
     
@@ -267,24 +267,24 @@ namespace MCGalaxy.Commands.Moderation {
 
             if (message.Length == 0) {
                 z = p.ZoneIn;
-                if (z == null) { p.Message("&STo use &T/ZoneMark &Swithout providing a zone name, you must be standing in a zone"); return; }
+                if (z == null) { p.Message(Locale.Get("cmd.zonecmds.msg11", p)); return; }
             } else {
                 z = Matcher.FindZones(p, p.level, message);
                 if (z == null) return;
             }
 
             if (!CmdMark.DoMark(p, z.MinX, z.MinY, z.MinZ)) {
-                p.Message("Cannot mark, no selection in progress.");
+                p.Message(Locale.Get("cmd.zonecmds.msg12", p));
             } else {
                 CmdMark.DoMark(p, z.MaxX, z.MaxY, z.MaxZ);
             }
         }
         
         public override void Help(Player p) {
-            p.Message("&T/ZoneMark [name]");
-            p.Message("&HUses corners of the given zone as a &T/Mark &Hfor selections");
+            p.Message(Locale.Get("cmd.zonecmds.help21", p));
+            p.Message(Locale.Get("cmd.zonecmds.help22", p));
             p.Message("&T/ZoneMark");
-            p.Message("&HUses corners of the zone you are currently standing in");
+            p.Message(Locale.Get("cmd.zonecmds.help23", p));
         }
     }
 }

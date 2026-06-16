@@ -32,8 +32,8 @@ namespace MCGalaxy.Commands.Moderation {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Trust [name]");
-            p.Message("&HTurns off the anti-grief for [name]");
+            p.Message(Locale.Get("cmd.trust.help1", p));
+            p.Message(Locale.Get("cmd.trust.help2", p));
         }
     }
 }

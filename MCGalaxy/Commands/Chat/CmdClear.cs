@@ -34,15 +34,15 @@ namespace MCGalaxy.Commands.Chatting
         public override void Use(Player p, string message, CommandData data) {        
             if (!message.CaselessEq("global")) {
                 ClearChat(p);
-                p.Message("&4Chat cleared.");
+                p.Message(Locale.Get("clear.cleared", p));
             } else {
                 if (!CheckExtraPerm(p, data, 1)) return;
-                
+
                 Player[] players = PlayerInfo.Online.Items;
                 foreach (Player pl in players) {
                     ClearChat(pl);
                 }
-                Chat.MessageAll("&4Global Chat cleared.");
+                Chat.MessageAll(Locale.Get("clear.global_cleared"));
             }
         }
         
@@ -54,8 +54,8 @@ namespace MCGalaxy.Commands.Chatting
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Clear &H- Clears your chat.");
-            p.Message("&T/Clear global &H- Clears chat of all users.");
+            p.Message(Locale.Get("clear.help1", p));
+            p.Message(Locale.Get("clear.help2", p));
         }
     }
 }

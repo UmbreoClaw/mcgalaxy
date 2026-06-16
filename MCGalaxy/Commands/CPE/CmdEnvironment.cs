@@ -44,7 +44,7 @@ namespace MCGalaxy.Commands.CPE
             
             // Work on current level by default
             if (cfg == null) {
-                if (p.IsSuper) { p.Message("&WWhen using &T/Env &Wfrom {0}, only &T/Env Global &Wis supported", p.SuperName); return; }
+                if (p.IsSuper) { p.Message(Locale.Get("cmd.environment.msg1", p), p.SuperName); return; }
                 
                 lvl = p.level; cfg = lvl.Config;
                 area = lvl.ColoredName;
@@ -68,7 +68,7 @@ namespace MCGalaxy.Commands.CPE
                 cfg.LightColor  = preset.Sun;
             } else if (type.CaselessEq("normal")) {
                 cfg.ResetEnv();
-                p.Message("Reset environment for {0} &Sto normal", area);
+                p.Message(Locale.Get("cmd.environment.msg2", p), area);
             } else {
                 EnvOption opt = EnvOptions.Find(type);
                 if (opt == null) return false;
@@ -97,22 +97,22 @@ namespace MCGalaxy.Commands.CPE
         }
 
         static void ExplainPresets(Player p) {
-            p.Message("&T/Env preset [type] &H- Applies an env preset on the map");
+            p.Message(Locale.Get("cmd.environment.help1", p));
             EnvPreset.ListFor(p);
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Environment global/level [variable] [value]");
-            p.Message("&HChanges server default or current level's environment.");
-            p.Message("&HSee &T/Help env variables &Hfor list of variables");
-            p.Message("&T/Environment global/level normal");
-            p.Message("&HResets all environment variables to default");
+            p.Message(Locale.Get("cmd.environment.help2", p));
+            p.Message(Locale.Get("cmd.environment.help3", p));
+            p.Message(Locale.Get("cmd.environment.help4", p));
+            p.Message(Locale.Get("cmd.environment.help5", p));
+            p.Message(Locale.Get("cmd.environment.help6", p));
         }
         
         public override void Help(Player p, string message) {
             if (message.CaselessEq("variable") || message.CaselessEq("variables")) {
-                p.Message("&HVariables: &f{0}", EnvOptions.Options.Join(o => o.Name));
-                p.Message("&HUse &T/Help env [variable] &Hto see details for that variable");
+                p.Message(Locale.Get("cmd.environment.help7", p), EnvOptions.Options.Join(o => o.Name));
+                p.Message(Locale.Get("cmd.environment.help8", p));
                 return;
             } else if (message.CaselessEq("presets")) {
                 ExplainPresets(p); return;
@@ -120,11 +120,11 @@ namespace MCGalaxy.Commands.CPE
             
             EnvOption opt = EnvOptions.Find(message);
             if (opt != null) {
-                p.Message("&T/Env {0} [value]", opt.Name);
+                p.Message(Locale.Get("cmd.environment.help9", p), opt.Name);
                 p.Message(opt.Help);
-                p.Message("&HUse 'normal' for [value] to reset to default");
+                p.Message(Locale.Get("cmd.environment.help10", p));
             } else {
-                p.Message("&WUnrecognised property \"{0}\"", message);
+                p.Message(Locale.Get("cmd.environment.msg3", p), message);
             }
         }
     }

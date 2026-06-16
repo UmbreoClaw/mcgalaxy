@@ -79,10 +79,12 @@ namespace MCGalaxy
             }
             
             if (clone != null && (verifiedName || Server.Config.VerifyNames)) {
-                string reason = ip == clone.ip ? "(Reconnecting)" : "(Reconnecting from a different IP)";
+                string reason = ip == clone.ip
+                    ? Locale.Get("login.reconnecting")
+                    : Locale.Get("login.reconnecting_diff_ip");
                 clone.Leave(reason);
             } else if (clone != null) {
-                Leave(null, "Already logged in!", true); return;
+                Leave(null, Locale.Get("login.already_logged_in"), true); return;
             }
             
             deathCooldown = DateTime.UtcNow.AddSeconds(2);
@@ -105,7 +107,7 @@ namespace MCGalaxy
 
             hideRank = Rank;
             hidden   = CanUse("Hide") && Server.hidden.Contains(name);
-            if (hidden) Message("&8Reminder: You are still hidden.");
+            if (hidden) Message(Locale.Get("login.hidden_reminder", this));
             
             if (Chat.AdminchatPerms.UsableBy(this) && Server.Config.AdminsJoinSilently) {
                 hidden = true; adminchat = true;                
@@ -124,7 +126,7 @@ namespace MCGalaxy
             }
 
             if (Server.Config.AgreeToRulesOnEntry && Rank == LevelPermission.Guest && !Server.agreed.Contains(name)) {
-                Message("&9You must read the &c/Rules &9and &c/Agree &9to them before you can build and use commands!");
+                Message(Locale.Get("login.rules_agree", this));
                 agreed = false;
             }
             
@@ -133,12 +135,12 @@ namespace MCGalaxy
             if (CanUse("Inbox") && Database.TableExists("Inbox" + name)) {
                 int count = Database.CountRows("Inbox" + name);
                 if (count > 0) {
-                    Message("You have &a" + count + " &Smessages in &T/Inbox");
+                    Message(Locale.Get("login.inbox_messages", this), count);
                 }
             }
-            
+
             if (Server.Config.PositionUpdateInterval > 1000)
-                Message("Lowlag mode is currently &aON.");
+                Message(Locale.Get("login.lowlag_on", this));
 
             Logger.Log(LogType.UserActivity, "{0} [{1}] connected using {2}.", truename, IP, Session.ClientName());
             PlayerActions.PostSentMap(this, null, level, false);
@@ -209,11 +211,11 @@ namespace MCGalaxy
             
             if (data == null) {
                 PlayerData.Create(this);
-                Chat.MessageFrom(this, "λNICK &Shas connected for the first time!");
-                Message("Welcome " + ColoredName + "&S! This is your first visit.");
+                Chat.MessageFrom(this, Locale.Get("login.first_connection"));
+                Message(Locale.Get("login.first_visit", this), ColoredName);
             } else {
                 data.ApplyTo(this);
-                Message("Welcome back " + FullName + "&S! You've been here " + TimesVisited + " times!");
+                Message(Locale.Get("login.return", this), FullName, TimesVisited);
             }
             gotSQLData = true;
         }
@@ -221,12 +223,12 @@ namespace MCGalaxy
         void CheckState() {
             if (Server.muted.Contains(name)) {
                 muted = true;
-                Chat.MessageFrom(this, "λNICK &Wis still muted from previously.");
+                Chat.MessageFrom(this, Locale.Get("login.still_muted"));
             }
-            
+
             if (Server.frozen.Contains(name)) {
                 frozen = true;
-                Chat.MessageFrom(this, "λNICK &Wis still frozen from previously.");
+                Chat.MessageFrom(this, Locale.Get("login.still_frozen"));
             }
         }
         
@@ -244,7 +246,7 @@ namespace MCGalaxy
             if (alts.Count == 0) return;
             
             ItemPerms opchat = Chat.OpchatPerms;
-            string altsMsg = "λNICK &Sis lately known as: " + alts.Join();
+            string altsMsg = string.Format(Locale.Get("login.alts_known_as"), alts.Join());
 
             Chat.MessageFrom(p, altsMsg,
                              (pl, obj) => pl.CanSee(p) && opchat.UsableBy(pl));

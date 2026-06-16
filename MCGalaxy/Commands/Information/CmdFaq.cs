@@ -28,14 +28,14 @@ namespace MCGalaxy.Commands.Info {
             faqFile.EnsureExists();
             
             string[] faq = faqFile.GetText();
-            p.Message("&cFAQ&f:");
+            p.Message(Locale.Get("faq.header", p));
             foreach (string line in faq)
                 p.Message("&f" + line);
         }
 
         public override void Help(Player p) {
-            p.Message("&T/FAQ");
-            p.Message("&HDisplays frequently asked questions");
+            p.Message(Locale.Get("faq.help1", p));
+            p.Message(Locale.Get("faq.help2", p));
         }
     }
 }

@@ -37,7 +37,7 @@ namespace MCGalaxy.Commands.Building
             } else if (message.CaselessStarts("clear")) {
                 string[] words = message.SplitSpaces();
                 if (words.Length < 2) {
-                    p.Message("You must provide a slot number to clear.");
+                    p.Message(Locale.Get("copyslot.must_provide_slot", p));
                     return;
                 }
                 int num = 0;
@@ -59,11 +59,11 @@ namespace MCGalaxy.Commands.Building
             for (int i = 0; i < copySlots.Count; i++)
             {
                 if (copySlots[i] == null) continue;
-                p.Message("  #{0}: {1}", i + 1, copySlots[i].Summary);
+                p.Message(Locale.Get("cmd.copyslot.msg1", p), i + 1, copySlots[i].Summary);
                 used++;
             }
             
-            p.Message("Using {0} of {1} slots, with slot #{2} selected.",
+            p.Message(Locale.Get("copyslot.using_slots", p),
                       used, p.group.CopySlots, p.CurrentCopySlot + 1);
         }
         
@@ -78,7 +78,7 @@ namespace MCGalaxy.Commands.Building
             }
             
             if (slots.Count == 0) {
-                p.Message("&WCannot randomly select when all copy slots are unused/empty");
+                p.Message(Locale.Get("copyslot.all_empty", p));
                 return;
             }
             
@@ -89,9 +89,9 @@ namespace MCGalaxy.Commands.Building
         static void SetCopySlot(Player p, int i) {
             p.CurrentCopySlot = i - 1;
             if (p.CurrentCopy == null) {
-                p.Message("Selected copy slot {0} (unused)", i);
+                p.Message(Locale.Get("copyslot.selected_unused", p), i);
             } else {
-                p.Message("Selected copy slot {0}: {1}", i, p.CurrentCopy.Summary);
+                p.Message(Locale.Get("copyslot.selected", p), i, p.CurrentCopy.Summary);
             }
         }
 
@@ -99,23 +99,23 @@ namespace MCGalaxy.Commands.Building
             int i = num - 1; //We know that i is 0 at min bc num passed to this is 1 at min
             List<CopyState> copySlots = p.CopySlots;
             if (i >= copySlots.Count || copySlots[i] == null) {
-                p.Message("Copy slot {0} is already empty.", num);
+                p.Message(Locale.Get("copyslot.already_empty", p), num);
                 return;
             }
             copySlots[i] = null;
-            p.Message("Cleared copy slot {0}.", num);
+            p.Message(Locale.Get("copyslot.cleared", p), num);
         }
         
         public override void Help(Player p) {
-            p.Message("&T/CopySlot random");
-            p.Message("&HSelects a random slot to &T/copy &Hand &T/paste &Hfrom");
-            p.Message("&T/CopySlot [number]");
-            p.Message("&HSelects the slot to &T/copy &Hand &T/paste &Hfrom");
-            p.Message("&HMaxmimum number of copy slots is determined by your rank");
-            p.Message("&T/CopySlot clear [number]");
-            p.Message("&HRemoves the copy data from the given slot, making it empty");
-            p.Message("&T/CopySlot");
-            p.Message("&HLists details about any copies stored in any slots");
+            p.Message(Locale.Get("copyslot.help1", p));
+            p.Message(Locale.Get("copyslot.help2", p));
+            p.Message(Locale.Get("copyslot.help3", p));
+            p.Message(Locale.Get("copyslot.help4", p));
+            p.Message(Locale.Get("copyslot.help5", p));
+            p.Message(Locale.Get("copyslot.help6", p));
+            p.Message(Locale.Get("copyslot.help7", p));
+            p.Message(Locale.Get("copyslot.help8", p));
+            p.Message(Locale.Get("copyslot.help9", p));
         }
     }
 }

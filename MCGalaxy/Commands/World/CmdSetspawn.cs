@@ -27,7 +27,7 @@ namespace MCGalaxy.Commands.World {
             if (!LevelInfo.Check(p, data.Rank, p.level, "set spawn of this level")) return;
             
             if (message.Length == 0) {
-                p.Message("Spawn location set to your current location.");
+                p.Message(Locale.Get("setspawn.location_set", p));
                 p.level.spawnx = (ushort)p.Pos.BlockX;
                 p.level.spawny = (ushort)p.Pos.BlockY;
                 p.level.spawnz = (ushort)p.Pos.BlockZ;
@@ -40,19 +40,19 @@ namespace MCGalaxy.Commands.World {
             
             Player target = PlayerInfo.FindMatches(p, message);
             if (target == null) return;
-            if (target.level != p.level) { p.Message("{0} &Sis on a different map.", p.FormatNick(target)); return; }
+            if (target.level != p.level) { p.Message(Locale.Get("setspawn.different_map", p), p.FormatNick(target)); return; }
             if (!CheckRank(p, data, target, "set spawn of", false)) return;
             
-            p.Message("Set spawn location of {0} &Sto your current location.", p.FormatNick(target));
+            p.Message(Locale.Get("setspawn.target_set", p), p.FormatNick(target));
             target.Session.SendSetSpawnpoint(p.Pos, p.Rot);
-            target.Message("Your spawnpoint was updated.");
+            target.Message(Locale.Get("setspawn.spawnpoint_updated", target));
         }
         
         public override void Help(Player p) {
-            p.Message("&T/SetSpawn");
-            p.Message("&HSets the spawn location of the map to your current location.");
-            p.Message("&T/SetSpawn [player]");
-            p.Message("&HSets the spawn location of that player");
+            p.Message(Locale.Get("setspawn.help1", p));
+            p.Message(Locale.Get("setspawn.help2", p));
+            p.Message(Locale.Get("setspawn.help3", p));
+            p.Message(Locale.Get("setspawn.help4", p));
         }
     }
 }

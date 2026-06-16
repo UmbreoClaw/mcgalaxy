@@ -26,7 +26,7 @@ namespace MCGalaxy.Commands.Building {
         
         protected override int MarksCount { get { return 1; } }
         protected override string SelectionType { get { return "origin"; } }
-        protected override string PlaceMessage { get { return "Place a block to determine the origin."; } }
+        protected override string PlaceMessage { get { return "draw_adv.place_origin"; } }
         
         protected override DrawMode GetMode(string[] parts) {
             string msg = parts[0];
@@ -70,14 +70,14 @@ namespace MCGalaxy.Commands.Building {
             
             if (UsesHeight(dArgs)) {
                 if (args.Length < 3) {
-                    p.Message("You need to provide the radius and the height for the {0}.", args[0]);
+                    p.Message(Locale.Get("draw_adv.need_radius_height", p), args[0]);
                 } else {
                     success = CommandParser.GetInt(p, args[1], "radius", ref meta.radius, 0, 2000)
                         && CommandParser.GetInt(p, args[2], "height", ref meta.height, 0, 2000);
                 }
             } else {
                 if (args.Length < 2) {
-                    p.Message("You need to provide the radius for the {0}.", args[0]);
+                    p.Message(Locale.Get("draw_adv.need_radius", p), args[0]);
                 } else {
                     success = CommandParser.GetInt(p, args[1], "radius", ref meta.radius, 0, 2000);
                 }
@@ -118,13 +118,13 @@ namespace MCGalaxy.Commands.Building {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Draw [object] [baseradius] [height] <brush args>");
-            p.Message("&T/Draw [object] [radius] <brush args>");
-            p.Message("&HDraws an object at the specified point.");
-            p.Message("   &HObjects: &fcone/hcone/icone/hicone/cylinder/");
-            p.Message("     &fpyramid/hpyramid/ipyramid/hipyramid/volcano");
-            p.Message("   &HObjects with only radius: &fsphere/hsphere");
-            p.Message("   &HNote 'h' means hollow, 'i' means inverse");
+            p.Message(Locale.Get("draw_adv.help1", p));
+            p.Message(Locale.Get("draw_adv.help2", p));
+            p.Message(Locale.Get("draw_adv.help3", p));
+            p.Message(Locale.Get("draw_adv.help4", p));
+            p.Message(Locale.Get("draw_adv.help5", p));
+            p.Message(Locale.Get("draw_adv.help6", p));
+            p.Message(Locale.Get("draw_adv.help7", p));
             p.Message(BrushHelpLine);
         }
     }

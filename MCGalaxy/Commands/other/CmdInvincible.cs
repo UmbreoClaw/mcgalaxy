@@ -41,21 +41,21 @@ namespace MCGalaxy.Commands.Misc {
         }
         
         static void ShowPlayerMessage(Player p, Player target) {
-            string msg = target.invincible ? "now invincible" : "no longer invincible";
-            if (p == target) p.Message("You are {0}", msg);
+            string msg = target.invincible ? Locale.Get("invincible.now", p) : Locale.Get("invincible.no_longer", p);
+            if (p == target) p.Message(Locale.Get("invincible.you_are", p), msg);
 
-            string globalMsg = target.invincible ? Server.Config.InvincibleMessage : "has stopped being invincible";
+            string globalMsg = target.invincible ? Server.Config.InvincibleMessage : Locale.Get("invincible.stopped");
             if (Server.Config.ShowInvincibleMessage && !target.hidden) {
                 Chat.MessageFrom(target, "λNICK &S" + globalMsg);
             } else if (p != target) {
-                p.Message("{0} &Sis {1}.", p.FormatNick(target), msg);
+                p.Message(Locale.Get("invincible.other", p), p.FormatNick(target), msg);
             }
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Invincible <name>");
-            p.Message("&HTurns invincible mode on/off.");
-            p.Message("&HIf <name> is given, that player's invincibility is toggled");
+            p.Message(Locale.Get("invincible.help1", p));
+            p.Message(Locale.Get("invincible.help2", p));
+            p.Message(Locale.Get("invincible.help3", p));
         }
     }
 }

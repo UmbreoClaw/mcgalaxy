@@ -35,9 +35,9 @@ namespace MCGalaxy.Commands.Info
                 string all = files.Join(f => Path.GetFileNameWithoutExtension(f));
 
                 if (all.Length == 0) {
-                    p.Message("No files are viewable by you");
+                    p.Message(Locale.Get("view.no_files", p));
                 } else {
-                    p.Message("Available files:");
+                    p.Message(Locale.Get("view.available_files", p));
                     p.Message(all);
                 }
             } else {
@@ -47,14 +47,14 @@ namespace MCGalaxy.Commands.Info
                     string[] lines = File.ReadAllLines("extra/text/" + message + ".txt");
                     p.MessageLines(lines);
                 } else {
-                    p.Message("File specified doesn't exist");
+                    p.Message(Locale.Get("view.file_not_exist", p));
                 }
             }
         }
         
         public override void Help(Player p) {
-            p.Message("&T/view &H- Lists all files you can view");
-            p.Message("&T/view [file] &H- Views [file]'s contents");
+            p.Message(Locale.Get("view.help1", p));
+            p.Message(Locale.Get("view.help2", p));
         }
     }
 }

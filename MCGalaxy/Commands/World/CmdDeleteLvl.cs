@@ -57,7 +57,7 @@ namespace MCGalaxy.Commands.World {
             if (!LevelInfo.Check(p, data.Rank, map, "delete this map",out cfg)) return;
 
             if (!LevelActions.Delete(p, map)) return;
-            Chat.MessageGlobal("Level {0} &Swas deleted", cfg.Color + map);
+            Chat.MessageGlobal(Locale.Get("deletelvl.deleted"), cfg.Color + map);
         }
         /// <summary>
         /// os changes which confirmation text is displayed
@@ -67,9 +67,9 @@ namespace MCGalaxy.Commands.World {
             string[] words = message.SplitSpaces();
             if (words.Length < 2) {
                 //Cannot be seen with os since two args guaranteed provided
-                p.Message("You must provide a level name and the backup to delete.");
-                p.Message("A backup is usually a number, but may also be named.");
-                p.Message("See &T/help restore &7to display backups.");
+                p.Message(Locale.Get("deletelvl.backup_need_args", p));
+                p.Message(Locale.Get("deletelvl.backup_number_hint", p));
+                p.Message(Locale.Get("deletelvl.backup_see_restore", p));
                 return;
             }
             bool confirmed = words.Length == 3 && words[2].CaselessEq("confirm");
@@ -77,15 +77,14 @@ namespace MCGalaxy.Commands.World {
             string map = words[0].ToLower();
             string backup = words[1].ToLower();
             if (!confirmed) {
-                p.Message("You are about to &Wpermanently delete&S backup \"{0}\" from level \"{1}\"",
-                    backup, map);
+                p.Message(Locale.Get("deletelvl.confirm_delete", p), backup, map);
 
                 if (os) {
-                    p.Message("If you are sure, type &T/os delete {0} {1} confirm", BACKUP_FLAG, backup);
+                    p.Message(Locale.Get("cmd.deletelvl.msg1", p), BACKUP_FLAG, backup);
                 } else {
                     // Don't use message, since they could have typed /deletebackup earth 1 derp
                     // and it should not tell you to type "[...] derp confirm"
-                    p.Message("If you are sure, type &T/{0} {1} {2} confirm", BackupAlias.Trigger, map, backup);
+                    p.Message(Locale.Get("cmd.deletelvl.msg2", p), BackupAlias.Trigger, map, backup);
                 }
                 return;
             }
@@ -94,14 +93,14 @@ namespace MCGalaxy.Commands.World {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/DeleteLvl [level]");
-            p.Message("&HCompletely deletes [level] (portals, MBs, everything)");
-            p.Message("&HA backup of the level is made in the levels/deleted folder");
+            p.Message(Locale.Get("deletelvl.help1", p));
+            p.Message(Locale.Get("deletelvl.help2", p));
+            p.Message(Locale.Get("deletelvl.help3", p));
             HelpBackup(p);
         }
         public static void HelpBackup(Player p) {
-            p.Message("&T/DeleteLvl {0} [level] [backup]", BACKUP_FLAG);
-            p.Message("&H-Permanently- deletes [backup] of [level].");
+            p.Message(Locale.Get("deletelvl.help4", p), BACKUP_FLAG);
+            p.Message(Locale.Get("deletelvl.help5", p));
         }
 
     }

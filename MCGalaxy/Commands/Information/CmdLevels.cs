@@ -37,8 +37,8 @@ namespace MCGalaxy.Commands.Info
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Levels");
-            p.Message("&HLists levels and whether you can go to them.");
+            p.Message(Locale.Get("levels.help1", p));
+            p.Message(Locale.Get("levels.help2", p));
         }
     }
 }

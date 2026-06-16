@@ -59,21 +59,21 @@ namespace MCGalaxy.Commands.Moderation {
             string[] users = GetReportedUsers();
             
             if (users.Length > 0) {
-                p.Message("The following players have been reported:");
+                p.Message(Locale.Get("report.list_header", p));
                 string modifier = args.Length > 1 ? args[1] : "";
                 Paginator.Output(p, users, pl => p.FormatNick(pl),
                                  "Review list", "players", modifier);
-                
-                p.Message("Use &T/Report check [player] &Sto view report details.");
-                p.Message("Use &T/Report delete [player] &Sto delete a report");
+
+                p.Message(Locale.Get("report.list_check", p));
+                p.Message(Locale.Get("report.list_delete", p));
             } else {
-                p.Message("No players have been reported currently.");
+                p.Message(Locale.Get("report.no_reports", p));
             }
         }
         
         void HandleCheck(Player p, string[] args, CommandData data) {
             if (args.Length != 2) {
-                p.Message("You need to provide a player's name."); return;
+                p.Message(Locale.Get("report.need_name", p)); return;
             }
             if (!CheckExtraPerm(p, data, 1)) return;
             
@@ -82,16 +82,16 @@ namespace MCGalaxy.Commands.Moderation {
             string nick = p.FormatNick(target);
             
             if (!HasReports(target)) {
-                p.Message("{0} &Shas not been reported.", nick); return;
+                p.Message(Locale.Get("report.not_reported", p), nick); return;
             }
-            
+
             string[] reports = File.ReadAllLines("extra/reported/" + target + ".txt");
             p.MessageLines(reports);
         }
         
         void HandleDelete(Player p, string[] args, CommandData data) {
             if (args.Length != 2) {
-                p.Message("You need to provide a player's name."); return;
+                p.Message(Locale.Get("report.need_name", p)); return;
             }
             if (!CheckExtraPerm(p, data, 1)) return;
             
@@ -100,14 +100,14 @@ namespace MCGalaxy.Commands.Moderation {
             string nick = p.FormatNick(target);
             
             if (!HasReports(target)) {
-                p.Message("{0} &Shas not been reported.", nick); return;
+                p.Message(Locale.Get("report.not_reported", p), nick); return;
             }
             if (!Directory.Exists("extra/reportedbackups"))
                 Directory.CreateDirectory("extra/reportedbackups");
             
             DeleteReport(target);
-            p.Message("Reports on {0} &Swere deleted.", nick);
-            Chat.MessageFromOps(p, "λNICK &Sdeleted reports on " + nick);
+            p.Message(Locale.Get("report.deleted", p), nick);
+            Chat.MessageFromOps(p, Locale.Get("report.deleted_ops") + nick);
             Logger.Log(LogType.UserActivity, "Reports on {1} were deleted by {0}", p.name, target);
         }
         
@@ -119,14 +119,14 @@ namespace MCGalaxy.Commands.Moderation {
             string[] users = GetReportedUsers();
             foreach (string user in users) { DeleteReport(user); }
             
-            p.Message("&aYou have cleared all reports!");
-            Chat.MessageFromOps(p, "λNICK &ccleared ALL reports!");
+            p.Message(Locale.Get("report.cleared", p));
+            Chat.MessageFromOps(p, Locale.Get("report.cleared_ops"));
             Logger.Log(LogType.UserActivity, p.name + " cleared ALL reports!");
         }
         
         void HandleAdd(Player p, string[] args) {
             if (args.Length != 2) {
-                p.Message("You need to provide a reason for the report."); return;
+                p.Message(Locale.Get("report.need_reason", p)); return;
             }
             
             string target = PlayerDB.MatchNames(p, args[0]);
@@ -140,7 +140,7 @@ namespace MCGalaxy.Commands.Moderation {
             ItemPerms checkPerms = CommandExtraPerms.Find(name, 1);
             
             if (reports.Count >= 5) {
-                p.Message("{0} &Walready has 5 reports! Please wait until an {1} &Whas reviewed these reports first!",
+                p.Message(Locale.Get("report.too_many", p),
                           nick, CommandExtraPerms.Find(name, 1).Describe());
                 return;
             }
@@ -150,7 +150,7 @@ namespace MCGalaxy.Commands.Moderation {
             
             reports.Add(reason + " - Reported by " + p.name + " at " + DateTime.Now);
             File.WriteAllLines(ReportPath(target), reports.ToArray());
-            p.Message("&aReport sent! It should be viewed when a {0} &ais online", 
+            p.Message(Locale.Get("report.sent", p),
                       checkPerms.Describe());
             
             ModAction action = new ModAction(target, p, ModActionType.Reported, reason);
@@ -186,11 +186,11 @@ namespace MCGalaxy.Commands.Moderation {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Report list &H- Lists all reported players.");
-            p.Message("&T/Report check [player] &H- Views reports for that player.");
-            p.Message("&T/Report delete [player] &H- Deletes reports for that player.");
-            p.Message("&T/Report clear &H- Clears &call&H reports.");
-            p.Message("&T/Report [player] [reason] &H- Reports that player for the given reason.");
+            p.Message(Locale.Get("report.help1", p));
+            p.Message(Locale.Get("report.help2", p));
+            p.Message(Locale.Get("report.help3", p));
+            p.Message(Locale.Get("report.help4", p));
+            p.Message(Locale.Get("report.help5", p));
         }
     }
 }

@@ -46,13 +46,13 @@ namespace MCGalaxy.Commands.World {
                 // always restore paused state, even some if ReplaceAll somehow fails
                 lvl.PhysicsPaused = paused;
             }
-            lvl.Message("Unflooded!");
+            lvl.Message(Locale.Get("unflood.unflooded"));
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Unflood [liquid]");
-            p.Message("&HUnfloods the map you are currently in of [liquid].");
-            p.Message("&H  If [liquid] is \"all\", unfloods the map of all liquids.");
+            p.Message(Locale.Get("unflood.help1", p));
+            p.Message(Locale.Get("unflood.help2", p));
+            p.Message(Locale.Get("unflood.help3", p));
         }
     }
 }

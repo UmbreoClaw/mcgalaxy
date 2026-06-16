@@ -28,20 +28,20 @@ namespace MCGalaxy.Commands.Misc {
 
         public override void Use(Player p, string message, CommandData data) {
             if (!Hacks.CanUseHacks(p)) {
-                p.Message("You cannot use &T/Ascend &Son this map."); return;
+                p.Message(Locale.Get("ascend.no_hacks", p)); return;
             }
             int x = p.Pos.BlockX, y = p.Pos.BlockY, z = p.Pos.BlockZ;
             if (y < 0) y = 0;
-            
+
             int freeY = -1;
             if (p.level.IsValidPos(x, y, z)) {
                 freeY = FindYAbove(p.level, (ushort)x, (ushort)y, (ushort)z);
             }
-            
+
             if (freeY == -1) {
-                p.Message("There are no blocks above to ascend to.");
+                p.Message(Locale.Get("ascend.no_space", p));
             } else {
-                p.Message("Teleported you up.");
+                p.Message(Locale.Get("ascend.teleported", p));
                 Position pos = Position.FromFeet(p.Pos.X, freeY * 32, p.Pos.Z);
                 p.SendPosition(pos, p.Rot);
             }
@@ -63,10 +63,9 @@ namespace MCGalaxy.Commands.Misc {
         
         public override void Help(Player p) {
             string name = Group.GetColoredName(LevelPermission.Operator);
-            p.Message("&T/Ascend");
-            p.Message("&HTeleports you to the first free space above you.");
-            p.Message("&H  Cannot be used on maps which have -hax in their motd. " +
-                           "(unless you are {0}&H+ and the motd has +ophax)", name);
+            p.Message(Locale.Get("ascend.help1", p));
+            p.Message(Locale.Get("ascend.help2", p));
+            p.Message(Locale.Get("ascend.help3", p), name);
         }
     }
 }

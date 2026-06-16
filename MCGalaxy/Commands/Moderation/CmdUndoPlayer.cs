@@ -41,7 +41,7 @@ namespace MCGalaxy.Commands.Moderation {
             }
 
             if (CheckSuper(p, message, "player name")) return;
-            if (message.Length == 0) { p.Message("You need to provide a player name."); return; }
+            if (message.Length == 0) { p.Message(Locale.Get("cmd.undoplayer.msg1", p)); return; }
             
             string[] parts = message.SplitSpaces(), names = null;
             int[] ids = GetIds(p, parts, data, out names);
@@ -54,7 +54,7 @@ namespace MCGalaxy.Commands.Moderation {
                 Vec3S32[] marks = new Vec3S32[] { Vec3U16.MinVal, Vec3U16.MaxVal };
                 UndoPlayer(p, delta, names, ids, marks);
             } else {
-                p.Message("Place or break two blocks to determine the edges.");
+                p.Message(Locale.Get("cmd.undoplayer.msg2", p));
                 UndoAreaArgs args = new UndoAreaArgs();
                 args.ids = ids; args.names = names; args.delta = delta;
                 p.MakeSelection(2, "Selecting region for &SUndo player", args, DoUndoArea);
@@ -94,7 +94,7 @@ namespace MCGalaxy.Commands.Moderation {
                 Chat.MessageGlobal("Undid {1}&S's changes for the past &b{0}", delta.Shorten(true), namesStr);
                 Logger.Log(LogType.UserActivity, "Actions of {0} for the past {1} were undone.", names.Join(), delta.Shorten(true));
             } else {
-                p.Message("No changes found by {1} &Sin the past &b{0}", delta.Shorten(true), namesStr);
+                p.Message(Locale.Get("cmd.undoplayer.msg3", p), delta.Shorten(true), namesStr);
             }
         }
         
@@ -115,11 +115,11 @@ namespace MCGalaxy.Commands.Moderation {
         }
 
         public override void Help(Player p) {
-            p.Message("&T/UndoPlayer [player1] <player2..> <timespan>");
-            p.Message("&HUndoes the block changes of [players] in the past <timespan>");
-            p.Message("&T/UndoPlayer -area [player1] <player2..> <timespan>");
-            p.Message("&HOnly undoes block changes in the specified region.");
-            p.Message("&H  If <timespan> is not given, undoes 30 minutes.");
+            p.Message(Locale.Get("cmd.undoplayer.help1", p));
+            p.Message(Locale.Get("cmd.undoplayer.help2", p));
+            p.Message(Locale.Get("cmd.undoplayer.help3", p));
+            p.Message(Locale.Get("cmd.undoplayer.help4", p));
+            p.Message(Locale.Get("cmd.undoplayer.help5", p));
         }
     }
 }

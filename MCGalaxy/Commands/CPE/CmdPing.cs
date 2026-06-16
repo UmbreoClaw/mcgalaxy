@@ -39,17 +39,17 @@ namespace MCGalaxy.Commands.Chatting
                 PingList ping = who.Session.Ping;
 
                 if (!who.Supports(CpeExt.TwoWayPing)) {
-                    p.Message("{0} client does not support measuring ping", 
+                    p.Message(Locale.Get("cmd.ping.msg1", p), 
                               p == who ? "Your" : p.FormatNick(who) + "&S's");
                 } else if (ping.Measures() == 0) {
-                    p.Message("No ping measurements yet. Try again in a bit.");
+                    p.Message(Locale.Get("cmd.ping.msg2", p));
                 } else {
                     p.Message(p.FormatNick(who) + " &S- " + ping.Format());
                 }
             } else {
                 if (!CheckExtraPerm(p, data, 1)) return;
                 Player[] players = PlayerInfo.Online.Items;
-                p.Message("Ping/latency list of online players: (&aLo&S:&7Avg&S:&cHi&S)ms");
+                p.Message(Locale.Get("cmd.ping.msg3", p));
 
                 foreach (Player target in players) 
                 {
@@ -63,10 +63,10 @@ namespace MCGalaxy.Commands.Chatting
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Ping &H- Outputs details about your ping to the server.");
-            p.Message("&T/Ping [player] &H- Outputs ping details for a player.");
-            p.Message("&T/Ping all &H- Outputs ping details for all players.");
-            p.Message("&cNOTE: &HNot all clients support measuring ping.");
+            p.Message(Locale.Get("cmd.ping.help1", p));
+            p.Message(Locale.Get("cmd.ping.help2", p));
+            p.Message(Locale.Get("cmd.ping.help3", p));
+            p.Message(Locale.Get("cmd.ping.msg4", p));
         }
     }
 }

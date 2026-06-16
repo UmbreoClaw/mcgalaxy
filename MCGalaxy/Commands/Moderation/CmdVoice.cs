@@ -29,18 +29,18 @@ namespace MCGalaxy.Commands.Moderation {
             
             if (target.voice) {
                 p.Message("Removing voice status from " + p.FormatNick(target));
-                target.Message("Your voice status has been revoked.");
+                target.Message(Locale.Get("cmd.voice.msg1", p));
             } else {
                 p.Message("Giving voice status to " + p.FormatNick(target));
-                target.Message("You have received voice status.");
+                target.Message(Locale.Get("cmd.voice.msg2", p));
             }
             target.voice = !target.voice;
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Voice [name]");
-            p.Message("&HToggles voice status on or off for the given player.");
-            p.Message("&HIf no name is given, toggles your own voice status.");
+            p.Message(Locale.Get("cmd.voice.help1", p));
+            p.Message(Locale.Get("cmd.voice.help2", p));
+            p.Message(Locale.Get("cmd.voice.help3", p));
         }
     }
 }

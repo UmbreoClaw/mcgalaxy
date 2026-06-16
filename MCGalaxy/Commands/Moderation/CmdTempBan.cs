@@ -39,13 +39,13 @@ namespace MCGalaxy.Commands.Moderation {
             if (group == null) return;
             
             if (Server.tempBans.Contains(target)) {
-                p.Message("{0} &Sis already temp-banned.", p.FormatNick(target));
+                p.Message(Locale.Get("cmd.tempban.msg1", p), p.FormatNick(target));
                 return;
             }
             
             TimeSpan span = TimeSpan.FromHours(1);
             if (args.Length > 1 && !CommandParser.GetTimespan(p, args[1], ref span, "temp ban for", "m")) return;
-            if (span.TotalSeconds < 1) { p.Message("Cannot temp ban someone for less than a second."); return; }
+            if (span.TotalSeconds < 1) { p.Message(Locale.Get("cmd.tempban.msg2", p)); return; }
             
             reason = ModActionCmd.ExpandReason(p, reason);
             if (reason == null) return;
@@ -56,10 +56,10 @@ namespace MCGalaxy.Commands.Moderation {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/TempBan [name] [timespan] <reason>");
-            p.Message("&HBans [name] for [timespan]. Default is 1 hour.");
-            p.Message("&H e.g. to tempban for 90 minutes, [timespan] would be &S1h30m");
-            p.Message("&HFor <reason>, @number can be used as a shortcut for that rule.");
+            p.Message(Locale.Get("cmd.tempban.help1", p));
+            p.Message(Locale.Get("cmd.tempban.help2", p));
+            p.Message(Locale.Get("cmd.tempban.help3", p));
+            p.Message(Locale.Get("cmd.tempban.help4", p));
         }
     }
 }

@@ -95,28 +95,27 @@ namespace MCGalaxy.Commands.Misc {
         
         static bool CheckPlayer(Player p, Player target, CommandData data) {
             if (target.level.IsMuseum) {
-                p.Message("{0} &Sis in a museum.", p.FormatNick(target)); return false;
-            }          
+                p.Message(Locale.Get("tp.in_museum", p), p.FormatNick(target)); return false;
+            }
             if (!Server.Config.HigherRankTP && !CheckRank(p, data, target, "teleport to", true)) return false;
-            
+
             IGame game = IGame.GameOn(target.level);
             if (!p.Game.Referee && game != null) {
-                p.Message("You can only teleport to players in " +
-                               "a game when you are in referee mode."); return false;
+                p.Message(Locale.Get("tp.referee_only", p)); return false;
             }
             return true;
         }
         
         public override void Help(Player p) {
-            p.Message("&HUse ~ before a coordinate to move relative to current position");
-            p.Message("&T/TP [x y z] <yaw> <pitch>");
-            p.Message("&HTeleports yourself to the given block coordinates.");
-            p.Message("&T/TP -precise [x y z] <yaw> <pitch>");
-            p.Message("&HTeleports using precise units. (32 units = 1 block)");
-            p.Message("&T/TP [player]");
-            p.Message("&HTeleports yourself to that player.");
-            p.Message("&T/TP bot [name]");
-            p.Message("&HTeleports yourself to that bot.");
+            p.Message(Locale.Get("tp.help1", p));
+            p.Message(Locale.Get("tp.help2", p));
+            p.Message(Locale.Get("tp.help3", p));
+            p.Message(Locale.Get("tp.help4", p));
+            p.Message(Locale.Get("tp.help5", p));
+            p.Message(Locale.Get("tp.help6", p));
+            p.Message(Locale.Get("tp.help7", p));
+            p.Message(Locale.Get("tp.help8", p));
+            p.Message(Locale.Get("tp.help9", p));
         }
     }
 }

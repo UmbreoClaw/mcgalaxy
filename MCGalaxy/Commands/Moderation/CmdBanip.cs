@@ -37,10 +37,10 @@ namespace MCGalaxy.Commands.Moderation {
             if (addr == null) return;
 
             IPAddress ip;
-            if (!IPAddress.TryParse(addr, out ip)) { p.Message("\"{0}\" is not a valid IP.", addr); return; }
-            if (IPAddress.IsLoopback(ip))          { p.Message("You cannot IP ban the server."); return; }
-            if (ip.Equals(p.IP))                   { p.Message("You cannot IP ban yourself."); return; }
-            if (Server.bannedIP.Contains(addr))    { p.Message("{0} is already IP banned.", addr); return; }
+            if (!IPAddress.TryParse(addr, out ip)) { p.Message(Locale.Get("cmd.banip.msg1", p), addr); return; }
+            if (IPAddress.IsLoopback(ip))          { p.Message(Locale.Get("cmd.banip.msg2", p)); return; }
+            if (ip.Equals(p.IP))                   { p.Message(Locale.Get("cmd.banip.msg3", p)); return; }
+            if (Server.bannedIP.Contains(addr))    { p.Message(Locale.Get("cmd.banip.msg4", p), addr); return; }
             
             // Check if IP is shared by any other higher ranked accounts
             if (!CheckIP(p, data, addr)) return;
@@ -65,7 +65,7 @@ namespace MCGalaxy.Commands.Moderation {
                 Group grp = PlayerInfo.GetGroup(name);
                 if (grp.Permission < data.Rank) continue;
                 
-                p.Message("You can only IP ban IPs used by players with a lower rank.");
+                p.Message(Locale.Get("cmd.banip.msg5", p));
                 p.Message(name + "(" + grp.ColoredName + "&S) uses that IP.");
                 
                 Logger.Log(LogType.SuspiciousActivity, 
@@ -76,9 +76,9 @@ namespace MCGalaxy.Commands.Moderation {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/BanIP [ip/player] <reason>");
-            p.Message("&HBans an IP, or the IP the given player is on.");
-            p.Message("&HFor <reason>, @number can be used as a shortcut for that rule.");
+            p.Message(Locale.Get("cmd.banip.help1", p));
+            p.Message(Locale.Get("cmd.banip.help2", p));
+            p.Message(Locale.Get("cmd.banip.help3", p));
         }
     }
 }

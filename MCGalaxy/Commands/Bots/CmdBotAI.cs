@@ -43,7 +43,7 @@ namespace MCGalaxy.Commands.Bots
             string ai = args[1].ToLower();
 
             if (!Formatter.ValidFilename(p, ai)) return;
-            if (ai == "hunt" || ai == "kill") { p.Message("Reserved for special AI."); return; }
+            if (ai == "hunt" || ai == "kill") { p.Message(Locale.Get("cmd.botai.msg1", p)); return; }
 
             if (IsCreateAction(cmd)) {
                 HandleAdd(p, ai, args);
@@ -60,7 +60,7 @@ namespace MCGalaxy.Commands.Bots
             if (!Directory.Exists("bots/deleted"))
                 Directory.CreateDirectory("bots/deleted");
             if (!File.Exists("bots/" + ai)) {
-                p.Message("Could not find specified bot AI."); return;
+                p.Message(Locale.Get("cmd.botai.msg2", p)); return;
             }
             
             for (int attempt = 0; attempt < 10; attempt++) {
@@ -118,7 +118,7 @@ namespace MCGalaxy.Commands.Bots
         
         void HandleInfo(Player p, string ai) {
             if (!File.Exists("bots/" + ai)) {
-                p.Message("There is no bot AI with that name."); return;
+                p.Message(Locale.Get("cmd.botai.msg3", p)); return;
             }
             
             string[] lines = File.ReadAllLines("bots/" + ai);
@@ -130,21 +130,21 @@ namespace MCGalaxy.Commands.Bots
         }
         
         public override void Help(Player p) {
-            p.Message("&T/BotAI del [name] &H- deletes that AI");
-            p.Message("&T/BotAI del [name] last&H- deletes last instruction of that AI");
-            p.Message("&T/BotAI info [name] &H- prints list of instructions that AI has");
-            p.Message("&T/BotAI list &H- lists all current AIs");
-            p.Message("&T/BotAI add [name] [instruction] <args>");
+            p.Message(Locale.Get("cmd.botai.help1", p));
+            p.Message(Locale.Get("cmd.botai.help2", p));
+            p.Message(Locale.Get("cmd.botai.help3", p));
+            p.Message(Locale.Get("cmd.botai.help4", p));
+            p.Message(Locale.Get("cmd.botai.help5", p));
             
-            p.Message("&HInstructions: &S{0}",
+            p.Message(Locale.Get("cmd.botai.help6", p),
                       BotInstruction.Instructions.Join(ins => ins.Name));
-            p.Message("&HTo see detailed help, type &T/Help BotAI [instruction]");
+            p.Message(Locale.Get("cmd.botai.help7", p));
         }
         
         public override void Help(Player p, string message) {
             BotInstruction ins = BotInstruction.Find(message);
             if (ins == null) {
-                p.Message("&HInstructions: &S{0}, reverse",
+                p.Message(Locale.Get("cmd.botai.help8", p),
                                BotInstruction.Instructions.Join(ins2 => ins2.Name));
             } else {
                 p.MessageLines(ins.Help);

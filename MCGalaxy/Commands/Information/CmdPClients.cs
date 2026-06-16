@@ -46,7 +46,7 @@ namespace MCGalaxy.Commands.Info
             }
             
             List<string> lines = new List<string>();
-            lines.Add("Players using:");
+            lines.Add(Locale.Get("pclients.header", p));
             foreach (var kvp in clients) 
             {
                 StringBuilder builder = new StringBuilder();
@@ -65,8 +65,8 @@ namespace MCGalaxy.Commands.Info
         }
 
         public override void Help(Player p) {
-            p.Message("&T/PClients");
-            p.Message("&HLists the clients players are using, and who uses which client.");
+            p.Message(Locale.Get("pclients.help1", p));
+            p.Message(Locale.Get("pclients.help2", p));
         }
     }
 }

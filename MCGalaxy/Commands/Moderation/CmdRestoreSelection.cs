@@ -38,10 +38,10 @@ namespace MCGalaxy.Commands.Moderation {
             
             string path = LevelInfo.BackupFilePath(p.level.name, message);
             if (File.Exists(path)) {
-                p.Message("Select two corners for restore.");
+                p.Message(Locale.Get("cmd.restoreselection.msg1", p));
                 p.MakeSelection(2, "Selecting region for &SRestore", path, DoRestore);
             } else {
-                p.Message("Backup {0} does not exist.", message);
+                p.Message(Locale.Get("cmd.restoreselection.msg2", p), message);
                 LevelOperations.OutputBackups(p, p.level);
             }
         }
@@ -60,8 +60,8 @@ namespace MCGalaxy.Commands.Moderation {
         }
 
         public override void Help(Player p) {
-            p.Message("&T/RestoreSelection [backup name]");
-            p.Message("&HRestores a previous backup of the current selection");
+            p.Message(Locale.Get("cmd.restoreselection.help1", p));
+            p.Message(Locale.Get("cmd.restoreselection.help2", p));
         }
     }
 }

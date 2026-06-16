@@ -33,13 +33,13 @@ namespace MCGalaxy.Commands.Chatting
         
         public override void Use(Player p, string message, CommandData data) {
             if (!Database.TableExists("Inbox" + p.name)) {
-                p.Message("Your inbox is empty."); return;
+                p.Message(Locale.Get("inbox.empty", p)); return;
             }
-            
+
             List<string[]> entries = Database.GetRows("Inbox" + p.name, "Contents,TimeSent,PlayerFrom",
                                                       "ORDER BY TimeSent");
             if (entries.Count == 0) {
-                p.Message("Your inbox is empty."); return;
+                p.Message(Locale.Get("inbox.empty", p)); return;
             }
 
             string[] args = message.SplitSpaces(2);
@@ -50,7 +50,7 @@ namespace MCGalaxy.Commands.Chatting
                 }
             } else if (IsDeleteAction(args[0])) {
                 if (args.Length == 1) {
-                    p.Message("You need to provide either \"all\" or a number.");
+                    p.Message(Locale.Get("inbox.del_specify", p));
                 } else if (args[1].CaselessEq("all")) {
                     DeleteAll(p);
                 } else {
@@ -66,7 +66,7 @@ namespace MCGalaxy.Commands.Chatting
             
             string sql = SqlUtils.WithTable(fmt, "Inbox" + p.name);
             int count  = Database.Execute(sql);
-            p.Message("Deleted all {0} messages.", count);
+            p.Message(Locale.Get("inbox.deleted_all", p), count);
         }
         
         static void DeleteByID(Player p, string value, List<string[]> entries) {
@@ -74,23 +74,23 @@ namespace MCGalaxy.Commands.Chatting
             if (!CommandParser.GetInt(p, value, "Message number", ref num, 1)) return;
             
             if (num > entries.Count) {
-                p.Message("Message #{0} does not exist.", num);
+                p.Message(Locale.Get("inbox.no_such_message", p), num);
             } else {
                 string[] entry = entries[num - 1];
                 const string fmt = "DELETE FROM {table} WHERE PlayerFrom=@0 AND TimeSent=@1";
-                
+
                 string sql = SqlUtils.WithTable(fmt, "Inbox" + p.name);
                 Database.Execute(sql, entry[i_from], entry[i_sent]);
-                p.Message("Deleted message #{0}", num);
+                p.Message(Locale.Get("inbox.deleted", p), num);
             }
         }
         
         static void OutputByID(Player p, string value, List<string[]> entries) {
             int num = 1;
             if (!CommandParser.GetInt(p, value, "Message number", ref num, 1)) return;
-            
+
             if (num > entries.Count) {
-                p.Message("Message #{0} does not exist.", num);
+                p.Message(Locale.Get("inbox.no_such_message", p), num);
             } else {
                 Output(p, num, entries[num - 1]);
             }
@@ -101,18 +101,18 @@ namespace MCGalaxy.Commands.Chatting
             TimeSpan delta = DateTime.Now - time;
             string sender  = p.FormatNick(entry[i_from]);
             
-            p.Message("{0}) From {1} &a{2} ago:", num, sender, delta.Shorten());
-            p.Message("  {0}", entry[i_text]);
+            p.Message(Locale.Get("inbox.from", p), num, sender, delta.Shorten());
+            p.Message(Locale.Get("cmd.inbox.msg1", p), entry[i_text]);
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Inbox");
-            p.Message("&HDisplays all your messages.");
-            p.Message("&T/Inbox [num]");
-            p.Message("&HDisplays the message at [num]");
-            p.Message("&T/Inbox del [num]/all");
-            p.Message("&HDeletes the message at [num], deletes all messages if \"all\"");
-            p.Message("  &HUse &T/Send &Hto reply to a message");
+            p.Message(Locale.Get("inbox.help1", p));
+            p.Message(Locale.Get("inbox.help2", p));
+            p.Message(Locale.Get("inbox.help3", p));
+            p.Message(Locale.Get("inbox.help4", p));
+            p.Message(Locale.Get("inbox.help5", p));
+            p.Message(Locale.Get("inbox.help6", p));
+            p.Message(Locale.Get("inbox.help7", p));
         }
     }
 }

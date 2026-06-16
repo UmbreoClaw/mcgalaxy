@@ -42,8 +42,8 @@ namespace MCGalaxy.Commands.World {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/os [command] [args]");
-            p.Message("&HAllows you to modify and manage your personal realms.");
+            p.Message(Locale.Get("overseer.help1", p));
+            p.Message(Locale.Get("overseer.help2", p));
             Overseer.subCommandGroup.DisplayAvailable(p);
         }
 

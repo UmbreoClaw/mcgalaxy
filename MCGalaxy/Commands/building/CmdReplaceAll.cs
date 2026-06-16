@@ -43,15 +43,15 @@ namespace MCGalaxy.Commands.Building {
             measure.Perform(marks, brush, null);
             
             if (measure.Total > p.group.DrawLimit) {
-                p.Message("You tried to replace " + measure.Total + " blocks.");
-                p.Message("You cannot draw more than " + p.group.DrawLimit + ".");
+                p.Message(Locale.Get("replaceall.tried_replace", p), measure.Total);
+                p.Message(Locale.Get("replaceall.too_many_blocks", p), p.group.DrawLimit);
                 return;
             }
             
             DrawOp op = new CuboidDrawOp();
             op.AffectedByTransform = false;
             if (!DrawOpPerformer.Do(op, brush, p, marks, false)) return;
-            p.Message("&4/replaceall finished!");
+            p.Message(Locale.Get("replaceall.finished", p));
         }
         
         
@@ -73,10 +73,10 @@ namespace MCGalaxy.Commands.Building {
         }
 
         public override void Help(Player p) {
-            p.Message("&T/ReplaceAll [block] [block2].. [new]");
-            p.Message("&HReplaces [block] with [new] for the entire map.");
-            p.Message("&H  If more than one [block] is given, they are all replaced.");
-            p.Message("&H  If only [block] is given, replaces with your held block.");
+            p.Message(Locale.Get("replaceall.help1", p));
+            p.Message(Locale.Get("replaceall.help2", p));
+            p.Message(Locale.Get("replaceall.help3", p));
+            p.Message(Locale.Get("replaceall.help4", p));
         }
     }
 }

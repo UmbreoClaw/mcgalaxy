@@ -34,8 +34,8 @@ namespace MCGalaxy.Commands.World {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Load [level]");
-            p.Message("&HLoads a level.");
+            p.Message(Locale.Get("load.help1", p));
+            p.Message(Locale.Get("load.help2", p));
         }
     }
 }

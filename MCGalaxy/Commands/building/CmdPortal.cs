@@ -50,7 +50,7 @@ namespace MCGalaxy.Commands.Building {
             if (!CommandParser.IsBlockAllowed(p, "place a portal of", pArgs.Block)) return;
             pArgs.Entries = new List<PortalPos>();
 
-            p.Message("Place an &aEntry block &Sfor the portal");
+            p.Message(Locale.Get("portal.place_entry", p));
             p.ClearBlockchange();
             p.blockchangeObject = pArgs;
             p.Blockchange += EntryChange;
@@ -102,10 +102,10 @@ namespace MCGalaxy.Commands.Building {
 
             if (!args.Multi) {
                 p.Blockchange += ExitChange;
-                p.Message("&aEntry block placed");
+                p.Message(Locale.Get("portal.entry_placed", p));
             } else {
                 p.Blockchange += EntryChange;
-                p.Message("&aEntry block placed. &c{0} block for exit",
+                p.Message(Locale.Get("portal.entry_placed_multi", p),
                               Block.GetName(p, Block.Red));
             }
         }
@@ -127,9 +127,9 @@ namespace MCGalaxy.Commands.Building {
                 }
             }
 
-            p.Message("&3Exit &Sblock placed");
+            p.Message(Locale.Get("portal.exit_placed", p));
             if (!p.staticCommands) return;
-            p.Message("To delete portals, toggle &T/delete &Smode.");
+            p.Message(Locale.Get("portal.delete_hint", p));
             args.Entries.Clear();
             p.blockchangeObject = args;
             p.Blockchange += EntryChange;
@@ -169,7 +169,7 @@ namespace MCGalaxy.Commands.Building {
                 }
             }
 
-            p.Message("Now {0} &Sportals.",
+            p.Message(Locale.Get("portal.now_showing", p),
                            p.showPortals ? "showing &a" + coords.Count : "hiding");
         }
 
@@ -198,15 +198,15 @@ namespace MCGalaxy.Commands.Building {
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Portal [block]");
-            p.Message("&HPlace a block for the entry, then another block for exit.");
-            p.Message("&T/Portal [block] multi");
-            p.Message("&HPlace multiple blocks for entries, then a {0} block for exit.", Block.GetName(p, Block.Red));
-            p.Message("&H  Note: The exit can be on a different level.");
+            p.Message(Locale.Get("portal.help1", p));
+            p.Message(Locale.Get("portal.help2", p));
+            p.Message(Locale.Get("portal.help3", p));
+            p.Message(Locale.Get("portal.help4", p), Block.GetName(p, Block.Red));
+            p.Message(Locale.Get("portal.help5", p));
             List<string> names = SupportedBlocks(p);
-            p.Message("&H  Supported blocks: &S{0}", names.Join());
-            p.Message("&T/Portal show &H- Shows or hides portals on the map");
-            p.Message("&H  (green = entry, red = exit, black = queued for removal)");
+            p.Message(Locale.Get("portal.help6", p), names.Join());
+            p.Message(Locale.Get("portal.help7", p));
+            p.Message(Locale.Get("portal.help8", p));
         }
     }
 }

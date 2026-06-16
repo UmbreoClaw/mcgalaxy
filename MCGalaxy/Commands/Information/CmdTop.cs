@@ -40,7 +40,7 @@ namespace MCGalaxy.Commands.Info
 
             TopStat stat = TopStat.Find(args[1]);
             if (stat == null) {
-                p.Message("&WNo stat found with name \"{0}\".", args[1]); return;
+                p.Message(Locale.Get("top.stat_not_found", p), args[1]); return;
             }
             
             if (args.Length > 2) {
@@ -48,20 +48,19 @@ namespace MCGalaxy.Commands.Info
             }
             
             List<TopResult> results = stat.GetResults(maxResults, offset);
-            p.Message("&a{0}:", stat.Title);
+            p.Message(Locale.Get("cmd.top.msg1", p), stat.Title);
             
             for (int i = 0; i < results.Count; i++) 
             {
-                p.Message("{0}) {1} &S- {2}", offset + (i + 1), 
+                p.Message(Locale.Get("cmd.top.msg2", p), offset + (i + 1), 
                           stat.FormatName(p, results[i].Name), 
                           stat.Formatter(results[i].Value));
             }
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Top [max results] [stat] <offset>");
-            p.Message("&HPrints a list of players who have the " +
-                       "most/top of a particular stat. Available stats:");
+            p.Message(Locale.Get("top.help1", p));
+            p.Message(Locale.Get("top.help2", p));
             TopStat.List(p);
         }
     }

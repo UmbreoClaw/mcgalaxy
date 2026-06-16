@@ -54,22 +54,22 @@ namespace MCGalaxy.Commands.Maintenance {
             }
 
             if (args.Length < 2) { Help(p); return; }
-            if (args.Length == 2) { p.Message("You need to provide a rank name for this type."); return; }
+            if (args.Length == 2) { p.Message(Locale.Get("limit.need_rank", p)); return; }
             Group grp = Matcher.FindRanks(p, args[2]);
             if (grp == null) return;
 
             switch (args[0].ToLower()) {
                 case "draw":
-                    Chat.MessageAll(grp.ColoredName + "&S's draw limit set to &b" + limit);
+                    Chat.MessageAll(string.Format(Locale.Get("limit.draw_set"), grp.ColoredName, limit));
                     grp.DrawLimit = limit; break;
                 case "maxundo":
-                    Chat.MessageAll(grp.ColoredName + "&S's undo limit set to &b" + limit);
+                    Chat.MessageAll(string.Format(Locale.Get("limit.undo_set"), grp.ColoredName, limit));
                     grp.MaxUndo = TimeSpan.FromSeconds(limit); break;
                 case "gen":
-                    Chat.MessageAll(grp.ColoredName + "&S's map gen volume limit set to &b" + limit);
+                    Chat.MessageAll(string.Format(Locale.Get("limit.gen_set"), grp.ColoredName, limit));
                     grp.GenVolume = limit; break;
                 case "realms":
-                    Chat.MessageAll(grp.ColoredName + "&S's max realms set to &b" + limit);
+                    Chat.MessageAll(string.Format(Locale.Get("limit.realms_set"), grp.ColoredName, limit));
                     grp.OverseerMaps = limit; break;
                 default:
                     Help(p); return;
@@ -78,35 +78,35 @@ namespace MCGalaxy.Commands.Maintenance {
         }
         
         static void SetLimitPercent(Player p, ref float target, float value, bool hasValue) {
-            const string type = "Threshold before drawing reloads map";
+            string type = Locale.Get("limit.reload_threshold");
             if (hasValue) target = value / 100.0f;
             string percent = (target * 100).ToString("F2") + "%";
-            
+
             if (!hasValue) {
                 p.Message(type + ": &b" + percent);
             } else {
-                Chat.MessageAll(type + " set to &b" + percent);
+                Chat.MessageAll(string.Format(Locale.Get("limit.type_set_to"), type, "&b" + percent));
                 SrvProperties.Save();
             }
         }
-        
+
         static void SetLimit(Player p, string type, ref int target, int value, bool hasValue) {
             if (!hasValue) {
                 p.Message(type + ": &b" + target);
             } else {
                 target = value;
-                Chat.MessageAll(type + " set to &b" + target);
+                Chat.MessageAll(string.Format(Locale.Get("limit.type_set_to"), type, "&b" + target));
                 SrvProperties.Save();
             }
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Limit [type] [amount]");
-            p.Message("&HSets the general limit for [type]");
-            p.Message("  &HValid types: &freloadthreshold, restartphysics(rp), rpnormal, physicsundo(pu)");
-            p.Message("&T/Limit [type] [amount] [rank]");
-            p.Message("&HSets the limit for [type] for the given rank");
-            p.Message("  &HValid types: &fdraw, maxundo, gen, realms");
+            p.Message(Locale.Get("limit.help1", p));
+            p.Message(Locale.Get("limit.help2", p));
+            p.Message(Locale.Get("limit.help3", p));
+            p.Message(Locale.Get("limit.help4", p));
+            p.Message(Locale.Get("limit.help5", p));
+            p.Message(Locale.Get("limit.help6", p));
         }
     }
 }

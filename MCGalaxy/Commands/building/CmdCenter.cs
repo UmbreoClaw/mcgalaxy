@@ -29,7 +29,7 @@ namespace MCGalaxy.Commands.Building
         public override string type { get { return CommandTypes.Building; } }
         
         public override void Use(Player p, string message, CommandData data) {
-            p.Message("Place or break two blocks to determine the edges.");
+            p.Message(Locale.Get("draw.place_two_blocks", p));
             p.MakeSelection(2, "Selecting region for &SCenter", null, DoCentre);
         }
         
@@ -50,7 +50,7 @@ namespace MCGalaxy.Commands.Building
                 if ((lenX & 1) == 1 && (lenZ & 1) == 1) Place(p, x + 1, y + 1, z + 1);
             }
             
-            p.Message("Gold blocks were placed at ({0}, {1}, {2}).", x, y, z);
+            p.Message(Locale.Get("center.gold_placed", p), x, y, z);
             return true;
         }
         
@@ -59,8 +59,8 @@ namespace MCGalaxy.Commands.Building
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Center");
-            p.Message("&HPlaces gold blocks at the center of your selection");
+            p.Message(Locale.Get("center.help1", p));
+            p.Message(Locale.Get("center.help2", p));
         }
     }
 }

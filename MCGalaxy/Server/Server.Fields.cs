@@ -55,6 +55,12 @@ namespace MCGalaxy
 
         //Other
         public static bool SetupFinished, CLIMode;
+
+        /// <summary> Optional handler invoked on first-time startup (when no server.properties
+        /// exists yet) to let the user pick the server language. Given the list of available
+        /// locale codes, returns the chosen code, or null to keep the default. Frontends
+        /// (CLI/GUI) set this to provide a console prompt or a dialog. </summary>
+        public static Func<List<string>, string> StartupLanguageSelector;
         
         public static PlayerList whiteList, invalidIds;
         public static PlayerList ignored, hidden, agreed, vip, noEmotes, lockdown;

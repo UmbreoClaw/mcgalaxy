@@ -52,10 +52,10 @@ namespace MCGalaxy.Commands.Building {
             
             ImagePalette palette = ImagePalette.Find(args[1]);
             if (palette != null) {
-                p.Message("Palette {0} already exists.", args[1]);
+                p.Message(Locale.Get("palette.already_exists", p), args[1]);
             } else {
                 ImagePalette.Add(args[1]);
-                p.Message("Created palette {0}", args[1]);
+                p.Message(Locale.Get("palette.created", p), args[1]);
             }
         }
         
@@ -64,10 +64,10 @@ namespace MCGalaxy.Commands.Building {
             
             ImagePalette palette = ImagePalette.Find(args[1]);
             if (palette == null) {
-                p.Message("Palette {0} does not exist.", args[1]);
+                p.Message(Locale.Get("palette.not_exist", p), args[1]);
             } else {
                 ImagePalette.Remove(palette);
-                p.Message("Removed palette {0}", args[1]);
+                p.Message(Locale.Get("palette.removed", p), args[1]);
             }
         }
         
@@ -76,12 +76,12 @@ namespace MCGalaxy.Commands.Building {
             
             ImagePalette palette = ImagePalette.Find(args[1]);
             if (palette == null) {
-                p.Message("Palette {0} does not exist.", args[1]); return;
+                p.Message(Locale.Get("palette.not_exist", p), args[1]); return;
             }
-            
+
             BlockID block;
             if (!CommandParser.GetBlock(p, args[2], out block)) return;
-            
+
             ColorDesc rgb = default(ColorDesc);
             if (!CommandParser.GetHex(p, args[3], ref rgb)) return;
             PaletteEntry entry = new PaletteEntry(rgb.R, rgb.G, rgb.B, block);
@@ -96,7 +96,7 @@ namespace MCGalaxy.Commands.Building {
             newEntries.Add(entry);
             palette.Entries = newEntries.ToArray();
             palette.Save();
-            p.Message("Added block to entries of palette {0}", palette.Name);
+            p.Message(Locale.Get("palette.added_entry", p), palette.Name);
         }
         
         void HandleRemove(Player p, string[] args) {
@@ -104,9 +104,9 @@ namespace MCGalaxy.Commands.Building {
             
             ImagePalette palette = ImagePalette.Find(args[1]);
             if (palette == null) {
-                p.Message("Palette {0} does not exist.", args[1]); return;
+                p.Message(Locale.Get("palette.not_exist", p), args[1]); return;
             }
-            
+
             BlockID block;
             if (!CommandParser.GetBlock(p, args[2], out block)) return;
             RemoveEntry(p, palette, block);
@@ -116,7 +116,7 @@ namespace MCGalaxy.Commands.Building {
         static void RemoveEntry(Player p, ImagePalette palette, BlockID block) {
             PaletteEntry[] entries = palette.Entries;
             if (entries == null) {
-                p.Message("Block not found in entries of palette {0}", palette.Name);
+                p.Message(Locale.Get("palette.block_not_found", p), palette.Name);
             }
             
             List<PaletteEntry> newEntries = new List<PaletteEntry>();
@@ -126,12 +126,12 @@ namespace MCGalaxy.Commands.Building {
             }
             
             if (newEntries.Count == entries.Length) {
-                p.Message("Block not found in entries of palette {0}", palette.Name); return;
+                p.Message(Locale.Get("palette.block_not_found", p), palette.Name); return;
             }
             
             palette.Entries = newEntries.ToArray();
             palette.Save();
-            p.Message("Removed block from entries of palette {0}", palette.Name);
+            p.Message(Locale.Get("palette.removed_entry", p), palette.Name);
         }
         
         void HandleEntries(Player p, string[] args) {
@@ -139,7 +139,7 @@ namespace MCGalaxy.Commands.Building {
             
             ImagePalette palette = ImagePalette.Find(args[1]);
             if (palette == null) {
-                p.Message("Palette {0} does not exist.", args[1]); return;
+                p.Message(Locale.Get("palette.not_exist", p), args[1]); return;
             }
             
             string modifer = args.Length > 2 ? args[2] : "";
@@ -148,19 +148,19 @@ namespace MCGalaxy.Commands.Building {
         }
         
         static void PrintEntry(Player p, PaletteEntry e) {
-            p.Message("{0} - {1}", Block.GetName(p, e.Block), Utils.Hex(e.R, e.G, e.B));
+            p.Message(Locale.Get("cmd.palette.msg1", p), Block.GetName(p, e.Block), Utils.Hex(e.R, e.G, e.B));
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Palette create/delete [name]");
-            p.Message("&HCreates or deletes a palette for &T/ImagePrint");
-            p.Message("&T/Palette add [name] [block] [hex color]");
-            p.Message("&HAdds a block to a palette's entries.");
-            p.Message("&T/Palette remove [name] [block]");
-            p.Message("&HRemoves a block from a palette's entries.");
-            p.Message("&T/Palette entries [name]");
-            p.Message("&HLists the entries of that palette.");
-            p.Message("&HPalettes: &f{0}", ImagePalette.Palettes.Join(pal => pal.Name));
+            p.Message(Locale.Get("palette.help1", p));
+            p.Message(Locale.Get("palette.help2", p));
+            p.Message(Locale.Get("palette.help3", p));
+            p.Message(Locale.Get("palette.help4", p));
+            p.Message(Locale.Get("palette.help5", p));
+            p.Message(Locale.Get("palette.help6", p));
+            p.Message(Locale.Get("palette.help7", p));
+            p.Message(Locale.Get("palette.help8", p));
+            p.Message(Locale.Get("palette.help9", p), ImagePalette.Palettes.Join(pal => pal.Name));
         }
     }
 }

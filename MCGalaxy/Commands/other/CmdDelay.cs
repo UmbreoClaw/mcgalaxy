@@ -28,21 +28,20 @@ namespace MCGalaxy.Commands.Misc {
             if (!CommandParser.GetTimespan(p, message, ref duration, "wait for", "ms")) return;
             
             if (duration.TotalSeconds > 60) {
-                p.Message("&WCan only wait for a minute at most."); return;
+                p.Message(Locale.Get("delay.too_long", p)); return;
             }
 
             if (data.Context != CommandContext.MessageBlock) {
-                p.Message("&WThis command can only be used in message blocks."); return;
+                p.Message(Locale.Get("delay.mb_only", p)); return;
             }
             Thread.Sleep((int)duration.TotalMilliseconds);
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Delay [timespan]");
-            p.Message("&HWaits for a certain amount of time.");
-            p.Message("&HUse to run a command after a certain delay in a &T/MB");
-            p.Message("&H  e.g. &T/MB air /Delay 1000ms |/Help Me &Hruns &T/Help Me " +
-                           "&H1000 milliseconds (1 second) after the MB is clicked");
+            p.Message(Locale.Get("delay.help1", p));
+            p.Message(Locale.Get("delay.help2", p));
+            p.Message(Locale.Get("delay.help3", p));
+            p.Message(Locale.Get("delay.help4", p));
         }
     }
 }

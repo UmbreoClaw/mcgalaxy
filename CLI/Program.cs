@@ -16,6 +16,7 @@
     permissions and limitations under the Licenses.
  */
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Threading;
@@ -90,6 +91,7 @@ namespace MCGalaxy.Cli {
                 Updater.NewerVersionDetected += LogNewerVersionDetected;
                 
                 EnableCLIMode();
+                Server.StartupLanguageSelector = SelectLanguage;
                 Server.Start();
                 Console.Title = Server.Config.Name + " - " + Server.SoftwareNameVersioned;
                 Console.CancelKeyPress += OnCancelKeyPress;
@@ -102,6 +104,37 @@ namespace MCGalaxy.Cli {
             }
         }
         
+        // First-run prompt: let the user choose the server language from the console.
+        static string SelectLanguage(List<string> locales) {
+            Write("&e============================================");
+            Write("&eFirst-time setup: choose the server language");
+            Write("&e============================================");
+            for (int i = 0; i < locales.Count; i++) {
+                Write("  &b" + (i + 1) + "&S) " + locales[i]);
+            }
+            Write("&eEnter a number or language code (or press Enter for 'en'):");
+
+            string line;
+            try {
+                line = Console.ReadLine();
+            } catch {
+                return null; // non-interactive stdin - keep default
+            }
+            if (line == null) return null;
+            line = line.Trim();
+            if (line.Length == 0) return null;
+
+            int idx;
+            if (int.TryParse(line, out idx) && idx >= 1 && idx <= locales.Count) {
+                return locales[idx - 1];
+            }
+            foreach (string code in locales) {
+                if (code.CaselessEq(line)) return code;
+            }
+            Write("&cUnrecognised choice - keeping default language.");
+            return null;
+        }
+
         static void OnCancelKeyPress(object sender, ConsoleCancelEventArgs e) {
             switch (e.SpecialKey) {
                 case ConsoleSpecialKey.ControlBreak:

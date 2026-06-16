@@ -41,19 +41,19 @@ namespace MCGalaxy.Commands.Maintenance {
             SwapGroups(src, dst, srcGroup, dstGroup);
             OnInfoSwapEvent.Call(src, dst);
             
-            p.Message("Successfully infoswapped {0} &Sand {1}",
+            p.Message(Locale.Get("infoswap.success", p),
                       p.FormatNick(src), p.FormatNick(dst));
         }
         
         static string GetName(Player p, string name) {
             if (!Formatter.ValidPlayerName(p, name)) return null;
             if (PlayerInfo.FindExact(name) != null) {
-                p.Message("\"{0}\" must be offline to use &T/InfoSwap", name); return null;
+                p.Message(Locale.Get("infoswap.must_be_offline", p), name); return null;
             }
-            
+
             string match = PlayerDB.FindName(name);
             if (match == null) {
-                p.Message("\"{0}\" was not found in the database.", name); return null;
+                p.Message(Locale.Get("infoswap.not_in_db", p), name); return null;
             }
             return match;
         }
@@ -77,9 +77,9 @@ namespace MCGalaxy.Commands.Maintenance {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/InfoSwap [source] [other]");
-            p.Message("&HSwaps all the player's info from [source] to [other].");
-            p.Message("&HNote that both players must be offline for this to work.");
+            p.Message(Locale.Get("infoswap.help1", p));
+            p.Message(Locale.Get("infoswap.help2", p));
+            p.Message(Locale.Get("infoswap.help3", p));
         }
     }
 }

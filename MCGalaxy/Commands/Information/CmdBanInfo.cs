@@ -49,50 +49,50 @@ namespace MCGalaxy.Commands.Info
             string ip  = PlayerDB.FindIP(target);
             bool ipBanned = ip != null && Server.bannedIP.Contains(ip);
             
-            if (!ipBanned && isBanned) msg += " &Sis &cBANNED";
-            else if (!ipBanned && !isBanned) msg += " &Sis not banned";
-            else if (ipBanned && isBanned) msg += " &Sand their IP are &cBANNED";
-            else msg += " &Sis not banned, but their IP is &cBANNED";
+            if (!ipBanned && isBanned) msg += Locale.Get("baninfo.is_banned", p);
+            else if (!ipBanned && !isBanned) msg += Locale.Get("baninfo.not_banned", p);
+            else if (ipBanned && isBanned) msg += Locale.Get("baninfo.ip_also_banned", p);
+            else msg += Locale.Get("baninfo.ip_only_banned", p);
             
             string banner, reason, prevRank;
             DateTime time;
             Ban.GetBanData(target, out banner, out reason, out time, out prevRank);
             if (banner != null && permaBanned) {
                 string grpName = Group.GetColoredName(prevRank);
-                msg += " &S(Former rank: " + grpName + "&S)";
+                msg += string.Format(Locale.Get("baninfo.former_rank", p), grpName);
             }
             p.Message(msg);
             
             if (tempExpiry >= DateTime.UtcNow) {
                 TimeSpan delta = tempExpiry - DateTime.UtcNow;
-                p.Message("Temp-banned &S by {1} &Sfor another {0}",
+                p.Message(Locale.Get("baninfo.temp_banned", p),
                           delta.Shorten(), p.FormatNick(tempBanner));
                 if (tempReason.Length > 0) {
-                    p.Message("Reason: {0}",tempReason);
+                    p.Message(Locale.Get("baninfo.reason", p), tempReason);
                 }
             }
-            
+
             if (banner != null) {
-                DisplayDetails(p, banner, reason, time, permaBanned ? "Banned" : "Last banned");
+                DisplayDetails(p, banner, reason, time, permaBanned ? Locale.Get("baninfo.banned_label", p) : Locale.Get("baninfo.last_banned_label", p));
             } else {
-                p.Message("No previous bans recorded for {0}&S.", nick);
-            }            
+                p.Message(Locale.Get("baninfo.no_previous_bans", p), nick);
+            }
             Ban.GetUnbanData(target, out banner, out reason, out time);
-            DisplayDetails(p, banner, reason, time, permaBanned ? "Last unbanned" : "Unbanned");
+            DisplayDetails(p, banner, reason, time, permaBanned ? Locale.Get("baninfo.last_unbanned_label", p) : Locale.Get("baninfo.unbanned_label", p));
         }
         
         static void DisplayDetails(Player p, string banner, string reason, DateTime time, string type) {
             if (banner == null) return;
-            
+
             TimeSpan delta = DateTime.UtcNow - time;
-            p.Message("{0} {1} ago by {2}",
+            p.Message(Locale.Get("baninfo.event_ago_by", p),
                           type, delta.Shorten(), p.FormatNick(banner));
-            p.Message("Reason: {0}", reason);
+            p.Message(Locale.Get("baninfo.reason", p), reason);
         }
         
         public override void Help(Player p) {
-            p.Message("&T/BanInfo [player]");
-            p.Message("&HOutputs information about current and/or previous ban/unban for that player.");
+            p.Message(Locale.Get("baninfo.help1", p));
+            p.Message(Locale.Get("baninfo.help2", p));
         }
     }
 }

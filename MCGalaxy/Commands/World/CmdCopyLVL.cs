@@ -33,7 +33,7 @@ namespace MCGalaxy.Commands.World {
             if (message.Length == 0) { Help(p); return; }
             string[] args = message.ToLower().SplitSpaces();
             if (args.Length < 2) {
-                p.Message("You did not specify the destination level name."); return;
+                p.Message(Locale.Get("copylvl.no_dest", p)); return;
             }
             LevelConfig cfg;
             
@@ -45,13 +45,13 @@ namespace MCGalaxy.Commands.World {
             if (!Formatter.ValidMapName(p, dst)) return;
 
             if (!LevelActions.Copy(p, src, dst)) return;
-            Chat.MessageGlobal("Level {0} &Swas copied to {1}", cfg.Color + src, cfg.Color + dst);
+            Chat.MessageGlobal(Locale.Get("copylvl.copied"), cfg.Color + src, cfg.Color + dst);
         }
         
         public override void Help(Player p) {
-            p.Message("&T/CopyLvl [level] [copied level]");
-            p.Message("&HMakes a copy of [level] called [copied level].");
-            p.Message("&HNote: The level's BlockDB is not copied.");
+            p.Message(Locale.Get("copylvl.help1", p));
+            p.Message(Locale.Get("copylvl.help2", p));
+            p.Message(Locale.Get("copylvl.help3", p));
         }
     }
 }

@@ -28,16 +28,15 @@ namespace MCGalaxy.Commands.Info
         public override bool UseableWhenFrozen { get { return true; } }
         
         public override void Use(Player p, string message, CommandData data) {
-            p.Message("Server time: {0:HH:mm:ss} on {0:yyyy-MM-dd}", DateTime.Now);
+            p.Message(Locale.Get("time.server_time", p), DateTime.Now);
             IGame game = IGame.GameOn(p.level);
             if (game != null) game.OutputTimeInfo(p);
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Time");
-            p.Message("&HShows the server time.");
-            p.Message("&HIf a time limit round-based game is running on the level you are currently on, " +
-                      "shows time left until round end or start.");
+            p.Message(Locale.Get("time.help1", p));
+            p.Message(Locale.Get("time.help2", p));
+            p.Message(Locale.Get("time.help3", p));
         }
     }
 }

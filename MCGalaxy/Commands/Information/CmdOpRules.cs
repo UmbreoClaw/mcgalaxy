@@ -37,13 +37,13 @@ namespace MCGalaxy.Commands.Info
             }
 
             string[] oprules = oprulesFile.GetText();
-            who.Message("Server OPRules:");
+            who.Message(Locale.Get("oprules.header", p));
             who.MessageLines(oprules);
         }
 
         public override void Help(Player p) {
-            p.Message("&T/OpRules [player]");
-            p.Message("&HDisplays server oprules to a player");
+            p.Message(Locale.Get("oprules.help1", p));
+            p.Message(Locale.Get("oprules.help2", p));
         }
     }
 }

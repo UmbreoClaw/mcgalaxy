@@ -35,8 +35,8 @@ namespace MCGalaxy.Commands.Moderation {
             if (addr == null) return;
 
             IPAddress ip;
-            if (!IPAddress.TryParse(addr, out ip)) { p.Message("\"{0}\" is not a valid IP.", addr); return; }
-            if (ip.Equals(p.IP))                   { p.Message("You cannot un-IP ban yourself."); return; }
+            if (!IPAddress.TryParse(addr, out ip)) { p.Message(Locale.Get("cmd.unbanip.msg1", p), addr); return; }
+            if (ip.Equals(p.IP))                   { p.Message(Locale.Get("cmd.unbanip.msg2", p)); return; }
             if (!Server.bannedIP.Contains(addr))   { p.Message(addr + " is not a banned IP."); return; }
             
             string reason = args.Length > 1 ? args[1] : "";
@@ -48,8 +48,8 @@ namespace MCGalaxy.Commands.Moderation {
         }
         
         public override void Help(Player p)  {
-            p.Message("&T/UnbanIP [ip/player]");
-            p.Message("&HUn-bans an IP, or the IP the given player is on.");
+            p.Message(Locale.Get("cmd.unbanip.help1", p));
+            p.Message(Locale.Get("cmd.unbanip.help2", p));
         }
     }
 }

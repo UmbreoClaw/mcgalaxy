@@ -41,7 +41,7 @@ namespace MCGalaxy.Commands.Building {
             
             if (message.Length == 0) {
                 if (p.ModeBlock != Block.Invalid) {
-                    p.Message("&b{0} &Smode: &cOFF", Block.GetName(p, p.ModeBlock));
+                    p.Message(Locale.Get("cmd.mode.msg1", p), Block.GetName(p, p.ModeBlock));
                     p.ModeBlock = Block.Invalid;
                 } else {
                     Help(p);
@@ -53,22 +53,22 @@ namespace MCGalaxy.Commands.Building {
             if (!CommandParser.GetBlockIfAllowed(p, message, "place", out block)) return;
             
             if (p.ModeBlock == block) {
-                p.Message("&b{0} &Smode: &cOFF", Block.GetName(p, p.ModeBlock));
+                p.Message(Locale.Get("cmd.mode.msg2", p), Block.GetName(p, p.ModeBlock));
                 p.ModeBlock = Block.Invalid;
             } else {
                 p.ModeBlock = block;
-                p.Message("&b{0} &Smode: &aON", Block.GetName(p, p.ModeBlock));
+                p.Message(Locale.Get("cmd.mode.msg3", p), Block.GetName(p, p.ModeBlock));
             }
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Mode");
-            p.Message("&HReverts the last &T/Mode [block].");
-            p.Message("&T/Mode [block]");
-            p.Message("&HMakes every block placed into [block].");
-            p.Message("&H/[block] also works");
-            p.Message("&T/Mode tnt small/big/nuke &H");
-            p.Message("&HMakes every block placed into exploding TNT (if physics on).");
+            p.Message(Locale.Get("mode.help1", p));
+            p.Message(Locale.Get("mode.help2", p));
+            p.Message(Locale.Get("mode.help3", p));
+            p.Message(Locale.Get("mode.help4", p));
+            p.Message(Locale.Get("mode.help5", p));
+            p.Message(Locale.Get("mode.help6", p));
+            p.Message(Locale.Get("mode.help7", p));
         }
     }
 }

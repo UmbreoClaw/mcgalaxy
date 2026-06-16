@@ -29,8 +29,8 @@ namespace MCGalaxy.Commands.Building {
 
         public override void Use(Player p, string message, CommandData data) {
             if (message.Length == 0) message = "y";
-            if (p.CurrentCopy == null) { 
-                p.Message("You haven't copied anything yet"); return; 
+            if (p.CurrentCopy == null) {
+                p.Message(Locale.Get("copy.not_copied_yet", p)); return;
             }
             
             CopyState cState = p.CurrentCopy;
@@ -39,7 +39,7 @@ namespace MCGalaxy.Commands.Building {
             
             // /Mirror used to be part of spin
             if (opt.CaselessStarts("mirror")) {
-                p.Message("&T/Spin {0} &Sis deprecated. Use &T/Mirror &Sinstead", opt);
+                p.Message(Locale.Get("spin.mirror_deprecated", p), opt);
                 return;
             }
             
@@ -62,7 +62,7 @@ namespace MCGalaxy.Commands.Building {
             newState.CopySource = cState.CopySource;
             newState.CopyTime   = cState.CopyTime;
             p.CurrentCopy = newState;
-            p.Message("Rotated copy {0} degrees around the {1} axis", angle, axis);       
+            p.Message(Locale.Get("spin.rotated", p), angle, axis);
         }
         
         bool Handle(ref char axis, ref int angle, string arg) {
@@ -80,9 +80,8 @@ namespace MCGalaxy.Commands.Building {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Spin X/Y/Z 90/180/270");
-            p.Message("&HRotates the copied object around that axis by the given angle. " +
-                           "If no angle is given, 90 degrees is used.");
+            p.Message(Locale.Get("spin.help1", p));
+            p.Message(Locale.Get("spin.help2", p));
         }
     }
 }

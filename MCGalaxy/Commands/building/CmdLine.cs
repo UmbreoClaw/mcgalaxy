@@ -28,7 +28,7 @@ namespace MCGalaxy.Commands.Building {
         }
         
         protected override string SelectionType { get { return "endpoints"; } }
-        protected override string PlaceMessage { get { return "Place or break two blocks to determine the endpoints."; } }
+        protected override string PlaceMessage { get { return "line.place_msg"; } }
         
         protected override DrawMode GetMode(string[] parts) {
             string msg = parts[0];
@@ -42,8 +42,7 @@ namespace MCGalaxy.Commands.Building {
         protected override DrawOp GetDrawOp(DrawArgs dArgs) {
             LineDrawOp line = new LineDrawOp();
             if (dArgs.Mode == DrawMode.wire) {
-                dArgs.Player.Message("&HIn connected lines mode, endpoint of each line also forms the " +
-                                     "start point of next line. Use &T/Abort &Hto stop drawing");
+                dArgs.Player.Message(Locale.Get("line.connected_mode", dArgs.Player));
             }
             
             line.WallsMode = dArgs.Mode == DrawMode.walls;
@@ -89,11 +88,11 @@ namespace MCGalaxy.Commands.Building {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Line <brush args>");
-            p.Message("&HCreates a line between two points.");
-            p.Message("&T/Line [mode] <brush args> <length>");
-            p.Message("&HModes: &fnormal/walls/straight/connected");
-            p.Message("&HLength optionally specifies max number of blocks in the line");
+            p.Message(Locale.Get("line.help1", p));
+            p.Message(Locale.Get("line.help2", p));
+            p.Message(Locale.Get("line.help3", p));
+            p.Message(Locale.Get("line.help4", p));
+            p.Message(Locale.Get("line.help5", p));
             p.Message(BrushHelpLine);
         }
     }

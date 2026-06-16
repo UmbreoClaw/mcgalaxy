@@ -52,7 +52,7 @@ namespace MCGalaxy.Blocks
         }
         
         public void MessageCannotUse(Player p, string action) {
-            p.Message("Only {0} can {1} {2}",
+            p.Message(Locale.Get("perms.cannot_use_block", p),
                       Describe(), action, Block.GetName(p, ID));
         }
         

@@ -40,12 +40,12 @@ namespace MCGalaxy.Commands.Chatting
         }
 
         public override void Help(Player p) {
-            p.Message("&T/TColor <color>");
-            p.Message("&H Sets your title color");
-            p.Message("&T/OTColor [player] <color>");
-            p.Message("&H Sets the title color of other player");
-            p.Message("&H  Leave color blank to reset it.");
-            p.Message("&H  To see a list of all colors, use &T/Help colors.");
+            p.Message(Locale.Get("tcolor.help1", p));
+            p.Message(Locale.Get("tcolor.help2", p));
+            p.Message(Locale.Get("tcolor.help3", p));
+            p.Message(Locale.Get("tcolor.help4", p));
+            p.Message(Locale.Get("tcolor.help5", p));
+            p.Message(Locale.Get("tcolor.help6", p));
         }
     }
 }

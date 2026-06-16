@@ -47,12 +47,12 @@ namespace MCGalaxy
             if (modifier.Length == 0) {
                 OutputPage(p, items, formatter, printer, cmd, type, 1, perPage);
                 if (total <= perPage) return;
-                p.Message("To see all {0}, use &T/{1} all", type, cmd);
+                p.Message(Locale.Get("paginator.see_all", p), LocalizeType(p, type), cmd);
             } else if (modifier.CaselessEq("all")) {
                 OutputItems(p, items, 0, items.Count, formatter, printer);
-                p.Message("Showing {0} 1-{1} (out of {1})", type, items.Count);
+                p.Message(Locale.Get("paginator.showing_all", p), LocalizeType(p, type), items.Count);
             } else if (!NumberUtils.TryParseInt32(modifier, out page)) {
-                p.Message("Input must be either \"all\" or an integer.");
+                p.Message(Locale.Get("paginator.bad_input", p));
             } else {
                 OutputPage(p, items, formatter, printer, cmd, type, page, perPage);
             }
@@ -66,14 +66,22 @@ namespace MCGalaxy
             OutputItems(p, items, start, end, formatter, printer);
             
             if (items.Count == 0) {
-                p.Message("Showing {0} 0-0 (out of 0)", type);
+                p.Message(Locale.Get("paginator.showing_none", p), LocalizeType(p, type));
             } else if (end < items.Count) {
-                p.Message("Showing {0} {1}-{2} (out of {3}) Next: &T/{4} {5}",
-                          type, start + 1, end, items.Count, cmd, start + 1 + perPage);
+                p.Message(Locale.Get("paginator.showing_next", p),
+                          LocalizeType(p, type), start + 1, end, items.Count, cmd, start + 1 + perPage);
             } else {
-                p.Message("Showing {0} {1}-{2} (out of {3})",
-                          type, start + 1, end, items.Count);
+                p.Message(Locale.Get("paginator.showing", p),
+                          LocalizeType(p, type), start + 1, end, items.Count);
             }
+        }
+
+        // Translates the item-type noun (e.g. "commands") for the current locale,
+        // falling back to the original English noun when no translation exists.
+        static string LocalizeType(Player p, string type) {
+            string key = "paginator.type." + type.Replace(' ', '_').ToLower();
+            string val = Locale.Get(key, p);
+            return val == key ? type : val;
         }
         
         static void OutputItems<T>(Player p, IList<T> items, int beg, int end,

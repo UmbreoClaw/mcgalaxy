@@ -34,8 +34,7 @@ namespace MCGalaxy.Commands.Building
             
             string replaceCmd = ReplaceNot ? "ReplaceNot" : "Replace";
             if (!p.CanUse(replaceCmd) || !p.CanUse("Brush")) {
-                p.Message("You cannot use &T/Brush &Sand/or &T/" + replaceCmd + 
-                          "&S, so therefore cannot use this command."); return null;
+                p.Message(Locale.Get("replacebrush.no_perm", p), replaceCmd); return null;
             }
 
             DrawOp op = new CuboidDrawOp();
@@ -49,23 +48,21 @@ namespace MCGalaxy.Commands.Building
         }
         
         public override void Help(Player p) {
-            p.Message("&T/ReplaceBrush [block] [brush name] <brush args>");
-            p.Message("&HReplaces all blocks of the given type, " +
-                      "in the specified area with the output of the given brush.");
+            p.Message(Locale.Get("replacebrush.help1", p));
+            p.Message(Locale.Get("replacebrush.help2", p));
             p.Message(BrushHelpLine);
         }
     }
-    
-    public class CmdReplaceNotBrush : CmdReplaceBrush 
+
+    public class CmdReplaceNotBrush : CmdReplaceBrush
     {
         public override string name { get { return "ReplaceNotBrush"; } }
-        public override string shortcut { get { return "rnb"; } }        
+        public override string shortcut { get { return "rnb"; } }
         protected override bool ReplaceNot { get { return true; } }
-        
+
         public override void Help(Player p) {
-            p.Message("&T/ReplaceNotBrush [block] [brush name] <brush args>");
-            p.Message("&HReplaces all blocks (except for the given block), " +
-                      "in the specified area with the output of the given brush.");
+            p.Message(Locale.Get("replacenotbrush.help1", p));
+            p.Message(Locale.Get("replacenotbrush.help2", p));
             p.Message(BrushHelpLine);
         }
     }

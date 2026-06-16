@@ -42,12 +42,12 @@ namespace MCGalaxy.Commands.Chatting
         }
 
         public override void Help(Player p) {
-            p.Message("&T/LogoutMessage <message>");
-            p.Message("&H Sets your logout message");
-            p.Message("&T/OLogoutMessage [player] <message>");
-            p.Message("&H Sets the logout message of another player");
-            p.Message("&H  Leave <message> blank to reset it.");
-            p.Message("&HYour logout message is currently: &S{0}", PlayerInfo.GetLogoutMessage(p));
+            p.Message(Locale.Get("logoutmessage.help1", p));
+            p.Message(Locale.Get("logoutmessage.help2", p));
+            p.Message(Locale.Get("logoutmessage.help3", p));
+            p.Message(Locale.Get("logoutmessage.help4", p));
+            p.Message(Locale.Get("logoutmessage.help5", p));
+            p.Message(Locale.Get("logoutmessage.current", p), PlayerInfo.GetLogoutMessage(p));
         }
     }
 }

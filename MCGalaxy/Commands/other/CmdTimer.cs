@@ -25,7 +25,7 @@ namespace MCGalaxy.Commands.Misc {
         public override LevelPermission defaultRank { get { return LevelPermission.Operator; } }
 
         public override void Use(Player p, string message, CommandData data) {
-            if (p.cmdTimer) { p.Message("Can only have one timer at a time. Use /abort to cancel your previous timer."); return; }
+            if (p.cmdTimer) { p.Message(Locale.Get("timer.one_at_a_time", p)); return; }
             if (message.Length == 0) { Help(p); return; }
 
             int TotalTime = 0;
@@ -40,7 +40,7 @@ namespace MCGalaxy.Commands.Misc {
                 TotalTime = 60;
             }
 
-            if (TotalTime > 300) { p.Message("Cannot have more than 5 minutes in a timer"); return; }
+            if (TotalTime > 300) { p.Message(Locale.Get("timer.too_long", p)); return; }
 
             TimerArgs args = new TimerArgs();
             args.Message = message;
@@ -48,7 +48,7 @@ namespace MCGalaxy.Commands.Misc {
             args.Player  = p;
             
             p.cmdTimer = true;
-            p.level.Message("Timer lasting for " + TotalTime + " seconds has started.");
+            p.level.Message(string.Format(Locale.Get("timer.started"), TotalTime));
             p.level.Message(args.Message);
             Server.MainScheduler.QueueRepeat(TimerCallback, args, TimeSpan.FromSeconds(5));
         }
@@ -65,19 +65,19 @@ namespace MCGalaxy.Commands.Misc {
 
             args.Repeats--;
             if (args.Repeats == 0 || !p.cmdTimer) {
-                p.Message("Timer ended.");
+                p.Message(Locale.Get("timer.ended", p));
                 p.cmdTimer = false;
                 task.Repeating = false;
             } else {
                 p.level.Message(args.Message);
-                p.level.Message("Timer has " + (args.Repeats * 5) + " seconds remaining.");
+                p.level.Message(string.Format(Locale.Get("timer.remaining"), args.Repeats * 5));
             }
         }
         
         public override void Help(Player p)  {
-            p.Message("&T/Timer [time] [message]");
-            p.Message("&HStarts a timer which repeats [message] every 5 seconds.");
-            p.Message("&HRepeats constantly until [time] has passed");
+            p.Message(Locale.Get("timer.help1", p));
+            p.Message(Locale.Get("timer.help2", p));
+            p.Message(Locale.Get("timer.help3", p));
         }
     }
 }

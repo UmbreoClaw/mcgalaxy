@@ -53,14 +53,14 @@ namespace MCGalaxy.Commands.Fun {
 
         protected virtual void HandleGo(Player p, RoundsGame game) {
             if (!game.Running) {
-                p.Message("{0} is not running", game.GameName);
+                p.Message(Locale.Get("roundsgame.not_running", p), game.GameName);
             } else {
                 PlayerActions.ChangeMap(p, game.Map);
             }
         }
-        
+
         protected virtual void HandleStart(Player p, RoundsGame game, string[] args) {
-            if (game.Running) { p.Message("{0} is already running", game.GameName); return; }
+            if (game.Running) { p.Message(Locale.Get("roundsgame.already_running", p), game.GameName); return; }
 
             string map = args.Length > 1 ? args[1] : "";
             game.Start(p, map, int.MaxValue);
@@ -70,24 +70,24 @@ namespace MCGalaxy.Commands.Fun {
             if (game.RoundInProgress) {
                 game.EndRound();
             } else {
-                p.Message("No round is currently in progress");
+                p.Message(Locale.Get("roundsgame.no_round", p));
             }
         }
-        
+
         protected virtual void HandleStop(Player p, RoundsGame game) {
             if (!game.Running) {
-                p.Message("{0} is not running", game.GameName);
+                p.Message(Locale.Get("roundsgame.not_running", p), game.GameName);
             } else {
                 game.End();
-                Chat.MessageGlobal(game.GameName + " has ended! We hope you had fun!");
+                Chat.MessageGlobal(Locale.Get("roundsgame.ended"), game.GameName);
             }
         }
 
         protected virtual void HandleStatus(Player p, RoundsGame game) {
             if (!game.Running) {
-                p.Message("{0} is not running", game.GameName);
+                p.Message(Locale.Get("roundsgame.not_running", p), game.GameName);
             } else {
-                p.Message("Running on map: " + game.Map.ColoredName);
+                p.Message(Locale.Get("roundsgame.running_on", p), game.Map.ColoredName);
                 game.OutputStatus(p);
             }
         }

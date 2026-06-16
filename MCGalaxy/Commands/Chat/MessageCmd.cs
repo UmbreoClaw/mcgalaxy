@@ -60,8 +60,8 @@ namespace MCGalaxy.Commands.Chatting
         }
 
         public override void Help(Player p) {
-            p.Message("&T/High5 [player]");
-            p.Message("&HHigh five someone! :D");
+            p.Message(Locale.Get("high5.help1", p));
+            p.Message(Locale.Get("high5.help2", p));
         }
     }
 }

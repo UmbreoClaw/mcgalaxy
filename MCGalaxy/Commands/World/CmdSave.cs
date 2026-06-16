@@ -53,34 +53,34 @@ namespace MCGalaxy.Commands.World {
             foreach (Level lvl in loaded) {
                 TrySave(p, lvl, false);
             }
-            Chat.MessageGlobal("All levels have been saved.");
+            Chat.MessageGlobal(Locale.Get("save.all_saved"));
         }
         
         static bool TrySave(Player p, Level lvl, bool force) {
             if (!force && !lvl.Changed) return false;
             
             if (!lvl.SaveChanges) {
-                p.Message("Saving {0} &Sis currently disabled (most likely because a game is or was running on the level)", lvl.ColoredName);
+                p.Message(Locale.Get("save.saving_disabled", p), lvl.ColoredName);
                 return false;
             }
-            
+
             bool saved = lvl.Save(force);
-            if (!saved) p.Message("Saving of level {0} &Swas cancelled", lvl.ColoredName);
+            if (!saved) p.Message(Locale.Get("save.save_cancelled", p), lvl.ColoredName);
             return saved;
         }
         
         static void Save(Player p, Level lvl, string backup) {
             if (!TrySave(p, lvl, true)) return;
-            p.Message("Level {0} &Ssaved", lvl.ColoredName);
+            p.Message(Locale.Get("save.level_saved", p), lvl.ColoredName);
             
             LevelOperations.Backup(p, lvl, backup);
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Save &H- Saves the level you are currently in");
-            p.Message("&T/Save all &H- Saves all loaded levels.");
-            p.Message("&T/Save [level] &H- Saves the specified level.");
-            p.Message("&T/Save [level] [name] &H- Backups the level with a given restore name");
+            p.Message(Locale.Get("save.help1", p));
+            p.Message(Locale.Get("save.help2", p));
+            p.Message(Locale.Get("save.help3", p));
+            p.Message(Locale.Get("save.help4", p));
         }
     }
 }

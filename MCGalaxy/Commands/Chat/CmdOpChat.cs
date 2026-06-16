@@ -32,15 +32,15 @@ namespace MCGalaxy.Commands.Chatting
             if (message.Length > 0) { ChatModes.MessageOps(p, message); return; }
             
             p.opchat = !p.opchat;
-            if (p.opchat) p.Message("All messages will now be sent to OPs only");
-            else p.Message("OP chat turned off");
+            if (p.opchat) p.Message(Locale.Get("opchat.enabled", p));
+            else p.Message(Locale.Get("opchat.disabled", p));
         }
         
         public override void Help(Player p) {
-            p.Message("&T/OpChat [message]");
-            p.Message("&HSends a message to online OPs");
-            p.Message("&T/OpChat");
-            p.Message("&HMakes all messages sent go to OPs by default");
+            p.Message(Locale.Get("opchat.help1", p));
+            p.Message(Locale.Get("opchat.help2", p));
+            p.Message(Locale.Get("opchat.help3", p));
+            p.Message(Locale.Get("opchat.help4", p));
         }
     }
 }

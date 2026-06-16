@@ -40,7 +40,7 @@ namespace MCGalaxy.Commands.Chatting
             
             if (message.Length >= 256 && Database.Backend.EnforcesTextLength) {
                 message = message.Substring(0, 255);
-                p.Message("&WMessage was too long. It has been trimmed to:");
+                p.Message(Locale.Get("send.msg_trimmed", p));
                 p.Message(message);
             }
             Database.CreateTable("Inbox" + name, createInbox);
@@ -48,8 +48,7 @@ namespace MCGalaxy.Commands.Chatting
             int pending = Database.CountRows("Inbox" + name, "WHERE PlayerFrom=@0", p.name);
             if (pending >= 200) {
                 Pronouns pronouns = Pronouns.GetFor(name)[0];
-                p.Message("{0} &calready has 200+ messages from you currently in {1} inbox. " +
-                          "Try again later after {2} {3} deleted some of {4} inbox messages",
+                p.Message(Locale.Get("send.inbox_full", p),
                           p.FormatNick(name), pronouns.Object, pronouns.Subject, pronouns.PresentPerfectVerb, pronouns.Object);
                 return;
             }
@@ -63,11 +62,11 @@ namespace MCGalaxy.Commands.Chatting
             p.CheckForMessageSpam();
 
             Player target = PlayerInfo.FindExact(name);
-            p.Message("Message sent to {0}&S.", p.FormatNick(name));
+            p.Message(Locale.Get("send.sent", p), p.FormatNick(name));
             if (target == null) return;
-            
+
             if (!Chat.Ignoring(target, p)) {
-                target.Message("Message received from {0}&S. Check &T/Inbox", target.FormatNick(p));
+                target.Message(Locale.Get("send.received", target), target.FormatNick(p));
             }
         }
         
@@ -78,8 +77,8 @@ namespace MCGalaxy.Commands.Chatting
         };
         
         public override void Help(Player p) {
-            p.Message("&T/Send [name] [message]");
-            p.Message("&HSends [message] to [name], which can be read with &T/Inbox");
+            p.Message(Locale.Get("send.help1", p));
+            p.Message(Locale.Get("send.help2", p));
         }
     }
 }

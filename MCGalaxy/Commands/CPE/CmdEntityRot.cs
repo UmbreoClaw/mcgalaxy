@@ -59,7 +59,7 @@ namespace MCGalaxy.Commands.CPE
             
             string[] bits = args.SplitSpaces();
             if (bits.Length != 2) {
-                p.Message("You need to provide an axis name and angle."); return false;
+                p.Message(Locale.Get("cmd.entityrot.msg1", p)); return false;
             }
             int angle = 0;
             if (!CommandParser.GetInt(p, bits[1], "Angle", ref angle, -360, 360)) return false;
@@ -69,16 +69,16 @@ namespace MCGalaxy.Commands.CPE
             } else if (bits[0].CaselessEq("z")) {
                 Entities.UpdateEntityRot(entity, EntityProp.RotZ, angle);
             } else {
-                p.Message("Axis name must be X or Z."); return false;
+                p.Message(Locale.Get("cmd.entityrot.msg2", p)); return false;
             }
             return true;
         }
 
         public override void Help(Player p) {
-            p.Message("&T/EntityRot [name] x/z [angle].");
-            p.Message("&HSets X or Z axis rotation (in degrees) of that player.");
-            p.Message("&T/EntityRot bot [name] x/z [angle]");
-            p.Message("&HSets the X or Z axis rotation (in degrees) of that bot.");
+            p.Message(Locale.Get("cmd.entityrot.help1", p));
+            p.Message(Locale.Get("cmd.entityrot.help2", p));
+            p.Message(Locale.Get("cmd.entityrot.help3", p));
+            p.Message(Locale.Get("cmd.entityrot.help4", p));
         }
     }
 }

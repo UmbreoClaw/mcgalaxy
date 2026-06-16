@@ -55,10 +55,10 @@ namespace MCGalaxy.Commands.Moderation {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Joker [player]");
-            p.Message("&HMakes that player become a joker!");
-            p.Message("&T/Joker #[player]");
-            p.Message("&HMakes that player silently become a joker!");
+            p.Message(Locale.Get("cmd.joker.help1", p));
+            p.Message(Locale.Get("cmd.joker.help2", p));
+            p.Message(Locale.Get("cmd.joker.help3", p));
+            p.Message(Locale.Get("cmd.joker.help4", p));
         }
     }
 }

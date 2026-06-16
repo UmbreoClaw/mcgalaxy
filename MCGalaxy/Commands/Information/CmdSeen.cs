@@ -38,11 +38,11 @@ namespace MCGalaxy.Commands.Info
             if (matches > 1) return;
             if (matches == 1) {
                 Show(p, pl.ColoredName, pl.FirstLogin, pl.LastLogin);
-                p.Message("{0} &Sis currently online.", p.FormatNick(pl));
+                p.Message(Locale.Get("seen.currently_online", p), p.FormatNick(pl));
                 return;
             }
 
-            p.Message("Searching PlayerDB..");
+            p.Message(Locale.Get("seen.searching", p));
             PlayerData target = PlayerDB.Match(p, message);
             if (target == null) return;
             Show(p, target.Name, target.FirstLogin, target.LastLogin);
@@ -51,15 +51,15 @@ namespace MCGalaxy.Commands.Info
         static void Show(Player p, string name, DateTime first, DateTime last) {
             TimeSpan firstDelta = DateTime.Now - first;
             TimeSpan lastDelta  = DateTime.Now - last;
-            
+
             name = p.FormatNick(name);
-            p.Message("{0} &Swas first seen at {1:H:mm} on {1:yyyy-MM-dd} ({2} ago)", name, first, firstDelta.Shorten());
-            p.Message("{0} &Swas last seen at {1:H:mm} on {1:yyyy-MM-dd} ({2} ago)",  name, last,  lastDelta.Shorten());
+            p.Message(Locale.Get("seen.first_seen", p), name, first, firstDelta.Shorten());
+            p.Message(Locale.Get("seen.last_seen", p),  name, last,  lastDelta.Shorten());
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Seen [player]");
-            p.Message("&HSays when a player was first and last seen on the server");
+            p.Message(Locale.Get("seen.help1", p));
+            p.Message(Locale.Get("seen.help2", p));
         }
     }
 }

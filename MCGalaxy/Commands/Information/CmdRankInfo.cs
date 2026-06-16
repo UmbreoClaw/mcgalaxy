@@ -40,9 +40,9 @@ namespace MCGalaxy.Commands.Info
             string nick = p.FormatNick(name);
             
             if (rankings.Count == 0) {
-                p.Message("{0} &Shas no rankings.", nick); return;
+                p.Message(Locale.Get("rankinfo.no_rankings", p), nick); return;
             } else {
-                p.Message("  Rankings for {0}:", nick);
+                p.Message(Locale.Get("rankinfo.rankings_for", p), nick);
             }
             
             foreach (string line in rankings) {
@@ -67,18 +67,18 @@ namespace MCGalaxy.Commands.Info
                     newRank = args[7]; oldRank = args[8]; 
                     offset  = 9;
                 }
-                string reason = args.Length <= offset ? "(no reason given)" : args[offset].Replace("%20", " ");
-               
-                p.Message("&aFrom {0} &ato {1} &a{2} ago", 
+                string reason = args.Length <= offset ? Locale.Get("rankinfo.no_reason", p) : args[offset].Replace("%20", " ");
+
+                p.Message(Locale.Get("rankinfo.from_to_ago", p),
                                Group.GetColoredName(oldRank), Group.GetColoredName(newRank),
                                delta.Shorten(true, false));
-                p.Message("&aBy &S{0}&a, reason: &S{1}", p.FormatNick(args[1]), reason);
+                p.Message(Locale.Get("rankinfo.by_reason", p), p.FormatNick(args[1]), reason);
             }
         }
         
         public override void Help(Player p) {
-            p.Message("&T/RankInfo [player]");
-            p.Message("&HReturns details about that person's rankings.");
+            p.Message(Locale.Get("rankinfo.help1", p));
+            p.Message(Locale.Get("rankinfo.help2", p));
         }
     }
 }

@@ -27,13 +27,13 @@ namespace MCGalaxy.Commands.Building {
             p.painting = !p.painting;
             
             string type = p.painting ? "&aON" : "&cOFF";
-            p.Message("Painting mode: " + type + "&S.");
+            p.Message(Locale.Get("paint.mode", p), type);
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Paint");
-            p.Message("&HTurns painting mode on/off.");
-            p.Message("&HWhen paint mode is on, any block you delete is replaced by the block you are holding.");
+            p.Message(Locale.Get("paint.help1", p));
+            p.Message(Locale.Get("paint.help2", p));
+            p.Message(Locale.Get("paint.help3", p));
         }
     }
 }

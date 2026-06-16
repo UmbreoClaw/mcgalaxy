@@ -28,7 +28,7 @@ namespace MCGalaxy.Commands.Misc {
 
         public override void Use(Player p, string message, CommandData data) {
             if (!Hacks.CanUseHacks(p)) {
-                p.Message("You cannot use &T/Descend &Son this map."); return;
+                p.Message(Locale.Get("descend.no_hacks", p)); return;
             }
 
             // Move starting position down half a block since players are a little bit above the ground.
@@ -42,9 +42,9 @@ namespace MCGalaxy.Commands.Misc {
             }
             
             if (freeY == -1) {
-                p.Message("No free spaces found below you.");
+                p.Message(Locale.Get("descend.no_space", p));
             } else {
-                p.Message("Teleported you down.");
+                p.Message(Locale.Get("descend.teleported", p));
                 Position pos = Position.FromFeet(p.Pos.X, freeY * 32, p.Pos.Z);
                 p.SendPosition(pos, p.Rot);
             }
@@ -67,10 +67,9 @@ namespace MCGalaxy.Commands.Misc {
         
         public override void Help(Player p) {
             string name = Group.GetColoredName(LevelPermission.Operator);
-            p.Message("&T/Descend");
-            p.Message("&HTeleports you to the first free space below you.");
-            p.Message("&H  Cannot be used on maps which have -hax in their motd. " +
-                           "(unless you are {0}&H+ and the motd has +ophax)", name);
+            p.Message(Locale.Get("descend.help1", p));
+            p.Message(Locale.Get("descend.help2", p));
+            p.Message(Locale.Get("descend.help3", p), name);
         }
     }
 }

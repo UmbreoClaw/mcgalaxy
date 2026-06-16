@@ -34,7 +34,7 @@ namespace MCGalaxy.Commands.Building
             ushort dist = 20;
             if (message.Length > 0 && !CommandParser.GetUShort(p, message, "Distance", ref dist)) return;
             
-            p.Message("Destroy the block you wish to drill.");
+            p.Message(Locale.Get("drill.destroy_block", p));
             p.MakeSelection(1, "Selecting location for &SDrill", dist, DoDrill);
         }
         
@@ -44,8 +44,8 @@ namespace MCGalaxy.Commands.Building
             int dist = (ushort)state, numBlocks = (3 * 3) * dist;
             
             if (numBlocks > p.group.DrawLimit) {
-                p.Message("You tried to drill " + numBlocks + " blocks.");
-                p.Message("You cannot drill more than " + p.group.DrawLimit + ".");
+                p.Message(Locale.Get("drill.tried_blocks", p), numBlocks);
+                p.Message(Locale.Get("drill.too_many_blocks", p), p.group.DrawLimit);
                 return false;
             }
 
@@ -75,7 +75,7 @@ namespace MCGalaxy.Commands.Building
                 }
             }
 
-            p.Message("Drilled " + numBlocks + " blocks.");
+            p.Message(Locale.Get("drill.drilled_blocks", p), numBlocks);
             return true;
         }
         
@@ -87,8 +87,8 @@ namespace MCGalaxy.Commands.Building
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Drill [distance]");
-            p.Message("&HDrills a hole, destroying all similar blocks in a 3x3 rectangle ahead of you.");
+            p.Message(Locale.Get("drill.help1", p));
+            p.Message(Locale.Get("drill.help2", p));
         }
     }
 }

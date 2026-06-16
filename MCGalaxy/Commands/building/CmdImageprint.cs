@@ -53,18 +53,18 @@ namespace MCGalaxy.Commands.Building {
             if (parts.Length > 1) {
                 dArgs.Pal = ImagePalette.Find(parts[1]);
                 if (dArgs.Pal == null) {
-                    p.Message("Palette {0} not found.", parts[1]); return;
+                    p.Message(Locale.Get("cmd.imageprint.msg1", p), parts[1]); return;
                 }
                 
                 if (dArgs.Pal.Entries == null || dArgs.Pal.Entries.Length == 0) {
-                    p.Message("Palette {0} does not have any entries", dArgs.Pal.Name);
-                    p.Message("Use &T/Palette &Sto add entries to it"); return;
+                    p.Message(Locale.Get("imageprint.palette_no_entries", p), dArgs.Pal.Name);
+                    p.Message(Locale.Get("imageprint.palette_add_hint", p)); return;
                 }
             }
             
             if (parts.Length > 2) {
                 string mode = parts[2];
-                if (!ParseMode(mode, dArgs)) { p.Message("&WUnknown print mode \"{0}\".", mode); return; }
+                if (!ParseMode(mode, dArgs)) { p.Message(Locale.Get("cmd.imageprint.msg2", p), mode); return; }
             }
             
             if (parts.Length > 4) {
@@ -77,11 +77,11 @@ namespace MCGalaxy.Commands.Building {
                 if (dArgs.Data == null) return;
             } else {
                 string path = "extra/images/" + parts[0] + ".bmp";
-                if (!File.Exists(path)) { p.Message("{0} does not exist", path); return; }
+                if (!File.Exists(path)) { p.Message(Locale.Get("cmd.imageprint.msg3", p), path); return; }
                 dArgs.Data = File.ReadAllBytes(path);
             }
 
-            p.Message("Place or break two blocks to determine direction.");
+            p.Message(Locale.Get("imageprint.place_direction", p));
             p.MakeSelection(2, "Selecting direction for &SImagePrint", dArgs, DoImage);
         }
 
@@ -103,7 +103,7 @@ namespace MCGalaxy.Commands.Building {
         }
         
         bool DoImage(Player p, Vec3S32[] m, object state, BlockID block) {
-            if (m[0].X == m[1].X && m[0].Z == m[1].Z) { p.Message("No direction was selected"); return false; }
+            if (m[0].X == m[1].X && m[0].Z == m[1].Z) { p.Message(Locale.Get("imageprint.no_direction", p)); return false; }
 
             Thread thread;
             Server.StartThread(out thread, "ImagePrint",
@@ -155,7 +155,7 @@ namespace MCGalaxy.Commands.Building {
             resizedWidth  = Math.Max(1, (int)(width  * ratio));
             resizedHeight = Math.Max(1, (int)(height * ratio));
             
-            p.Message("&WImage is too large ({0}x{1}), resizing to ({2}x{3})",
+            p.Message(Locale.Get("imageprint.too_large", p),
                       width, height, resizedWidth, resizedHeight);
             width = resizedWidth; height = resizedHeight;
         }
@@ -169,11 +169,11 @@ namespace MCGalaxy.Commands.Building {
         }
         
         public override void Help(Player p) {
-            p.Message("&T/ImagePrint [file/url] [palette] <mode> <width height>");
-            p.Message("&HPrints image from given URL, or from a .bmp file in /extra/images/ folder");
-            p.Message("&HPalettes: &f{0}", ImagePalette.Palettes.Join(pal => pal.Name));
-            p.Message("&HModes: &fWall, WallDither, Wall2Layer, Floor, FloorDither");
-            p.Message("&H  <width height> optionally resize the printed image");
+            p.Message(Locale.Get("imageprint.help1", p));
+            p.Message(Locale.Get("imageprint.help2", p));
+            p.Message(Locale.Get("imageprint.help3", p), ImagePalette.Palettes.Join(pal => pal.Name));
+            p.Message(Locale.Get("imageprint.help4", p));
+            p.Message(Locale.Get("imageprint.help5", p));
         }
 
         class DrawArgs {

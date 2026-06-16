@@ -32,25 +32,25 @@ namespace MCGalaxy.Commands.Chatting
             if (!MessageCmd.CanSpeak(p, name)) return;
             
             if (Server.voting) {
-                p.Message("A vote is in progress!"); return;
+                p.Message(Locale.Get("vote.in_progress", p)); return;
             }
             Server.voting = true;
             Server.NoVotes = 0; Server.YesVotes = 0;
-            Chat.MessageGlobal("&2 VOTE: &S{0} &S(type &2Yes &Sor &cNo &Sin chat)", message);
+            Chat.MessageGlobal(Locale.Get("vote.started"), message);
             Server.MainScheduler.QueueOnce(VoteCallback, null, TimeSpan.FromSeconds(15));
         }
         
         void VoteCallback(SchedulerTask task) {
             Server.voting = false;
-            Chat.MessageGlobal("The votes are in! &2Y: {0} &cN: {1}", Server.YesVotes, Server.NoVotes);
+            Chat.MessageGlobal(Locale.Get("vote.results"), Server.YesVotes, Server.NoVotes);
             Player[] players = PlayerInfo.Online.Items;
             foreach (Player pl in players) pl.voted = false;
         }
         
         public override void Help(Player p) {
-            p.Message("&T/Vote [message]");
-            p.Message("&HStarts a vote for 15 seconds.");
-            p.Message("&HType &TY &Hor &TN &Hinto chat to vote.");
+            p.Message(Locale.Get("vote.help1", p));
+            p.Message(Locale.Get("vote.help2", p));
+            p.Message(Locale.Get("vote.help3", p));
         }
     }
 }

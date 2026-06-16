@@ -51,6 +51,8 @@ namespace MCGalaxy
         public const string AuthServicesFile = "properties/authservices.properties";
         public const string CPEDisabledFile = "properties/cpe.properties";
         
+        public const string LocaleDir = "locale";
+
         public const string ImportsDir = "extra/import/";
         public const string WAYPOINTS_DIR = "extra/Waypoints/";
         

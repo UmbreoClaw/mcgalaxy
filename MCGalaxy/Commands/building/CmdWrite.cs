@@ -31,7 +31,7 @@ namespace MCGalaxy.Commands.Building {
         protected override DrawOp GetDrawOp(DrawArgs dArgs) {
             Player p = dArgs.Player;
             if (!p.CanUse("Write")) {
-                p.Message("You must be able to use &T/Write &Sto use &T/WriteText."); return null;
+                p.Message(Locale.Get("cmd.write.msg1", p)); return null;
             }
             
             string[] args = dArgs.Message.SplitSpaces(3);
@@ -50,16 +50,16 @@ namespace MCGalaxy.Commands.Building {
        
         protected override void GetMarks(DrawArgs dArgs, ref Vec3S32[] m) {
             if (m[0].X != m[1].X || m[0].Z != m[1].Z) return; 
-            dArgs.Player.Message("No direction was selected");
+            dArgs.Player.Message(Locale.Get("cmd.write.msg2", dArgs.Player));
             m = null;
         }
         
         protected override void GetBrush(DrawArgs dArgs) { dArgs.BrushArgs = ""; }
 
         public override void Help(Player p) {
-            p.Message("&T/WriteText [scale] [spacing] [message]");
-            p.Message("&HWrites the given message in blocks.");
-            p.Message("&Hspacing specifies the number of blocks between each letter.");
+            p.Message(Locale.Get("cmd.write.help1", p));
+            p.Message(Locale.Get("cmd.write.help2", p));
+            p.Message(Locale.Get("cmd.write.help3", p));
         }
     }
     
@@ -72,9 +72,9 @@ namespace MCGalaxy.Commands.Building {
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Write [message]");
-            p.Message("&HWrites [message] in blocks");
-            p.Message("&HNote that this has been deprecated by &T/WriteText.");
+            p.Message(Locale.Get("cmd.write.help4", p));
+            p.Message(Locale.Get("cmd.write.help5", p));
+            p.Message(Locale.Get("cmd.write.help6", p));
         }
     }
 }
