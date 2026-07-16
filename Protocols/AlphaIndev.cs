@@ -456,9 +456,40 @@ namespace PluginAlphaIndev
             player.ProcessBlockchange((ushort)x, (ushort)y, (ushort)z, action, block);
         }
 
+        // ---- Outbound packet plumbing ----------------------------------------------
+        // MCGalaxy's TcpSocket copies every Send() into a fixed 4096 byte buffer, so any
+        // single Send larger than that throws and kills the connection. This was the cause
+        // of "large map loads crash the client": full chunk columns of varied terrain can
+        // compress to more than 4096 bytes. Every packet we send must stay under budget.
+        protected const int MAX_PACKET_SIZE = 4000;
+        protected readonly object sendLock = new object();
+
+        // All sends from this session go through this helper. The lock keeps multi-part
+        // payloads (see SendLarge) from being interleaved with other packets.
+        protected void SendPacket(byte[] data) {
+            lock (sendLock) socket.Send(data, SendFlags.None);
+        }
+
+        // Sends a logical packet that may exceed the socket's send buffer size by slicing
+        // it into multiple raw sends. TCP is a byte stream, so this is transparent to the
+        // client - PROVIDED nothing else writes to the socket in between, hence the lock.
+        protected void SendLarge(byte[] data) {
+            if (data.Length <= MAX_PACKET_SIZE) { SendPacket(data); return; }
+
+            lock (sendLock) {
+                for (int offset = 0; offset < data.Length; offset += MAX_PACKET_SIZE)
+                {
+                    int len = Math.Min(MAX_PACKET_SIZE, data.Length - offset);
+                    byte[] part = new byte[len];
+                    Buffer.BlockCopy(data, offset, part, 0, len);
+                    socket.Send(part, SendFlags.None);
+                }
+            }
+        }
+
 #region Packet senders
         public override void SendPing() {
-            Send(new byte[] { OPCODE_PING });
+            SendPacket(new byte[] { OPCODE_PING });
         }
 
         public override void SendSetSpawnpoint(Position pos, Orientation rot) {
@@ -467,14 +498,14 @@ namespace PluginAlphaIndev
             WriteI32(pos.BlockX, spawn, 1);
             WriteI32(pos.BlockY, spawn, 5);
             WriteI32(pos.BlockZ, spawn, 9);
-            Send(spawn);
+            SendPacket(spawn);
         }
 
         public override void SendRemoveEntity(byte id) {
             byte[] data = new byte[1 + 4];
             data[0] = OPCODE_REMOVE_ENTITY;
             WriteI32(id, data, 1);
-            Send(data);
+            SendPacket(data);
         }
 
         public override void SendChat(string message) {
@@ -484,37 +515,38 @@ namespace PluginAlphaIndev
             List<string> lines = LineWrapper.Wordwrap(buffer, bufferLen, true);
             for (int i = 0; i < lines.Count; i++)
             {
-                Send(MakeChat(ColorEscape(lines[i])));
+                SendPacket(MakeChat(ColorEscape(lines[i])));
             }
         }
 
         public override void SendMessage(CpeMessageType type, string message) {
             if (type != CpeMessageType.Normal) return;
             message = ColorEscape(CleanupColors(message));
-            Send(MakeChat(message));
+            SendPacket(MakeChat(message));
         }
 
         public override void SendKick(string reason, bool sync) {
             reason = ColorEscape(CleanupColors(reason));
-            socket.Send(MakeKick(reason), sync ? SendFlags.Synchronous : SendFlags.None);
+            byte[] data = MakeKick(reason);
+            lock (sendLock) socket.Send(data, sync ? SendFlags.Synchronous : SendFlags.None);
         }
 
         protected void SendHandshake(string serverID) {
-            Send(MakeHandshake(serverID));
+            SendPacket(MakeHandshake(serverID));
         }
 
         public override void SendBlockchange(ushort x, ushort y, ushort z, BlockID block) {
             byte[] packet = new byte[1 + 4 + 1 + 4 + 1 + 1];
             byte raw = (byte)ConvertBlock(block);
             WriteBlockChange(packet, 0, raw, x, y, z);
-            Send(packet);
+            SendPacket(packet);
         }
 
         public override void SendTeleport(byte id, Position pos, Orientation rot) {
             if (id == Entities.SelfID) {
-                Send(MakeSelfMoveLook(pos, rot));
+                SendPacket(MakeSelfMoveLook(pos, rot));
             } else {
-                Send(MakeEntityTeleport(id, pos, rot));
+                SendPacket(MakeEntityTeleport(id, pos, rot));
             }
         }
 
@@ -522,15 +554,15 @@ namespace PluginAlphaIndev
         public override void SendMotd(string motd) {
             if (sentMOTD) return; // TODO work out how to properly resend the map
             sentMOTD = true;
-            Send(MakeLogin(motd));
+            SendPacket(MakeLogin(motd));
         }
 
         public override void SendSpawnEntity(byte id, string name, string skin, Position pos, Orientation rot) {
             if (id == Entities.SelfID) {
-                Send(MakeSelfMoveLook(pos, rot));
+                SendPacket(MakeSelfMoveLook(pos, rot));
             } else {
                 name = ColorEscape(CleanupColors(name));
-                Send(MakeNamedAdd(id, name, skin, pos, rot));
+                SendPacket(MakeNamedAdd(id, name, skin, pos, rot));
             }
         }
 
@@ -763,14 +795,16 @@ namespace PluginAlphaIndev
                 case OPCODE_LOGIN:          return HandleLogin(buffer, offset, left);
                 case OPCODE_CHAT:           return HandleChat(buffer, offset, left);
                 case OPCODE_USE_ENTITY:     return HandleIgnored(buffer, offset, left, useentity_fields);
-                case OPCODE_RESPAWN:        return HandleIgnored(buffer, offset, left, isBeta ? beta_respawn_fields : alpha_respawn_fields);
+                case OPCODE_RESPAWN:        return isBeta ? HandleRespawn(buffer, offset, left)
+                                                          : HandleIgnored(buffer, offset, left, alpha_respawn_fields);
                 case OPCODE_SELF_STATEONLY: return HandleSelfStateOnly(buffer, offset, left);
                 case OPCODE_SELF_MOVE:      return HandleSelfMove(buffer, offset, left);
                 case OPCODE_SELF_LOOK:      return HandleSelfLook(buffer, offset, left);
                 case OPCODE_SELF_MOVE_LOOK: return HandleSelfMoveLook(buffer, offset, left);
                 case OPCODE_BLOCK_DIG:      return HandleBlockDig(buffer, offset, left);
                 case OPCODE_BLOCK_PLACE:    return HandleBlockPlace(buffer, offset, left);
-                case OPCODE_SLOT_SWITCHED:  return HandleIgnored(buffer, offset, left, isBeta ? beta_slot_fields : alpha_slot_fields);
+                case OPCODE_SLOT_SWITCHED:  return isBeta ? HandleSlotSwitch(buffer, offset, left)
+                                                          : HandleIgnored(buffer, offset, left, alpha_slot_fields);
                 case OPCODE_ARM_ANIM:       return HandleIgnored(buffer, offset, left, anim_fields);
                 case OPCODE_ENTITY_ACTION:  return HandleIgnored(buffer, offset, left, entityaction_fields);
                 case OPCODE_CLOSE_WINDOW:   return HandleIgnored(buffer, offset, left, closewindow_fields);
@@ -913,7 +947,37 @@ namespace PluginAlphaIndev
             int z = values[4].I32;
 
             // status 2 = "finished digging" (block broken) in Alpha/Beta
-            if (status == 2) TryBlockChange(x, y, z, 0, Block.Air);
+            if (status == 2) {
+                TryBlockChange(x, y, z, 0, Block.Air);
+            } else if (status == 4 && isBeta) {
+                // status 4 = dropped held item (Q) - top the client's stack back up
+                RestockHeldSlot();
+            }
+            return size;
+        }
+
+        int HandleSlotSwitch(byte[] buffer, int offset, int left) {
+            FieldValue* values = stackalloc FieldValue[AlphaIndevParser.MAX_FIELDS];
+            int size = parser.ParsePacket(buffer, offset, left, beta_slot_fields, values);
+            if (size < 0) return NeedMore(size, left);
+
+            short slot = (short)values[1].U16;
+            if (slot >= 0 && slot <= 8) heldSlot = slot;
+            return size;
+        }
+
+        int HandleRespawn(byte[] buffer, int offset, int left) {
+            const int size = 1 + 1; // opcode + dimension
+            if (left < size) return 0;
+
+            // The client wiped its local world when it respawned, so acknowledge the
+            // respawn and then resend the map, inventory and position from scratch.
+            SendPacket(new byte[] { OPCODE_RESPAWN, 0 });
+            Level lvl = player.level;
+            if (lvl != null) {
+                SendLevel(null, lvl);
+                SendPacket(MakeSelfMoveLook(player.Pos, player.Rot));
+            }
             return size;
         }
 
@@ -955,6 +1019,13 @@ namespace PluginAlphaIndev
             }
 
             PlaceOrActivate(x, y, z, dir, block);
+
+            // top the stack the client just placed from back up to a full 64,
+            // so the "creative" inventory never runs out
+            if (block >= 1 && block <= BETA_MAX_BLOCK) {
+                if (hotbarContents != null) hotbarContents[heldSlot] = block;
+                SendSetSlot(INV_HOTBAR_START + heldSlot, block);
+            }
             return size;
         }
 
@@ -985,6 +1056,17 @@ namespace PluginAlphaIndev
             int size = head;
             if (itemId != -1) size += 3;
             if (left < size) return 0;
+
+            // Acknowledge the click so the client doesn't consider the inventory
+            // action unconfirmed (vanilla servers ack every window click)
+            byte windowId = buffer[offset + 1];
+            ushort action = AlphaIndevParser.ReadU16(buffer, offset + 5);
+            byte[] resp = new byte[1 + 1 + 2 + 1];
+            resp[0] = OPCODE_TRANSACTION;
+            resp[1] = windowId;
+            WriteU16(action, resp, 2);
+            resp[4] = 1; // accepted
+            SendPacket(resp);
             return size;
         }
 
@@ -998,7 +1080,7 @@ namespace PluginAlphaIndev
 
 #region Level / map sending
         public override void SendLevel(Level prev, Level level) {
-            byte* conv = stackalloc byte[Block.ExtendedCount];
+            byte[] conv = new byte[Block.ExtendedCount];
             for (int j = 0; j < Block.ExtendedCount; j++)
                 conv[j] = (byte)ConvertBlock((BlockID)j);
 
@@ -1007,15 +1089,49 @@ namespace PluginAlphaIndev
             {
                 for (int z = 0; z < prev.ChunksZ; z++)
                     for (int x = 0; x < prev.ChunksX; x++)
-                        Send(MakePreChunk(x, z, false));
+                        SendPacket(MakePreChunk(x, z, false));
             }
 
-            for (int z = 0; z < level.ChunksZ; z++)
-                for (int x = 0; x < level.ChunksX; x++)
+            // Send columns closest to the spawn first, so the area around the player
+            // appears immediately and the rest of the map streams in behind it
+            int spawnX = level.SpawnPos.BlockX >> 4, spawnZ = level.SpawnPos.BlockZ >> 4;
+            int countX = level.ChunksX, countZ = level.ChunksZ;
+
+            int[] cells = new int[countX * countZ];
+            int[] dists = new int[countX * countZ];
+            for (int z = 0, i = 0; z < countZ; z++)
+                for (int x = 0; x < countX; x++, i++)
                 {
-                    Send(MakePreChunk(x, z, true));
-                    Send(MakeChunk(x, z, level, conv));
+                    cells[i] = (x << 16) | z;
+                    int dx = x - spawnX, dz = z - spawnZ;
+                    dists[i] = dx * dx + dz * dz;
                 }
+            Array.Sort(dists, cells);
+
+            for (int i = 0; i < cells.Length; i++)
+            {
+                int x = cells[i] >> 16, z = cells[i] & 0xFFFF;
+                SendPacket(MakePreChunk(x, z, true));
+                SendChunkColumn(level, conv, x, z, 0, 128);
+            }
+
+            SendInventory();
+        }
+
+        // Sends the 16 x h x 16 region starting at world Y 'y0' of chunk column (cx, cz).
+        // If the compressed packet would exceed the socket's send buffer limit, the region
+        // is recursively halved vertically until every packet fits. (A 16x4x16 region fits
+        // even if its data is completely incompressible, so this always terminates.)
+        void SendChunkColumn(Level lvl, byte[] conv, int cx, int cz, int y0, int h) {
+            byte[] packet = MakeChunkPacket(lvl, conv, cx, cz, y0, h);
+            if (packet.Length <= MAX_PACKET_SIZE || h <= 4) {
+                SendPacket(packet);
+                return;
+            }
+
+            int h1 = h / 2;
+            SendChunkColumn(lvl, conv, cx, cz, y0,      h1);
+            SendChunkColumn(lvl, conv, cx, cz, y0 + h1, h - h1);
         }
 
         protected override byte[] MakeLogin(string motd) {
@@ -1078,31 +1194,32 @@ namespace PluginAlphaIndev
             return data;
         }
 
-        byte[] MakeChunk(int x, int z, Level lvl, byte* conv) {
+        byte[] MakeChunkPacket(Level lvl, byte[] conv, int cx, int cz, int y0, int h) {
+            int volume = 16 * 16 * h;
+            byte[] block_data  = new byte[volume];
+            byte[] block_meta  = new byte[volume / 2];
+            byte[] block_light = new byte[volume / 2];
+            byte[] sky_light   = new byte[volume / 2];
+
+            int maxY = Math.Min(y0 + h, (int)lvl.Height);
+
+            for (int Y = y0; Y < maxY; Y++)
+                for (int ZZ = 0; ZZ < 16; ZZ++)
+                    for (int XX = 0; XX < 16; XX++)
+                    {
+                        int X = (cx * 16) + XX, Z = (cz * 16) + ZZ;
+                        if (!lvl.IsValidPos(X, Y, Z)) continue;
+
+                        block_data[(Y - y0) + (ZZ * h) + (XX * h * 16)] =
+                            conv[lvl.FastGetBlock((ushort)X, (ushort)Y, (ushort)Z)];
+                    }
+
+            // Make everything fully lit
+            for (int i = 0; i < sky_light.Length; i++) sky_light[i] = 0xFF;
+
             MemoryStream tmp = new MemoryStream();
             using (ZLibStream dst = new ZLibStream(tmp))
             {
-                byte[] block_data  = new byte[16 * 16 * 128];
-                byte[] block_meta  = new byte[(16 * 16 * 128) / 2];
-                byte[] block_light = new byte[(16 * 16 * 128) / 2];
-                byte[] sky_light   = new byte[(16 * 16 * 128) / 2];
-
-                int height = Math.Min(128, (int)lvl.Height);
-
-                for (int YY = 0; YY < height; YY++)
-                    for (int ZZ = 0; ZZ < 16; ZZ++)
-                        for (int XX = 0; XX < 16; XX++)
-                        {
-                            int X = (x * 16) + XX, Y = YY, Z = (z * 16) + ZZ;
-                            if (!lvl.IsValidPos(X, Y, Z)) continue;
-
-                            block_data[YY + (ZZ * 128) + (XX * 128 * 16)] =
-                                conv[lvl.FastGetBlock((ushort)X, (ushort)Y, (ushort)Z)];
-                        }
-
-                // Make everything fully lit
-                for (int i = 0; i < sky_light.Length; i++) sky_light[i] = 0xFF;
-
                 dst.Write(block_data,  0,  block_data.Length);
                 dst.Write(block_meta,  0,  block_meta.Length);
                 dst.Write(block_light, 0, block_light.Length);
@@ -1113,11 +1230,11 @@ namespace PluginAlphaIndev
             byte[] data  = new byte[1 + 4 + 2 + 4 + 1 + 1 + 1 + 4 + chunk.Length];
 
             data[0] = OPCODE_CHUNK;
-            WriteI32(x * 16, data, 1); // X/Y/Z chunk origin
-            WriteU16(0,      data, 5);
-            WriteI32(z * 16, data, 7);
-            data[11] = 15;  // X/Y/Z chunk size - 1
-            data[12] = 127;
+            WriteI32(cx * 16,      data, 1); // X/Y/Z region origin
+            WriteU16((ushort)y0,   data, 5);
+            WriteI32(cz * 16,      data, 7);
+            data[11] = 15;                   // X/Y/Z region size - 1
+            data[12] = (byte)(h - 1);
             data[13] = 15;
 
             WriteI32(chunk.Length, data, 14);
@@ -1180,6 +1297,91 @@ namespace PluginAlphaIndev
             }
         }
 #endregion
+
+#region Beta inventory
+        // Beta survival clients join with an empty inventory and so cannot build anything.
+        // Populate the hotbar + main inventory with stacks of buildable blocks at login,
+        // and top the used stack back up to 64 whenever the client places a block, giving
+        // an effectively infinite "creative style" block supply.
+        const byte OPCODE_SET_SLOT     = 0x67;
+        const byte OPCODE_WINDOW_ITEMS = 0x68;
+        // player inventory window layout: 0 craft result, 1-4 craft grid, 5-8 armor,
+        //   9-35 main inventory, 36-44 hotbar
+        const int INV_MAIN_START   = 9;
+        const int INV_HOTBAR_START = 36;
+        const int INV_SIZE         = 45;
+        const short BETA_MAX_BLOCK = 96; // highest placeable block id in beta 1.7.3
+
+        // Only blocks whose Beta ids are identical to the classic/MCGalaxy ids are given,
+        // so block ids need no translation in either direction.
+        static readonly short[] hotbar_items = { 1, 4, 5, 3, 12, 17, 20, 35, 45 };
+        static readonly short[] main_items = {
+            2, 13, 18, 19, 6, 37, 38, 39, 40, 14, 15,
+            16, 41, 42, 44, 46, 47, 48, 49
+        };
+
+        short heldSlot;          // hotbar index (0-8) tracked from holding-change packets
+        short[] hotbarContents;  // what we believe each hotbar slot holds (for restocking)
+
+        void SendInventory() {
+            if (!isBeta) return; // Alpha uses a different (pre-window) inventory system
+
+            hotbarContents = (short[])hotbar_items.Clone();
+
+            short[] slots = new short[INV_SIZE];
+            for (int i = 0; i < INV_SIZE; i++) slots[i] = -1;
+            for (int i = 0; i < main_items.Length && INV_MAIN_START + i < INV_HOTBAR_START; i++)
+                slots[INV_MAIN_START + i] = main_items[i];
+            for (int i = 0; i < hotbar_items.Length && i < 9; i++)
+                slots[INV_HOTBAR_START + i] = hotbar_items[i];
+
+            // window items packet: byte op, byte window, short count, then per-slot payload
+            //   (short id, then byte count + short damage when id != -1)
+            int dataLen = 1 + 1 + 2;
+            for (int i = 0; i < INV_SIZE; i++) dataLen += slots[i] < 0 ? 2 : 5;
+
+            byte[] data = new byte[dataLen];
+            data[0] = OPCODE_WINDOW_ITEMS;
+            data[1] = 0; // window 0 = player inventory
+            WriteU16(INV_SIZE, data, 2);
+
+            int o = 4;
+            for (int i = 0; i < INV_SIZE; i++)
+            {
+                WriteU16((ushort)slots[i], data, o); o += 2;
+                if (slots[i] >= 0) {
+                    data[o++] = 64;          // stack count
+                    WriteU16(0, data, o); o += 2; // damage
+                }
+            }
+            SendPacket(data);
+        }
+
+        void SendSetSlot(int slot, short item) {
+            byte[] data = new byte[1 + 1 + 2 + 2 + 1 + 2];
+            data[0] = OPCODE_SET_SLOT;
+            data[1] = 0; // window 0 = player inventory
+            WriteU16((ushort)slot, data, 2);
+            WriteU16((ushort)item, data, 4);
+            data[6] = 64;       // stack count
+            WriteU16(0, data, 7); // damage
+            SendPacket(data);
+        }
+
+        void RestockHeldSlot() {
+            short item = hotbarContents == null ? (short)-1 : hotbarContents[heldSlot];
+            if (item > 0) SendSetSlot(INV_HOTBAR_START + heldSlot, item);
+        }
+#endregion
+
+        public override BlockID ConvertBlock(BlockID block) {
+            BlockID raw = base.ConvertBlock(block);
+            // Classic's 16 coloured wool blocks occupy ids 21-36, but in Alpha/Beta those
+            // ids are lapis/sandstone/beds/rails/etc. Show them all as the single wool
+            // block instead of unrelated (and potentially glitchy) blocks.
+            if (raw >= 21 && raw <= 36) raw = 35;
+            return raw;
+        }
 
         public override string ClientName() {
             return IsBeta ? "Beta 1.7.3" : "Alpha 1.1.1";
@@ -1416,7 +1618,9 @@ namespace PluginAlphaIndev
                 ms.Write(tmp, 0, tmp.Length);
                 ms.Write(C_meta, 0, C_meta.Length);
 
-                Send(ms.ToArray());
+                // The indev map payload is one giant logical packet, which is far larger
+                // than the socket's 4096 byte send buffer - must send it in slices
+                SendLarge(ms.ToArray());
             }
 
             byte[] final = new byte[1 + 4 + 4 + 4 + 4 + 4];
@@ -1425,7 +1629,7 @@ namespace PluginAlphaIndev
             WriteI32(level.Width,  final,  5);
             WriteI32(level.Height, final,  9);
             WriteI32(level.Length, final, 13);
-            Send(final);
+            SendPacket(final);
 
             SendSetSpawnpoint(level.SpawnPos, default(Orientation));
         }

@@ -69,6 +69,49 @@ the inventory. Key changes:
   than throwing or corrupting server state. A capped `MaxEntityID` keeps the shared entity
   position buffer from overflowing (old-protocol teleports are larger than Classic's).
 
+## Large maps (fixed crash)
+
+MCGalaxy's `TcpSocket` copies every outgoing packet into a fixed **4096 byte** send
+buffer, so any single packet larger than that throws and kills the connection. Full
+16x128x16 chunk columns of varied terrain easily compress to more than 4096 bytes, which
+is why **small flat maps worked but big maps (e.g. 512x128x512) stuttered and crashed**
+partway through loading. Fixes:
+
+* Chunk columns whose compressed packet exceeds the budget are recursively split into
+  vertically-stacked sub-regions until every packet fits (a 16x4x16 region fits even if
+  its data is completely incompressible, so this always terminates).
+* Columns are sent nearest-to-spawn first, so the player's surroundings render right away
+  while the rest of the map streams in behind them.
+* The Indev map payload (one giant logical packet by protocol design) is sent in slices
+  under a session send lock so nothing can interleave into the byte stream.
+
+Very large maps still mean a lot of data for a 2010-era client to chew through (a
+512x512 map is ~84 MB of chunk arrays client side) — expect some initial loading stutter,
+and gigantic maps (1024x1024+) may exhaust the old client's default 1 GB Java heap.
+
+## Beta inventory (building support)
+
+Beta survival clients join with an empty inventory, so previously they couldn't place a
+single block. The plugin now:
+
+* fills the hotbar and main inventory with stacks of buildable blocks at login
+  (`0x68 Window Items`),
+* **tops the used stack back up to 64 after every block placement** (`0x67 Set Slot`),
+  and after dropping an item with Q — effectively infinite blocks, creative-style,
+* acknowledges inventory window clicks (`0x6A Transaction`) like a vanilla server, so
+  moving items around the inventory doesn't leave unconfirmed actions,
+* resyncs the world, inventory, and position when the client respawns after dying
+  (previously a respawn left the client on an endless loading screen).
+
+Only blocks whose Beta ids match the classic ids are handed out, so no id remapping is
+needed. Relatedly, classic's 16 coloured wool blocks (ids 21-36) — which mean
+lapis/sandstone/beds/rails in Beta — are now all shown to Alpha/Beta clients as the
+single wool block instead of unrelated garbage blocks.
+
+Digging speed is client-side (survival timing) — the server can't make blocks break
+instantly on these old clients. Alpha clients use a different pre-window inventory
+system (`0x05`) and are not given items yet.
+
 ## Known limitations / things to field-test
 
 * **Vertical position calibration** uses the same tuned offsets as the original
