@@ -12,6 +12,20 @@
 //     client-side crashes while mining / placing / using the inventory).
 //   * Defensive bounds checking everywhere - a malformed or oversized packet closes the
 //     connection cleanly instead of throwing or corrupting server state.
+//
+// ============================ MCGALAXY VERSION TOGGLE ============================
+// Older MCGalaxy releases broadcast entity positions via UpdatePlayerPositions(), while
+// newer ones (that added GetPositionPacket / MaxEntityID) use a shared buffer instead.
+// A single plugin can only match one of the two, so pick the one your server uses:
+//
+//   * Leave the line below UNCOMMENTED for older MCGalaxy (the common downloadable build).
+//   * COMMENT it out for newer MCGalaxy (if you get errors mentioning GetPositionPacket
+//     or MaxEntityID, that means your server is newer - comment the line out).
+//
+// Symptom of the wrong setting is a compile error about UpdatePlayerPositions() or
+// GetPositionPacket() 'no suitable method found to override'. Flip this line to fix it.
+#define LEGACY_ENTITY_API
+// ================================================================================
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -70,7 +84,8 @@ namespace PluginAlphaIndev
             try {
                 return ProcessPacket(buffer, length);
             } catch (Exception ex) {
-                Logger.LogError("Error handling I/A/B handshake", ex);
+                Logger.Log(LogType.Warning, "Error handling I/A/B handshake");
+                Logger.LogError(ex);
                 socket.Close();
                 return length;
             }
@@ -178,8 +193,9 @@ namespace PluginAlphaIndev
         // Sanity limit on string lengths (in bytes). Real packets never come close.
         const int MAX_STRING_BYTES = 32767;
 
-        public static ushort ReadU16(byte[] array, int index) { return MemUtils.ReadU16_BE(array, index); }
-        public static int    ReadI32(byte[] array, int index) { return MemUtils.ReadI32_BE(array, index); }
+        // NetUtils (rather than MemUtils) so this compiles against both old and new MCGalaxy
+        public static ushort ReadU16(byte[] array, int index) { return NetUtils.ReadU16(array, index); }
+        public static int    ReadI32(byte[] array, int index) { return NetUtils.ReadI32(array, index); }
 
         public static float ReadF32(byte[] array, int offset) {
             int value = ReadI32(array, offset);
@@ -370,7 +386,9 @@ namespace PluginAlphaIndev
         public const byte FIELD_STRING = AlphaIndevParser.FIELD_STRING;
 
         // ---- CPE / capabilities: none of these old clients support any of it -----
+#if !LEGACY_ENTITY_API
         public override int MaxEntityID { get { return 127; } } // keeps the position buffer within bounds
+#endif
         public override bool Supports(string extName, int version) { return false; }
 
         public override void SendAddTabEntry(byte id, string name, string nick, string group, byte groupRank) { }
@@ -380,7 +398,9 @@ namespace PluginAlphaIndev
         public override bool SendHoldThis(BlockID block, bool locked) { return false; }
         public override bool SendSetEnvColor(byte type, string hex) { return false; }
         public override void SendChangeModel(byte id, string model) { }
+#if !LEGACY_ENTITY_API
         public override void SendEntityProperty(byte id, EntityProp prop, int value) { }
+#endif
         public override bool SendSetWeather(byte weather) { return false; }
         public override bool SendSetTextColor(ColorDesc color) { return false; }
         public override bool SendDefineBlock(BlockDefinition def) { return false; }
@@ -388,7 +408,9 @@ namespace PluginAlphaIndev
         public override bool SendAddSelection(byte id, string label, Vec3U16 p1, Vec3U16 p2, ColorDesc color) { return false; }
         public override bool SendRemoveSelection(byte id) { return false; }
         public override bool SendCinematicGui(CinematicGui gui) { return false; }
+#if !LEGACY_ENTITY_API
         public override bool SendToggleBlockList(bool toggle) { return false; }
+#endif
 
         // ---- Little helpers ------------------------------------------------------
         protected static void WriteU16(ushort value, byte[] array, int index) { NetUtils.WriteU16(value, array, index); }
@@ -512,9 +534,29 @@ namespace PluginAlphaIndev
             }
         }
 
-        // Position broadcasting. Writes directly into the shared entity-update buffer.
-        // The buffer only guarantees 16 bytes/entity and an absolute teleport is 19 bytes,
-        // so MaxEntityID is capped low enough that this can never overflow.
+#if LEGACY_ENTITY_API
+        // Position broadcasting on older MCGalaxy: one teleport packet per moved entity.
+        public override void UpdatePlayerPositions() {
+            Player[] players = PlayerInfo.Online.Items;
+            Player dst = player;
+
+            foreach (Player p in players)
+            {
+                if (dst == p || dst.level != p.level || !dst.CanSeeEntity(p)) continue;
+
+                Orientation rot = p.Rot;
+                Position pos    = p._tempPos;
+                Position delta  = new Position(pos.X - p._lastPos.X, pos.Y - p._lastPos.Y, pos.Z - p._lastPos.Z);
+                bool posChanged = delta.X  != 0 || delta.Y != 0 || delta.Z != 0;
+                bool oriChanged = rot.RotY != p._lastRot.RotY   || rot.HeadX != p._lastRot.HeadX;
+                if (posChanged || oriChanged)
+                    SendTeleport(p.id, pos, rot);
+            }
+        }
+#else
+        // Position broadcasting on newer MCGalaxy: write directly into the shared entity
+        // update buffer. That buffer only guarantees 16 bytes/entity and an absolute
+        // teleport is 19 bytes, so MaxEntityID is capped low enough this can't overflow.
         public override unsafe void GetPositionPacket(ref byte* ptr, byte id, bool srcExtPos, bool extPos,
                                                       Position pos, Position oldPos, Orientation rot, Orientation oldRot) {
             Position delta = new Position(pos.X - oldPos.X, pos.Y - oldPos.Y, pos.Z - oldPos.Z);
@@ -553,6 +595,7 @@ namespace PluginAlphaIndev
             *ptr++ = (byte)(value >> 24); *ptr++ = (byte)(value >> 16);
             *ptr++ = (byte)(value >> 8);  *ptr++ = (byte)value;
         }
+#endif
 #endregion
 
 

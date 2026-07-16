@@ -13,6 +13,24 @@ It works by registering a protocol handler for opcode `0x02` (the Alpha/Beta/Ind
 handshake), so it lives alongside the normal Classic/ClassiCube protocol without
 interfering with it. When the plugin is unloaded the original handler is restored.
 
+## MCGalaxy version toggle (read this if it won't compile)
+
+MCGalaxy changed how it broadcasts entity positions: older releases use
+`UpdatePlayerPositions()`, newer ones use `GetPositionPacket()` / `MaxEntityID`. A single
+plugin can only match one, so there is a switch at the top of `AlphaIndev.cs`:
+
+```csharp
+#define LEGACY_ENTITY_API
+```
+
+* **Leave it uncommented** for older MCGalaxy (the usual downloadable build). This is the
+  default, so most people don't need to touch it.
+* **Comment it out** (`//#define LEGACY_ENTITY_API`) for newer MCGalaxy.
+
+If compilation fails with *"no suitable method found to override"* mentioning
+`UpdatePlayerPositions`, `GetPositionPacket` or `MaxEntityID`, you've got the wrong
+setting — flip that one line and recompile. (Both settings have been compile-checked.)
+
 ## Building
 
 The plugin references only `MCGalaxy_.dll` and `System.dll`, so it compiles like any
