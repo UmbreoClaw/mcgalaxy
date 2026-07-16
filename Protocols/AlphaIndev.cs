@@ -45,6 +45,11 @@ namespace PluginAlphaIndev
         public override string MCGalaxy_Version { get { return "1.9.5.3"; } }
         public override string creator { get { return "MCGalaxy"; } }
 
+        // Logs chunk streaming, column splitting, block id mapping decisions and world
+        // border hits to the console - useful when diagnosing client crashes/desyncs.
+        // Set false to silence.
+        public static bool Verbose = true;
+
         ProtocolConstructor oldCons;
         const byte OPCODE_HANDSHAKE = AlphaIndevProtocol.OPCODE_HANDSHAKE;
 
@@ -1012,6 +1017,7 @@ namespace PluginAlphaIndev
             byte dir = values[5].U8;
 
             short held = block < 0 ? (short)-1 : TranslateIncoming(block, 0);
+            LogPlaceMapping(block, 0, held);
             if (held < 0 && block >= 1) RevertPlacement(x, y, z, dir);
             else                        PlaceOrActivate(x, y, z, dir, held);
             return size;
@@ -1037,6 +1043,7 @@ namespace PluginAlphaIndev
             }
 
             short held = block < 0 ? (short)-1 : TranslateIncoming(block, damage);
+            LogPlaceMapping(block, damage, held);
             if (held < 0 && block >= 1 && block <= BETA_MAX_BLOCK) {
                 RevertPlacement(x, y, z, dir); // block we can't store - undo the prediction
             } else {
@@ -1165,6 +1172,10 @@ namespace PluginAlphaIndev
                 lastChunkX = int.MinValue; lastChunkZ = int.MinValue;
             }
 
+            if (AlphaIndevPlugin.Verbose)
+                Logger.Log(LogType.SystemActivity, "AlphaIndev: sending level {0} to {1} (view radius {2} chunks)",
+                           level.name, player.name, VIEW_RADIUS);
+
             StreamChunks(level, level.SpawnPos.BlockX >> 4, level.SpawnPos.BlockZ >> 4);
             SendInventory();
         }
@@ -1188,6 +1199,7 @@ namespace PluginAlphaIndev
                     SendPacket(MakePreChunk(key >> 16, key & 0xFFFF, false));
                 }
 
+                int sent = 0;
                 for (int r = 0; r <= VIEW_RADIUS; r++)
                     for (int dz = -r; dz <= r; dz++)
                         for (int dx = -r; dx <= r; dx++)
@@ -1203,8 +1215,13 @@ namespace PluginAlphaIndev
                             sentChunks[key] = true;
 
                             SendPacket(MakePreChunk(cx, cz, true));
-                            SendChunkColumn(lvl, convTable, convMetaTable, cx, cz, 0, 128);
+                            SendChunkColumn(lvl, convTable, convMetaTable, cx, cz);
+                            sent++;
                         }
+
+                if (AlphaIndevPlugin.Verbose && (sent > 0 || far.Count > 0))
+                    Logger.Log(LogType.SystemActivity, "AlphaIndev: {0}: +{1}/-{2} columns around chunk ({3},{4}), {5} loaded",
+                               player.name, sent, far.Count, pcx, pcz, sentChunks.Count);
             }
         }
 
@@ -1213,6 +1230,7 @@ namespace PluginAlphaIndev
         // world border: clamp movement to the level bounds and rubber-band the client
         // back inside. Falling out of the bottom of the world rescues to the spawn.
         const double BORDER_MARGIN = 0.4; // keeps the player's bounding box on real terrain
+        bool atBorder; // edge-triggers the border log so it isn't spammed every move packet
         void ClampToWorldBorder(ref double x, ref double y, ref double z) {
             Level lvl = player.level;
             if (lvl == null) return;
@@ -1231,9 +1249,17 @@ namespace PluginAlphaIndev
                 Position spawn = lvl.SpawnPos;
                 x = spawn.X / 32.0; y = spawn.Y / 32.0; z = spawn.Z / 32.0;
                 clamped = true;
+                if (AlphaIndevPlugin.Verbose)
+                    Logger.Log(LogType.SystemActivity, "AlphaIndev: {0} fell out of the world, rescued to spawn",
+                               player.name);
             }
 
+            if (AlphaIndevPlugin.Verbose && clamped && !atBorder)
+                Logger.Log(LogType.SystemActivity, "AlphaIndev: {0} hit the world border at ({1:F0}, {2:F0})",
+                           player.name, x, z);
+            atBorder = clamped;
             if (!clamped) return;
+
             // send the client back inside (SendTeleport also streams the terrain there)
             Position pos = new Position((int)(x * 32), (int)(y * 32), (int)(z * 32));
             SendTeleport(Entities.SelfID, pos, player.Rot);
@@ -1264,16 +1290,53 @@ namespace PluginAlphaIndev
         // If the compressed packet would exceed the socket's send buffer limit, the region
         // is recursively halved vertically until every packet fits. (A 16x4x16 region fits
         // even if its data is completely incompressible, so this always terminates.)
-        void SendChunkColumn(Level lvl, byte[] conv, byte[] convMeta, int cx, int cz, int y0, int h) {
-            byte[] packet = MakeChunkPacket(lvl, conv, convMeta, cx, cz, y0, h);
+        void SendChunkColumn(Level lvl, byte[] conv, byte[] convMeta, int cx, int cz) {
+            short[] heights = new short[16 * 16];
+            ComputeHeights(lvl, conv, cx, cz, heights);
+            SendChunkRegion(lvl, conv, convMeta, heights, cx, cz, 0, 128);
+        }
+
+        // For each (x,z) cell of the column, the y of the highest light-blocking block
+        // (-1 if the whole cell is transparent). Drives the sky light we send: it MUST
+        // agree with the heightmap the client itself computes from the block data,
+        // otherwise the client queues up endless lighting corrections for every column
+        // (uniform full-bright light previously did exactly that - the correction queue
+        // grew with every streamed chunk until the client ran out of memory).
+        void ComputeHeights(Level lvl, byte[] conv, int cx, int cz, short[] heights) {
+            int topY = Math.Min(128, (int)lvl.Height) - 1;
+
+            for (int ZZ = 0; ZZ < 16; ZZ++)
+                for (int XX = 0; XX < 16; XX++)
+                {
+                    int X = (cx * 16) + XX, Z = (cz * 16) + ZZ;
+                    short top = -1;
+
+                    if (lvl.IsValidPos(X, 0, Z)) {
+                        for (int Y = topY; Y >= 0; Y--)
+                        {
+                            byte block = conv[lvl.FastGetBlock((ushort)X, (ushort)Y, (ushort)Z)];
+                            if (!LIGHT_PASSES[block]) { top = (short)Y; break; }
+                        }
+                    }
+                    heights[(ZZ * 16) + XX] = top;
+                }
+        }
+
+        void SendChunkRegion(Level lvl, byte[] conv, byte[] convMeta, short[] heights,
+                             int cx, int cz, int y0, int h) {
+            byte[] packet = MakeChunkPacket(lvl, conv, convMeta, heights, cx, cz, y0, h);
             if (packet.Length <= MAX_PACKET_SIZE || h <= 4) {
                 SendPacket(packet);
                 return;
             }
 
+            if (AlphaIndevPlugin.Verbose)
+                Logger.Log(LogType.SystemActivity, "AlphaIndev: column ({0},{1}) is {2} bytes at h={3}, splitting",
+                           cx, cz, packet.Length, h);
+
             int h1 = h / 2;
-            SendChunkColumn(lvl, conv, convMeta, cx, cz, y0,      h1);
-            SendChunkColumn(lvl, conv, convMeta, cx, cz, y0 + h1, h - h1);
+            SendChunkRegion(lvl, conv, convMeta, heights, cx, cz, y0,      h1);
+            SendChunkRegion(lvl, conv, convMeta, heights, cx, cz, y0 + h1, h - h1);
         }
 
         protected override byte[] MakeLogin(string motd) {
@@ -1336,7 +1399,8 @@ namespace PluginAlphaIndev
             return data;
         }
 
-        byte[] MakeChunkPacket(Level lvl, byte[] conv, byte[] convMeta, int cx, int cz, int y0, int h) {
+        byte[] MakeChunkPacket(Level lvl, byte[] conv, byte[] convMeta, short[] heights,
+                               int cx, int cz, int y0, int h) {
             int volume = 16 * 16 * h;
             byte[] block_data  = new byte[volume];
             byte[] block_meta  = new byte[volume / 2];
@@ -1345,25 +1409,28 @@ namespace PluginAlphaIndev
 
             int maxY = Math.Min(y0 + h, (int)lvl.Height);
 
-            for (int Y = y0; Y < maxY; Y++)
+            for (int Y = y0; Y < y0 + h; Y++)
                 for (int ZZ = 0; ZZ < 16; ZZ++)
                     for (int XX = 0; XX < 16; XX++)
                     {
                         int X = (cx * 16) + XX, Z = (cz * 16) + ZZ;
-                        if (!lvl.IsValidPos(X, Y, Z)) continue;
-
-                        BlockID raw = lvl.FastGetBlock((ushort)X, (ushort)Y, (ushort)Z);
                         int i = (Y - y0) + (ZZ * h) + (XX * h * 16);
-                        block_data[i] = conv[raw];
 
-                        // metadata is a nibble array; carries e.g. wool colours
-                        byte meta = convMeta[raw];
-                        if (meta != 0)
-                            block_meta[i >> 1] |= (byte)(meta << ((i & 1) * 4));
+                        if (Y < maxY && lvl.IsValidPos(X, Y, Z)) {
+                            BlockID raw = lvl.FastGetBlock((ushort)X, (ushort)Y, (ushort)Z);
+                            block_data[i] = conv[raw];
+
+                            // metadata is a nibble array; carries e.g. wool colours
+                            byte meta = convMeta[raw];
+                            if (meta != 0)
+                                block_meta[i >> 1] |= (byte)(meta << ((i & 1) * 4));
+                        }
+
+                        // sky light: full above the highest light-blocking block, dark
+                        // below - matching what the client recomputes for itself
+                        if (Y > heights[(ZZ * 16) + XX])
+                            sky_light[i >> 1] |= (byte)(0xF << ((i & 1) * 4));
                     }
-
-            // Make everything fully lit
-            for (int i = 0; i < sky_light.Length; i++) sky_light[i] = 0xFF;
 
             MemoryStream tmp = new MemoryStream();
             using (ZLibStream dst = new ZLibStream(tmp))
@@ -1563,6 +1630,11 @@ namespace PluginAlphaIndev
         // beta wool colour -> classic wool id (brown -> CPE brown wool)
         static readonly byte[] wool_to_classic = { 36, 22, 32, 27, 23, 24, 33, 35, 35, 28, 31, 29, 57, 25, 21, 34 };
 
+        // Blocks the client treats as fully transparent to sky light (opacity 0). This
+        // must mirror the client's own heightmap rule - notably water and leaves DO stop
+        // sky light here, exactly like the client's heightmap calculation.
+        static readonly bool[] LIGHT_PASSES = new bool[256];
+
         static AlphaProtocol() {
             for (int i = 0; i < WIRE_ID.Length; i++) WIRE_ID[i] = (byte)i;
             for (int i = 0; i < 16; i++)
@@ -1570,6 +1642,14 @@ namespace PluginAlphaIndev
                 WIRE_ID[21 + i]   = 35;
                 WIRE_META[21 + i] = wool_meta[i];
             }
+
+            LIGHT_PASSES[0]  = true; // air
+            LIGHT_PASSES[6]  = true; // sapling
+            LIGHT_PASSES[20] = true; // glass
+            LIGHT_PASSES[37] = true; // dandelion
+            LIGHT_PASSES[38] = true; // rose
+            LIGHT_PASSES[39] = true; // brown mushroom
+            LIGHT_PASSES[40] = true; // red mushroom
         }
 
         protected override void WriteBlockChange(byte[] data, int offset, byte block, int x, int y, int z) {
@@ -1585,6 +1665,19 @@ namespace PluginAlphaIndev
             WriteI32(z, data, offset + 6);
             data[offset + 10] = id;
             data[offset + 11] = meta;
+        }
+
+        // Logs how a client-side placement was mapped, when the mapping is not 1:1
+        void LogPlaceMapping(short block, short damage, short held) {
+            if (!AlphaIndevPlugin.Verbose || block < 1 || held == block) return;
+
+            if (held < 0) {
+                Logger.Log(LogType.SystemActivity, "AlphaIndev: {0} placed id {1}:{2} - no mapping, reverted",
+                           player.name, block, damage);
+            } else {
+                Logger.Log(LogType.SystemActivity, "AlphaIndev: {0} placed id {1}:{2} -> stored as block {3}",
+                           player.name, block, damage, held);
+            }
         }
 
         // Maps a block id (+ item damage) received from an Alpha/Beta client to the

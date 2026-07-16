@@ -100,6 +100,30 @@ an `Out of memory!` crash. The plugin now behaves like a real Beta server:
 it for more visible terrain (vanilla beta servers used 10), lower it if a client with a
 tiny Java heap still struggles.
 
+**3. Bogus lighting made the client queue endless corrections.** Chunks used to be sent
+with sky light 15 *everywhere* — including inside solid stone and caves. The Beta client
+recomputes lighting from the block data and schedules a correction for every disagreeing
+cell, and each newly streamed column triggered relighting floods through the neighboring
+terrain. On cave-riddled maps (e.g. classic-generated levels) the correction queue grew
+with every chunk received while walking, until the client ran out of memory — this is why
+walking away from spawn crashed even before reaching the map edge. Chunks are now sent
+with heightmap-consistent sky light (full light above the highest light-blocking block,
+darkness below — the same rule the client itself uses), so the client has ~nothing to
+correct. Side effect: caves are now actually dark, like real Beta; surfaces are lit
+normally.
+
+## Console verbosity
+
+`AlphaIndevPlugin.Verbose` (default **true**) logs diagnostic activity to the console:
+
+* level sends and per-step chunk streaming (`+sent/-unloaded columns around chunk (x,z)`),
+* chunk columns that exceed the packet budget and get split (with the byte size),
+* block placements whose id mapping is not 1:1 (`placed id 35:14 -> stored as block 21`),
+  including placements with no equivalent that get reverted,
+* world border hits and fell-out-of-world rescues.
+
+Set the field to `false` (or edit the source default) to silence it once things work.
+
 One side effect of view-radius streaming: a player located beyond the loaded radius may
 occasionally be invisible until they next move (their entity was spawned into a column
 the client hadn't loaded). Position updates re-place them automatically.
