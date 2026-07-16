@@ -118,14 +118,39 @@ single block. The plugin now:
 * resyncs the world, inventory, and position when the client respawns after dying
   (previously a respawn left the client on an endless loading screen).
 
-Only blocks whose Beta ids match the classic ids are handed out, so no id remapping is
-needed. Relatedly, classic's 16 coloured wool blocks (ids 21-36) — which mean
-lapis/sandstone/beds/rails in Beta — are now all shown to Alpha/Beta clients as the
-single wool block instead of unrelated garbage blocks.
+**Tools:** the hotbar includes a diamond pickaxe/shovel/axe (plus sword and shears in
+the main inventory) so digging is much faster — dig speed is computed client side from
+the held item, so the server needs no timing changes. Tool durability is also client
+side, so the held tool is refreshed to full durability after every completed dig;
+without that, tools would slowly wear out and break. Tools are sent with stack count 1
+(they don't stack), and right-clicking with a tool in hand is now correctly ignored
+instead of being fed into block placement as a bogus block id. Fully instant "creative"
+breaking isn't possible — the break animation/timing lives in the client.
 
-Digging speed is client-side (survival timing) — the server can't make blocks break
-instantly on these old clients. Alpha clients use a different pre-window inventory
-system (`0x05`) and are not given items yet.
+**Block id translation:** MCGalaxy stores classic block ids, where 21-36 are the 16
+coloured wools; in Alpha/Beta those same ids mean lapis/sandstone/beds/rails/pistons.
+A proper two-way translation layer now handles this:
+
+* outgoing, coloured wools map to Beta's single wool block **with the right colour in
+  the block metadata** (both in chunk data and block-change packets), so classic wool
+  builds keep their colours on Beta clients,
+* incoming, wool placements carry their colour in the item damage value and are stored
+  as the matching classic coloured wool — the inventory includes red/blue/yellow wool,
+* craftable Beta blocks get sensible classic equivalents (stairs -> planks,
+  chest/crafting table -> crate, ladder -> rope, sandstone -> CPE sandstone, ...),
+  and blocks with no reasonable equivalent are reverted client-side instead of being
+  stored as garbage,
+* bulk block updates (physics, mass edits) now convert ids properly for these clients
+  instead of sending raw internal ids.
+
+**World border:** MCGalaxy worlds are finite but Alpha/Beta clients assume infinite
+terrain — walking past the map edge used to strand the client in nonexistent chunks
+(falling/crashing). The plugin now acts as a world border sized to the level: movement
+is clamped to the map bounds and the client is rubber-banded back inside, and falling
+out of the bottom of the world rescues the player to the spawn point.
+
+Alpha clients use a different pre-window inventory system (`0x05`) and are not given
+items yet.
 
 ## Known limitations / things to field-test
 

@@ -765,7 +765,9 @@ namespace PluginAlphaIndev
                 int y = (index / level.Width) / level.Length;
                 int z = (index / level.Width) % level.Length;
 
-                WriteBlockChange(data, i * size, (byte)buffer.blocks[i], x, y, z);
+                // blocks[] holds MCGalaxy internal ids - must convert them for the client,
+                // otherwise mass edits/physics send raw ids these clients render as garbage
+                WriteBlockChange(data, i * size, (byte)ConvertBlock(buffer.blocks[i]), x, y, z);
             }
             return data;
         }
@@ -905,6 +907,7 @@ namespace PluginAlphaIndev
             double y = values[3].F64;
             double z = values[4].F64;
 
+            ClampToWorldBorder(ref x, ref y, ref z);
             MaybeStreamChunks(x, z);
             Orientation rot = player.Rot;
             player.ProcessMovement((int)(x * 32), (int)(y * 32), (int)(z * 32),
@@ -938,6 +941,7 @@ namespace PluginAlphaIndev
             float yaw   = values[5].F32 + 180.0f;
             float pitch = values[6].F32;
 
+            ClampToWorldBorder(ref x, ref y, ref z);
             MaybeStreamChunks(x, z);
             player.ProcessMovement((int)(x * 32), (int)(y * 32), (int)(z * 32),
                                    DegToByte(yaw), DegToByte(pitch), -1);
@@ -957,6 +961,7 @@ namespace PluginAlphaIndev
             // status 2 = "finished digging" (block broken) in Alpha/Beta
             if (status == 2) {
                 TryBlockChange(x, y, z, 0, Block.Air);
+                if (isBeta) RefreshHeldTool();
             } else if (status == 4 && isBeta) {
                 // status 4 = dropped held item (Q) - top the client's stack back up
                 RestockHeldSlot();
@@ -1006,7 +1011,9 @@ namespace PluginAlphaIndev
             int z   = values[4].I32;
             byte dir = values[5].U8;
 
-            PlaceOrActivate(x, y, z, dir, block);
+            short held = block < 0 ? (short)-1 : TranslateIncoming(block, 0);
+            if (held < 0 && block >= 1) RevertPlacement(x, y, z, dir);
+            else                        PlaceOrActivate(x, y, z, dir, held);
             return size;
         }
 
@@ -1020,39 +1027,66 @@ namespace PluginAlphaIndev
             int z   = values[3].I32;
             byte dir = values[4].U8;
             short block = (short)values[5].U16;
+            short damage = 0;
 
-            // a held block id >= 0 is followed by byte amount + short damage (3 extra bytes)
+            // a held item id >= 0 is followed by byte amount + short damage (3 extra bytes)
             if (block >= 0) {
                 if (left < size + 3) return 0; // wait for the rest of the packet
+                damage = (short)AlphaIndevParser.ReadU16(buffer, offset + size + 1);
                 size += 3;
             }
 
-            PlaceOrActivate(x, y, z, dir, block);
+            short held = block < 0 ? (short)-1 : TranslateIncoming(block, damage);
+            if (held < 0 && block >= 1 && block <= BETA_MAX_BLOCK) {
+                RevertPlacement(x, y, z, dir); // block we can't store - undo the prediction
+            } else {
+                PlaceOrActivate(x, y, z, dir, held);
+            }
 
             // top the stack the client just placed from back up to a full 64,
             // so the "creative" inventory never runs out
             if (block >= 1 && block <= BETA_MAX_BLOCK) {
-                if (hotbarContents != null) hotbarContents[heldSlot] = block;
-                SendSetSlot(INV_HOTBAR_START + heldSlot, block);
+                if (hotbarContents != null) {
+                    hotbarContents[heldSlot] = block;
+                    hotbarDamage[heldSlot]   = damage;
+                }
+                SendSetSlot(INV_HOTBAR_START + heldSlot, block, damage);
             }
             return size;
         }
 
-        // Interprets a block placement. Direction 0xFF (-1) or a negative block id means
-        // "right clicked air / used an item", otherwise offset against the clicked face.
-        void PlaceOrActivate(int x, int y, int z, byte dir, short block) {
-            if (dir == 0xFF || block < 0) return;
-
+        // Offsets coordinates against the clicked block face; false for invalid faces
+        static bool OffsetByFace(ref int x, ref int y, ref int z, byte dir) {
             switch (dir) {
-                case 0: y--; break;
-                case 1: y++; break;
-                case 2: z--; break;
-                case 3: z++; break;
-                case 4: x--; break;
-                case 5: x++; break;
-                default: return;
+                case 0: y--; return true;
+                case 1: y++; return true;
+                case 2: z--; return true;
+                case 3: z++; return true;
+                case 4: x--; return true;
+                case 5: x++; return true;
+                default: return false;
             }
+        }
+
+        // Interprets a block placement. Direction 0xFF (-1) means "right clicked air";
+        // 'block' is the translated MCGalaxy block id (-1 = untranslatable/an item id).
+        void PlaceOrActivate(int x, int y, int z, byte dir, short block) {
+            if (dir == 0xFF) return;                        // right clicking air / using an item
+            if (block < 1 || block >= Block.CPE_COUNT) return; // no MCGalaxy equivalent
+            if (!OffsetByFace(ref x, ref y, ref z, dir)) return;
+
             TryBlockChange(x, y, z, 1, (BlockID)block);
+        }
+
+        // The client predicted a placement the server won't store - resend the actual
+        // block so the client doesn't keep showing a ghost block
+        void RevertPlacement(int x, int y, int z, byte dir) {
+            if (dir == 0xFF || !OffsetByFace(ref x, ref y, ref z, dir)) return;
+
+            Level lvl = player.level;
+            if (lvl == null || !lvl.IsValidPos(x, y, z)) return;
+            SendBlockchange((ushort)x, (ushort)y, (ushort)z,
+                            lvl.FastGetBlock((ushort)x, (ushort)y, (ushort)z));
         }
 
         int HandleWindowClick(byte[] buffer, int offset, int left) {
@@ -1101,14 +1135,23 @@ namespace PluginAlphaIndev
         // key = (chunkX << 16) | chunkZ. Dictionary used as a set (HashSet would need a
         // System.Core reference on older .NET Framework based servers)
         Dictionary<int, bool> sentChunks = new Dictionary<int, bool>();
-        byte[] convTable;
+        byte[] convTable, convMetaTable;
         Level chunkLevel;
         int lastChunkX = int.MinValue, lastChunkZ = int.MinValue;
 
         public override void SendLevel(Level prev, Level level) {
             byte[] conv = new byte[Block.ExtendedCount];
+            byte[] meta = new byte[Block.ExtendedCount];
             for (int j = 0; j < Block.ExtendedCount; j++)
-                conv[j] = (byte)ConvertBlock((BlockID)j);
+            {
+                byte classic = (byte)ConvertBlock((BlockID)j);
+                if (classic < WIRE_ID.Length) {
+                    conv[j] = WIRE_ID[classic];
+                    meta[j] = WIRE_META[classic];
+                } else {
+                    conv[j] = classic;
+                }
+            }
 
             lock (chunkLock) {
                 // unload all columns that were sent for the previous level
@@ -1116,8 +1159,9 @@ namespace PluginAlphaIndev
                     SendPacket(MakePreChunk(key >> 16, key & 0xFFFF, false));
                 sentChunks.Clear();
 
-                convTable  = conv;
-                chunkLevel = level;
+                convTable     = conv;
+                convMetaTable = meta;
+                chunkLevel    = level;
                 lastChunkX = int.MinValue; lastChunkZ = int.MinValue;
             }
 
@@ -1159,9 +1203,40 @@ namespace PluginAlphaIndev
                             sentChunks[key] = true;
 
                             SendPacket(MakePreChunk(cx, cz, true));
-                            SendChunkColumn(lvl, convTable, cx, cz, 0, 128);
+                            SendChunkColumn(lvl, convTable, convMetaTable, cx, cz, 0, 128);
                         }
             }
+        }
+
+        // MCGalaxy worlds are finite but these clients assume infinite terrain - walking
+        // past the map edge puts them in nonexistent chunks and they fall/crash. Act as a
+        // world border: clamp movement to the level bounds and rubber-band the client
+        // back inside. Falling out of the bottom of the world rescues to the spawn.
+        const double BORDER_MARGIN = 0.4; // keeps the player's bounding box on real terrain
+        void ClampToWorldBorder(ref double x, ref double y, ref double z) {
+            Level lvl = player.level;
+            if (lvl == null) return;
+
+            bool clamped = false;
+            double maxX = lvl.Width  - BORDER_MARGIN;
+            double maxZ = lvl.Length - BORDER_MARGIN;
+
+            if (x < BORDER_MARGIN) { x = BORDER_MARGIN; clamped = true; }
+            if (x > maxX)          { x = maxX;          clamped = true; }
+            if (z < BORDER_MARGIN) { z = BORDER_MARGIN; clamped = true; }
+            if (z > maxZ)          { z = maxZ;          clamped = true; }
+
+            // fell out of the bottom of the world - rescue to the spawn point
+            if (y < -8) {
+                Position spawn = lvl.SpawnPos;
+                x = spawn.X / 32.0; y = spawn.Y / 32.0; z = spawn.Z / 32.0;
+                clamped = true;
+            }
+
+            if (!clamped) return;
+            // send the client back inside (SendTeleport also streams the terrain there)
+            Position pos = new Position((int)(x * 32), (int)(y * 32), (int)(z * 32));
+            SendTeleport(Entities.SelfID, pos, player.Rot);
         }
 
         // Called from movement handlers - streams new columns when the player crosses
@@ -1189,16 +1264,16 @@ namespace PluginAlphaIndev
         // If the compressed packet would exceed the socket's send buffer limit, the region
         // is recursively halved vertically until every packet fits. (A 16x4x16 region fits
         // even if its data is completely incompressible, so this always terminates.)
-        void SendChunkColumn(Level lvl, byte[] conv, int cx, int cz, int y0, int h) {
-            byte[] packet = MakeChunkPacket(lvl, conv, cx, cz, y0, h);
+        void SendChunkColumn(Level lvl, byte[] conv, byte[] convMeta, int cx, int cz, int y0, int h) {
+            byte[] packet = MakeChunkPacket(lvl, conv, convMeta, cx, cz, y0, h);
             if (packet.Length <= MAX_PACKET_SIZE || h <= 4) {
                 SendPacket(packet);
                 return;
             }
 
             int h1 = h / 2;
-            SendChunkColumn(lvl, conv, cx, cz, y0,      h1);
-            SendChunkColumn(lvl, conv, cx, cz, y0 + h1, h - h1);
+            SendChunkColumn(lvl, conv, convMeta, cx, cz, y0,      h1);
+            SendChunkColumn(lvl, conv, convMeta, cx, cz, y0 + h1, h - h1);
         }
 
         protected override byte[] MakeLogin(string motd) {
@@ -1261,7 +1336,7 @@ namespace PluginAlphaIndev
             return data;
         }
 
-        byte[] MakeChunkPacket(Level lvl, byte[] conv, int cx, int cz, int y0, int h) {
+        byte[] MakeChunkPacket(Level lvl, byte[] conv, byte[] convMeta, int cx, int cz, int y0, int h) {
             int volume = 16 * 16 * h;
             byte[] block_data  = new byte[volume];
             byte[] block_meta  = new byte[volume / 2];
@@ -1277,8 +1352,14 @@ namespace PluginAlphaIndev
                         int X = (cx * 16) + XX, Z = (cz * 16) + ZZ;
                         if (!lvl.IsValidPos(X, Y, Z)) continue;
 
-                        block_data[(Y - y0) + (ZZ * h) + (XX * h * 16)] =
-                            conv[lvl.FastGetBlock((ushort)X, (ushort)Y, (ushort)Z)];
+                        BlockID raw = lvl.FastGetBlock((ushort)X, (ushort)Y, (ushort)Z);
+                        int i = (Y - y0) + (ZZ * h) + (XX * h * 16);
+                        block_data[i] = conv[raw];
+
+                        // metadata is a nibble array; carries e.g. wool colours
+                        byte meta = convMeta[raw];
+                        if (meta != 0)
+                            block_meta[i >> 1] |= (byte)(meta << ((i & 1) * 4));
                     }
 
             // Make everything fully lit
@@ -1379,28 +1460,47 @@ namespace PluginAlphaIndev
         const int INV_SIZE         = 45;
         const short BETA_MAX_BLOCK = 96; // highest placeable block id in beta 1.7.3
 
-        // Only blocks whose Beta ids are identical to the classic/MCGalaxy ids are given,
-        // so block ids need no translation in either direction.
-        static readonly short[] hotbar_items = { 1, 4, 5, 3, 12, 17, 20, 35, 45 };
+        // Blocks given use ids identical in Beta and classic; coloured wools use Beta's
+        // wool-colour damage values. Diamond tools (gold can't harvest everything) make
+        // digging much faster; dig speed itself is entirely client side.
+        static readonly short[] hotbar_items  = { 1, 4, 5, 3, 17, 35, 278, 277, 279 };
+        static readonly short[] hotbar_damage = { 0, 0, 0, 0, 0,  0,  0,   0,   0 };
         static readonly short[] main_items = {
-            2, 13, 18, 19, 6, 37, 38, 39, 40, 14, 15,
-            16, 41, 42, 44, 46, 47, 48, 49
+            276, 359, 20, 12, 45, 13, 18, 19, 6, 37, 38, 39, 40,
+            14, 15, 16, 41, 42, 44, 46, 47, 48, 49, 2, 35, 35, 35
+        };
+        static readonly short[] main_damage = {
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 14, 11, 4
         };
 
         short heldSlot;          // hotbar index (0-8) tracked from holding-change packets
         short[] hotbarContents;  // what we believe each hotbar slot holds (for restocking)
+        short[] hotbarDamage;    // damage/colour values for hotbarContents
+
+        static byte StackCount(short item) {
+            return item >= 256 ? (byte)1 : (byte)64; // ids >= 256 are items/tools, unstackable
+        }
 
         void SendInventory() {
             if (!isBeta) return; // Alpha uses a different (pre-window) inventory system
 
             hotbarContents = (short[])hotbar_items.Clone();
+            hotbarDamage   = (short[])hotbar_damage.Clone();
 
-            short[] slots = new short[INV_SIZE];
+            short[] slots  = new short[INV_SIZE];
+            short[] damage = new short[INV_SIZE];
             for (int i = 0; i < INV_SIZE; i++) slots[i] = -1;
             for (int i = 0; i < main_items.Length && INV_MAIN_START + i < INV_HOTBAR_START; i++)
-                slots[INV_MAIN_START + i] = main_items[i];
+            {
+                slots[INV_MAIN_START + i]  = main_items[i];
+                damage[INV_MAIN_START + i] = main_damage[i];
+            }
             for (int i = 0; i < hotbar_items.Length && i < 9; i++)
-                slots[INV_HOTBAR_START + i] = hotbar_items[i];
+            {
+                slots[INV_HOTBAR_START + i]  = hotbar_items[i];
+                damage[INV_HOTBAR_START + i] = hotbar_damage[i];
+            }
 
             // window items packet: byte op, byte window, short count, then per-slot payload
             //   (short id, then byte count + short damage when id != -1)
@@ -1417,38 +1517,98 @@ namespace PluginAlphaIndev
             {
                 WriteU16((ushort)slots[i], data, o); o += 2;
                 if (slots[i] >= 0) {
-                    data[o++] = 64;          // stack count
-                    WriteU16(0, data, o); o += 2; // damage
+                    data[o++] = StackCount(slots[i]);
+                    WriteU16((ushort)damage[i], data, o); o += 2;
                 }
             }
             SendPacket(data);
         }
 
-        void SendSetSlot(int slot, short item) {
+        void SendSetSlot(int slot, short item, short damage) {
             byte[] data = new byte[1 + 1 + 2 + 2 + 1 + 2];
             data[0] = OPCODE_SET_SLOT;
             data[1] = 0; // window 0 = player inventory
             WriteU16((ushort)slot, data, 2);
             WriteU16((ushort)item, data, 4);
-            data[6] = 64;       // stack count
-            WriteU16(0, data, 7); // damage
+            data[6] = StackCount(item);
+            WriteU16((ushort)damage, data, 7);
             SendPacket(data);
         }
 
         void RestockHeldSlot() {
-            short item = hotbarContents == null ? (short)-1 : hotbarContents[heldSlot];
-            if (item > 0) SendSetSlot(INV_HOTBAR_START + heldSlot, item);
+            if (hotbarContents == null) return;
+            short item = hotbarContents[heldSlot];
+            if (item > 0) SendSetSlot(INV_HOTBAR_START + heldSlot, item, hotbarDamage[heldSlot]);
+        }
+
+        // Tool wear is client side - refresh the held tool to full durability after digs,
+        // otherwise tools would slowly wear out and break
+        void RefreshHeldTool() {
+            if (hotbarContents == null) return;
+            short item = hotbarContents[heldSlot];
+            if (item >= 256) SendSetSlot(INV_HOTBAR_START + heldSlot, item, 0);
         }
 #endregion
 
-        public override BlockID ConvertBlock(BlockID block) {
-            BlockID raw = base.ConvertBlock(block);
-            // Classic's 16 coloured wool blocks occupy ids 21-36, but in Alpha/Beta those
-            // ids are lapis/sandstone/beds/rails/etc. Show them all as the single wool
-            // block instead of unrelated (and potentially glitchy) blocks.
-            if (raw >= 21 && raw <= 36) raw = 35;
-            return raw;
+#region Block id translation
+        // MCGalaxy stores classic block ids, where 21-36 are the 16 coloured wools; in
+        // Alpha/Beta those ids mean lapis/sandstone/beds/rails/pistons instead, and wool
+        // colour lives in the metadata of the single wool block (35). These tables map
+        // outgoing classic ids to the Beta wire id + metadata (all other ids match 1:1).
+        static readonly byte[] WIRE_ID   = new byte[50];
+        static readonly byte[] WIRE_META = new byte[50];
+        // classic wool order: Red,Orange,Yellow,Lime,Green,Teal,Aqua,Cyan,Blue,Indigo,
+        //                     Violet,Magenta,Pink,Black,Gray,White -> beta wool colours
+        static readonly byte[] wool_meta = { 14, 1, 4, 5, 13, 9, 3, 9, 11, 10, 10, 2, 6, 15, 7, 0 };
+        // beta wool colour -> classic wool id (brown -> CPE brown wool)
+        static readonly byte[] wool_to_classic = { 36, 22, 32, 27, 23, 24, 33, 35, 35, 28, 31, 29, 57, 25, 21, 34 };
+
+        static AlphaProtocol() {
+            for (int i = 0; i < WIRE_ID.Length; i++) WIRE_ID[i] = (byte)i;
+            for (int i = 0; i < 16; i++)
+            {
+                WIRE_ID[21 + i]   = 35;
+                WIRE_META[21 + i] = wool_meta[i];
+            }
         }
+
+        protected override void WriteBlockChange(byte[] data, int offset, byte block, int x, int y, int z) {
+            byte id = block, meta = 0;
+            if (block < WIRE_ID.Length) {
+                id   = WIRE_ID[block];
+                meta = WIRE_META[block];
+            }
+
+            data[offset + 0] = OPCODE_BLOCK_CHANGE;
+            WriteI32(x, data, offset + 1);
+            data[offset + 5] = (byte)y;
+            WriteI32(z, data, offset + 6);
+            data[offset + 10] = id;
+            data[offset + 11] = meta;
+        }
+
+        // Maps a block id (+ item damage) received from an Alpha/Beta client to the
+        // MCGalaxy block to store. Returns -1 when there is no reasonable equivalent
+        // (unknown blocks and item ids - the placement is then reverted client side).
+        static short TranslateIncoming(short block, short damage) {
+            if (block >= 1  && block <= 20) return block; // ids identical to classic
+            if (block >= 37 && block <= 49) return block;
+
+            switch (block) {
+                case 35: return wool_to_classic[damage & 0xF];
+                case 24: return 52;  // sandstone       -> CPE sandstone
+                case 53:             // wooden stairs   -> planks
+                case 72:             // wooden pressure plate
+                case 85:             // fence
+                case 96: return 5;   // trapdoor
+                case 54:             // chest           -> CPE crate
+                case 58: return 64;  // crafting table
+                case 65: return 51;  // ladder          -> CPE rope
+                case 50: return 39;  // torch           -> mushroom (closest small deco)
+                default: return -1;
+            }
+        }
+#endregion
 
         public override string ClientName() {
             return IsBeta ? "Beta 1.7.3" : "Alpha 1.1.1";
@@ -1623,7 +1783,8 @@ namespace PluginAlphaIndev
             short block = (short)values[5].U16;
             y -= WORLD_SHIFT_BLOCKS;
 
-            if (dir == 0xFF || block < 0) return size;
+            // indev block ids match the classic set; reject item ids / unknown blocks
+            if (dir == 0xFF || block < 1 || block > 49) return size;
             switch (dir) {
                 case 0: y--; break;
                 case 1: y++; break;
