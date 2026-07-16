@@ -69,25 +69,40 @@ the inventory. Key changes:
   than throwing or corrupting server state. A capped `MaxEntityID` keeps the shared entity
   position buffer from overflowing (old-protocol teleports are larger than Classic's).
 
-## Large maps (fixed crash)
+## Large maps (fixed two crashes)
 
-MCGalaxy's `TcpSocket` copies every outgoing packet into a fixed **4096 byte** send
-buffer, so any single packet larger than that throws and kills the connection. Full
-16x128x16 chunk columns of varied terrain easily compress to more than 4096 bytes, which
-is why **small flat maps worked but big maps (e.g. 512x128x512) stuttered and crashed**
-partway through loading. Fixes:
+Big maps (e.g. 512x128x512) used to stutter and then crash the client. Two independent
+causes, both fixed:
 
-* Chunk columns whose compressed packet exceeds the budget are recursively split into
-  vertically-stacked sub-regions until every packet fits (a 16x4x16 region fits even if
-  its data is completely incompressible, so this always terminates).
-* Columns are sent nearest-to-spawn first, so the player's surroundings render right away
-  while the rest of the map streams in behind them.
-* The Indev map payload (one giant logical packet by protocol design) is sent in slices
-  under a session send lock so nothing can interleave into the byte stream.
+**1. Oversized packets killed the connection.** MCGalaxy's `TcpSocket` copies every
+outgoing packet into a fixed **4096 byte** send buffer, so any single packet larger than
+that throws and aborts the level send. Full 16x128x16 chunk columns of varied terrain
+easily compress to more than 4096 bytes (small flat maps compressed under the limit,
+which is why they seemed fine). Columns whose compressed packet exceeds the budget are
+now recursively split into vertically-stacked sub-regions until every packet fits
+(a 16x4x16 region fits even incompressible data, so this always terminates). The Indev
+map payload (one giant packet by protocol design) is sent in slices under a session send
+lock so nothing can interleave into the byte stream.
 
-Very large maps still mean a lot of data for a 2010-era client to chew through (a
-512x512 map is ~84 MB of chunk arrays client side) — expect some initial loading stutter,
-and gigantic maps (1024x1024+) may exhaust the old client's default 1 GB Java heap.
+**2. Sending the whole map ran the client out of Java heap.** Old clients keep every
+received chunk column in memory (~80 KB each), so a 512x512 map meant 1024 columns and
+an `Out of memory!` crash. The plugin now behaves like a real Beta server:
+
+* only columns within `VIEW_RADIUS` (default 8) chunks of the player are sent, nearest
+  rings first — at most 17x17 = 289 columns (~24 MB) held client side, regardless of
+  map size,
+* new columns stream in as the player walks or teleports (teleports send the destination
+  terrain *before* the position, so the client never falls into ungenerated world),
+* columns further than `VIEW_RADIUS + 2` are unloaded from the client as it moves, so
+  memory stays bounded forever.
+
+`VIEW_RADIUS` is a const at the top of the map-sending region in `AlphaIndev.cs` — raise
+it for more visible terrain (vanilla beta servers used 10), lower it if a client with a
+tiny Java heap still struggles.
+
+One side effect of view-radius streaming: a player located beyond the loaded radius may
+occasionally be invisible until they next move (their entity was spawned into a column
+the client hadn't loaded). Position updates re-place them automatically.
 
 ## Beta inventory (building support)
 

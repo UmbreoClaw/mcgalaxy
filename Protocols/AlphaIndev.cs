@@ -542,8 +542,13 @@ namespace PluginAlphaIndev
             SendPacket(packet);
         }
 
+        // Gives subclasses a chance to send the terrain around a position before the
+        // client is moved there (otherwise it falls through ungenerated world)
+        protected virtual void EnsureChunksAt(Position pos) { }
+
         public override void SendTeleport(byte id, Position pos, Orientation rot) {
             if (id == Entities.SelfID) {
+                EnsureChunksAt(pos);
                 SendPacket(MakeSelfMoveLook(pos, rot));
             } else {
                 SendPacket(MakeEntityTeleport(id, pos, rot));
@@ -559,6 +564,7 @@ namespace PluginAlphaIndev
 
         public override void SendSpawnEntity(byte id, string name, string skin, Position pos, Orientation rot) {
             if (id == Entities.SelfID) {
+                EnsureChunksAt(pos);
                 SendPacket(MakeSelfMoveLook(pos, rot));
             } else {
                 name = ColorEscape(CleanupColors(name));
@@ -899,6 +905,7 @@ namespace PluginAlphaIndev
             double y = values[3].F64;
             double z = values[4].F64;
 
+            MaybeStreamChunks(x, z);
             Orientation rot = player.Rot;
             player.ProcessMovement((int)(x * 32), (int)(y * 32), (int)(z * 32),
                                    rot.RotY, rot.HeadX, -1);
@@ -931,6 +938,7 @@ namespace PluginAlphaIndev
             float yaw   = values[5].F32 + 180.0f;
             float pitch = values[6].F32;
 
+            MaybeStreamChunks(x, z);
             player.ProcessMovement((int)(x * 32), (int)(y * 32), (int)(z * 32),
                                    DegToByte(yaw), DegToByte(pitch), -1);
             return size;
@@ -976,7 +984,8 @@ namespace PluginAlphaIndev
             Level lvl = player.level;
             if (lvl != null) {
                 SendLevel(null, lvl);
-                SendPacket(MakeSelfMoveLook(player.Pos, player.Rot));
+                // SendTeleport streams the columns around the position first
+                SendTeleport(Entities.SelfID, player.Pos, player.Rot);
             }
             return size;
         }
@@ -1079,43 +1088,101 @@ namespace PluginAlphaIndev
 
 
 #region Level / map sending
+        // Old clients keep EVERY received chunk column in memory (~80 KB each), so sending
+        // a whole 512x512 map (1024 columns) at once runs the client out of memory. Like a
+        // real Beta server, only columns within VIEW_RADIUS chunks of the player are sent,
+        // new ones stream in as the player moves, and columns beyond UNLOAD_RADIUS are
+        // unloaded again - client memory stays bounded regardless of map size.
+        // (radius 8 = 17x17 = at most 289 columns / ~24 MB held client side)
+        const int VIEW_RADIUS   = 8;
+        const int UNLOAD_RADIUS = VIEW_RADIUS + 2; // hysteresis so walking doesn't thrash
+
+        readonly object chunkLock = new object();
+        // key = (chunkX << 16) | chunkZ. Dictionary used as a set (HashSet would need a
+        // System.Core reference on older .NET Framework based servers)
+        Dictionary<int, bool> sentChunks = new Dictionary<int, bool>();
+        byte[] convTable;
+        Level chunkLevel;
+        int lastChunkX = int.MinValue, lastChunkZ = int.MinValue;
+
         public override void SendLevel(Level prev, Level level) {
             byte[] conv = new byte[Block.ExtendedCount];
             for (int j = 0; j < Block.ExtendedCount; j++)
                 conv[j] = (byte)ConvertBlock((BlockID)j);
 
-            // unload chunks from the previous world
-            if (prev != null)
-            {
-                for (int z = 0; z < prev.ChunksZ; z++)
-                    for (int x = 0; x < prev.ChunksX; x++)
-                        SendPacket(MakePreChunk(x, z, false));
+            lock (chunkLock) {
+                // unload all columns that were sent for the previous level
+                foreach (int key in sentChunks.Keys)
+                    SendPacket(MakePreChunk(key >> 16, key & 0xFFFF, false));
+                sentChunks.Clear();
+
+                convTable  = conv;
+                chunkLevel = level;
+                lastChunkX = int.MinValue; lastChunkZ = int.MinValue;
             }
 
-            // Send columns closest to the spawn first, so the area around the player
-            // appears immediately and the rest of the map streams in behind it
-            int spawnX = level.SpawnPos.BlockX >> 4, spawnZ = level.SpawnPos.BlockZ >> 4;
-            int countX = level.ChunksX, countZ = level.ChunksZ;
-
-            int[] cells = new int[countX * countZ];
-            int[] dists = new int[countX * countZ];
-            for (int z = 0, i = 0; z < countZ; z++)
-                for (int x = 0; x < countX; x++, i++)
-                {
-                    cells[i] = (x << 16) | z;
-                    int dx = x - spawnX, dz = z - spawnZ;
-                    dists[i] = dx * dx + dz * dz;
-                }
-            Array.Sort(dists, cells);
-
-            for (int i = 0; i < cells.Length; i++)
-            {
-                int x = cells[i] >> 16, z = cells[i] & 0xFFFF;
-                SendPacket(MakePreChunk(x, z, true));
-                SendChunkColumn(level, conv, x, z, 0, 128);
-            }
-
+            StreamChunks(level, level.SpawnPos.BlockX >> 4, level.SpawnPos.BlockZ >> 4);
             SendInventory();
+        }
+
+        // Sends any missing columns within VIEW_RADIUS of the given chunk position
+        // (nearest rings first) and unloads columns beyond UNLOAD_RADIUS
+        void StreamChunks(Level lvl, int pcx, int pcz) {
+            lock (chunkLock) {
+                if (lvl != chunkLevel || convTable == null) return;
+
+                List<int> far = new List<int>();
+                foreach (int key in sentChunks.Keys)
+                {
+                    int cx = key >> 16, cz = key & 0xFFFF;
+                    if (Math.Abs(cx - pcx) > UNLOAD_RADIUS || Math.Abs(cz - pcz) > UNLOAD_RADIUS)
+                        far.Add(key);
+                }
+                foreach (int key in far)
+                {
+                    sentChunks.Remove(key);
+                    SendPacket(MakePreChunk(key >> 16, key & 0xFFFF, false));
+                }
+
+                for (int r = 0; r <= VIEW_RADIUS; r++)
+                    for (int dz = -r; dz <= r; dz++)
+                        for (int dx = -r; dx <= r; dx++)
+                        {
+                            // only walk the outer ring at distance r (inner rings already done)
+                            if (Math.Max(Math.Abs(dx), Math.Abs(dz)) != r) continue;
+
+                            int cx = pcx + dx, cz = pcz + dz;
+                            if (cx < 0 || cz < 0 || cx >= lvl.ChunksX || cz >= lvl.ChunksZ) continue;
+
+                            int key = (cx << 16) | cz;
+                            if (sentChunks.ContainsKey(key)) continue;
+                            sentChunks[key] = true;
+
+                            SendPacket(MakePreChunk(cx, cz, true));
+                            SendChunkColumn(lvl, convTable, cx, cz, 0, 128);
+                        }
+            }
+        }
+
+        // Called from movement handlers - streams new columns when the player crosses
+        // into a different chunk
+        void MaybeStreamChunks(double x, double z) {
+            Level lvl = player.level;
+            if (lvl == null) return;
+
+            int pcx = (int)Math.Floor(x) >> 4, pcz = (int)Math.Floor(z) >> 4;
+            lock (chunkLock) {
+                if (lvl != chunkLevel) return;
+                if (pcx == lastChunkX && pcz == lastChunkZ) return;
+                lastChunkX = pcx; lastChunkZ = pcz;
+            }
+            StreamChunks(lvl, pcx, pcz);
+        }
+
+        protected override void EnsureChunksAt(Position pos) {
+            Level lvl = player.level;
+            if (lvl == null) return;
+            StreamChunks(lvl, pos.BlockX >> 4, pos.BlockZ >> 4);
         }
 
         // Sends the 16 x h x 16 region starting at world Y 'y0' of chunk column (cx, cz).
