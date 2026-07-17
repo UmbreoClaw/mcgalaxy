@@ -124,6 +124,24 @@ normally.
 
 Set the field to `false` (or edit the source default) to silence it once things work.
 
+**Sanity check: am I running the current build?** The plugin *always* logs
+`AlphaIndev: sending level <map> to <player> (view radius 8 chunks)` the moment a Beta
+client joins, and `+N/-M columns around chunk (x,z)` lines while they walk. If a Beta
+client can join and play but the console never shows these lines, the server is still
+running an **old build** of the plugin — replace the `.cs`, recompile, and restart the
+server (a restart is the reliable way to swap the loaded protocol handler).
+
+## Protocol test client
+
+`test/betabot.py` is a minimal headless Beta 1.7.3 client
+(`python3 betabot.py [host] [port] [name]`). It performs the full handshake + login,
+parses every clientbound packet (so any stream desync is detected and reported), walks
+across the map, and prints a summary: initial/streamed/unloaded chunk counts, inventory
+contents, world-border rubber-banding, and a packet histogram. Useful for verifying a
+server's plugin build without launching a real client. The entire feature set —
+streaming, border, inventory/tools, wool colour metadata, unknown-block reverts — has
+been verified end-to-end with it against a live server.
+
 One side effect of view-radius streaming: a player located beyond the loaded radius may
 occasionally be invisible until they next move (their entity was spawned into a column
 the client hadn't loaded). Position updates re-place them automatically.
