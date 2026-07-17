@@ -1291,40 +1291,115 @@ namespace PluginAlphaIndev
         // is recursively halved vertically until every packet fits. (A 16x4x16 region fits
         // even if its data is completely incompressible, so this always terminates.)
         void SendChunkColumn(Level lvl, byte[] conv, byte[] convMeta, int cx, int cz) {
-            short[] heights = new short[16 * 16];
-            ComputeHeights(lvl, conv, cx, cz, heights);
-            SendChunkRegion(lvl, conv, convMeta, heights, cx, cz, 0, 128);
+            byte[] sky = new byte[16 * 16 * 128];
+            byte[] blk = new byte[16 * 16 * 128];
+            ComputeColumnLight(lvl, conv, cx, cz, sky, blk);
+            SendChunkRegion(lvl, conv, convMeta, sky, blk, cx, cz, 0, 128);
         }
 
-        // For each (x,z) cell of the column, the y of the highest light-blocking block
-        // (-1 if the whole cell is transparent). Drives the sky light we send: it MUST
-        // agree with the heightmap the client itself computes from the block data,
-        // otherwise the client queues up endless lighting corrections for every column
-        // (uniform full-bright light previously did exactly that - the correction queue
-        // grew with every streamed chunk until the client ran out of memory).
-        void ComputeHeights(Level lvl, byte[] conv, int cx, int cz, short[] heights) {
-            int topY = Math.Min(128, (int)lvl.Height) - 1;
+        // ---- Real lighting -----------------------------------------------------------
+        // The light sent MUST match what the client computes from the block data, or it
+        // schedules a correction for every disagreeing cell; on cave-riddled maps those
+        // corrections snowballed until the client ran out of memory. So compute proper
+        // beta lighting: sky light is 15 in the open column above the terrain and spreads
+        // sideways/down with attenuation (cliffs, cave mouths, overhangs), and lava emits
+        // block light. Light reaches at most 15 blocks, so computing each column with a
+        // 16 block apron guarantees adjacent columns agree at their seams.
+        const int LIGHT_APRON = 16;
+        const int RSIZE = 16 + LIGHT_APRON * 2; // 48
 
-            for (int ZZ = 0; ZZ < 16; ZZ++)
-                for (int XX = 0; XX < 16; XX++)
+        void ComputeColumnLight(Level lvl, byte[] conv, int cx, int cz, byte[] sky, byte[] blk) {
+            byte[] blocks = new byte[RSIZE * RSIZE * 128];
+            byte[] rsky   = new byte[blocks.Length];
+            byte[] rblk   = new byte[blocks.Length];
+            int height = Math.Min(128, (int)lvl.Height);
+            int baseX = cx * 16 - LIGHT_APRON, baseZ = cz * 16 - LIGHT_APRON;
+
+            // region blocks (outside the map = air, so map edges render lit)
+            for (int rx = 0; rx < RSIZE; rx++)
+                for (int rz = 0; rz < RSIZE; rz++)
                 {
-                    int X = (cx * 16) + XX, Z = (cz * 16) + ZZ;
-                    short top = -1;
+                    int X = baseX + rx, Z = baseZ + rz;
+                    if (X < 0 || Z < 0 || X >= lvl.Width || Z >= lvl.Length) continue;
 
-                    if (lvl.IsValidPos(X, 0, Z)) {
-                        for (int Y = topY; Y >= 0; Y--)
-                        {
-                            byte block = conv[lvl.FastGetBlock((ushort)X, (ushort)Y, (ushort)Z)];
-                            if (!LIGHT_PASSES[block]) { top = (short)Y; break; }
-                        }
+                    int col = ((rx * RSIZE) + rz) * 128;
+                    for (int y = 0; y < height; y++)
+                        blocks[col + y] = conv[lvl.FastGetBlock((ushort)X, (ushort)y, (ushort)Z)];
+                }
+
+            Queue<int> queue = new Queue<int>();
+
+            // sky light: full brightness straight down until the first non-transparent
+            // block (the client's heightmap rule), then BFS spread from those cells
+            for (int rx = 0; rx < RSIZE; rx++)
+                for (int rz = 0; rz < RSIZE; rz++)
+                {
+                    int col = ((rx * RSIZE) + rz) * 128;
+                    for (int y = 127; y >= 0; y--)
+                    {
+                        if (OPACITY[blocks[col + y]] > 0) break;
+                        rsky[col + y] = 15;
+                        queue.Enqueue(col + y);
                     }
-                    heights[(ZZ * 16) + XX] = top;
+                }
+            SpreadLight(rsky, blocks, queue);
+
+            // block light: emitted by lava
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                if (EMISSION[blocks[i]] == 0) continue;
+                rblk[i] = EMISSION[blocks[i]];
+                queue.Enqueue(i);
+            }
+            SpreadLight(rblk, blocks, queue);
+
+            // extract the centre chunk; local index = ((XX * 16) + ZZ) * 128 + Y
+            for (int XX = 0; XX < 16; XX++)
+                for (int ZZ = 0; ZZ < 16; ZZ++)
+                {
+                    int src = (((XX + LIGHT_APRON) * RSIZE) + (ZZ + LIGHT_APRON)) * 128;
+                    int dst = ((XX * 16) + ZZ) * 128;
+                    for (int y = 0; y < 128; y++)
+                    {
+                        sky[dst + y] = rsky[src + y];
+                        blk[dst + y] = rblk[src + y];
+                    }
                 }
         }
 
-        void SendChunkRegion(Level lvl, byte[] conv, byte[] convMeta, short[] heights,
+        // Flood-fills light through the region: each neighbour receives
+        // value - max(1, opacity), the same attenuation rule the client uses
+        static void SpreadLight(byte[] light, byte[] blocks, Queue<int> queue) {
+            const int STRIDE_Z = 128, STRIDE_X = RSIZE * 128;
+
+            while (queue.Count > 0)
+            {
+                int i = queue.Dequeue();
+                int v = light[i];
+                if (v <= 1) continue;
+
+                int y = i & 127, rzc = (i / 128) % RSIZE, rxc = i / STRIDE_X;
+                if (y > 0)           Spread(light, blocks, queue, i - 1, v);
+                if (y < 127)         Spread(light, blocks, queue, i + 1, v);
+                if (rzc > 0)         Spread(light, blocks, queue, i - STRIDE_Z, v);
+                if (rzc < RSIZE - 1) Spread(light, blocks, queue, i + STRIDE_Z, v);
+                if (rxc > 0)         Spread(light, blocks, queue, i - STRIDE_X, v);
+                if (rxc < RSIZE - 1) Spread(light, blocks, queue, i + STRIDE_X, v);
+            }
+        }
+
+        static void Spread(byte[] light, byte[] blocks, Queue<int> queue, int n, int v) {
+            int opacity = OPACITY[blocks[n]];
+            int cand = v - (opacity > 1 ? opacity : 1);
+            if (cand > light[n]) {
+                light[n] = (byte)cand;
+                queue.Enqueue(n);
+            }
+        }
+
+        void SendChunkRegion(Level lvl, byte[] conv, byte[] convMeta, byte[] sky, byte[] blk,
                              int cx, int cz, int y0, int h) {
-            byte[] packet = MakeChunkPacket(lvl, conv, convMeta, heights, cx, cz, y0, h);
+            byte[] packet = MakeChunkPacket(lvl, conv, convMeta, sky, blk, cx, cz, y0, h);
             if (packet.Length <= MAX_PACKET_SIZE || h <= 4) {
                 SendPacket(packet);
                 return;
@@ -1335,8 +1410,8 @@ namespace PluginAlphaIndev
                            cx, cz, packet.Length, h);
 
             int h1 = h / 2;
-            SendChunkRegion(lvl, conv, convMeta, heights, cx, cz, y0,      h1);
-            SendChunkRegion(lvl, conv, convMeta, heights, cx, cz, y0 + h1, h - h1);
+            SendChunkRegion(lvl, conv, convMeta, sky, blk, cx, cz, y0,      h1);
+            SendChunkRegion(lvl, conv, convMeta, sky, blk, cx, cz, y0 + h1, h - h1);
         }
 
         protected override byte[] MakeLogin(string motd) {
@@ -1399,7 +1474,7 @@ namespace PluginAlphaIndev
             return data;
         }
 
-        byte[] MakeChunkPacket(Level lvl, byte[] conv, byte[] convMeta, short[] heights,
+        byte[] MakeChunkPacket(Level lvl, byte[] conv, byte[] convMeta, byte[] sky, byte[] blk,
                                int cx, int cz, int y0, int h) {
             int volume = 16 * 16 * h;
             byte[] block_data  = new byte[volume];
@@ -1426,10 +1501,12 @@ namespace PluginAlphaIndev
                                 block_meta[i >> 1] |= (byte)(meta << ((i & 1) * 4));
                         }
 
-                        // sky light: full above the highest light-blocking block, dark
-                        // below - matching what the client recomputes for itself
-                        if (Y > heights[(ZZ * 16) + XX])
-                            sky_light[i >> 1] |= (byte)(0xF << ((i & 1) * 4));
+                        // computed lighting (see ComputeColumnLight)
+                        int light = ((XX * 16) + ZZ) * 128 + Y;
+                        if (sky[light] != 0)
+                            sky_light[i >> 1]   |= (byte)(sky[light] << ((i & 1) * 4));
+                        if (blk[light] != 0)
+                            block_light[i >> 1] |= (byte)(blk[light] << ((i & 1) * 4));
                     }
 
             MemoryStream tmp = new MemoryStream();
@@ -1630,10 +1707,11 @@ namespace PluginAlphaIndev
         // beta wool colour -> classic wool id (brown -> CPE brown wool)
         static readonly byte[] wool_to_classic = { 36, 22, 32, 27, 23, 24, 33, 35, 35, 28, 31, 29, 57, 25, 21, 34 };
 
-        // Blocks the client treats as fully transparent to sky light (opacity 0). This
-        // must mirror the client's own heightmap rule - notably water and leaves DO stop
-        // sky light here, exactly like the client's heightmap calculation.
-        static readonly bool[] LIGHT_PASSES = new bool[256];
+        // Per-block light opacity and emission, mirroring the beta client's own tables.
+        // The light we send must agree with what the client computes for itself,
+        // otherwise it schedules a correction for every disagreeing cell.
+        static readonly byte[] OPACITY  = new byte[256];
+        static readonly byte[] EMISSION = new byte[256];
 
         static AlphaProtocol() {
             for (int i = 0; i < WIRE_ID.Length; i++) WIRE_ID[i] = (byte)i;
@@ -1643,13 +1721,20 @@ namespace PluginAlphaIndev
                 WIRE_META[21 + i] = wool_meta[i];
             }
 
-            LIGHT_PASSES[0]  = true; // air
-            LIGHT_PASSES[6]  = true; // sapling
-            LIGHT_PASSES[20] = true; // glass
-            LIGHT_PASSES[37] = true; // dandelion
-            LIGHT_PASSES[38] = true; // rose
-            LIGHT_PASSES[39] = true; // brown mushroom
-            LIGHT_PASSES[40] = true; // red mushroom
+            for (int i = 0; i < OPACITY.Length; i++) OPACITY[i] = 15;
+            OPACITY[0]  = 0; // air
+            OPACITY[6]  = 0; // sapling
+            OPACITY[20] = 0; // glass
+            OPACITY[37] = 0; // dandelion
+            OPACITY[38] = 0; // rose
+            OPACITY[39] = 0; // brown mushroom
+            OPACITY[40] = 0; // red mushroom
+            OPACITY[8]  = 3; // flowing water
+            OPACITY[9]  = 3; // still water
+            OPACITY[18] = 1; // leaves
+
+            EMISSION[10] = 15; // flowing lava
+            EMISSION[11] = 15; // still lava
         }
 
         protected override void WriteBlockChange(byte[] data, int offset, byte block, int x, int y, int z) {

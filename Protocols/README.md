@@ -101,16 +101,25 @@ it for more visible terrain (vanilla beta servers used 10), lower it if a client
 tiny Java heap still struggles.
 
 **3. Bogus lighting made the client queue endless corrections.** Chunks used to be sent
-with sky light 15 *everywhere* — including inside solid stone and caves. The Beta client
-recomputes lighting from the block data and schedules a correction for every disagreeing
-cell, and each newly streamed column triggered relighting floods through the neighboring
-terrain. On cave-riddled maps (e.g. classic-generated levels) the correction queue grew
-with every chunk received while walking, until the client ran out of memory — this is why
-walking away from spawn crashed even before reaching the map edge. Chunks are now sent
-with heightmap-consistent sky light (full light above the highest light-blocking block,
-darkness below — the same rule the client itself uses), so the client has ~nothing to
-correct. Side effect: caves are now actually dark, like real Beta; surfaces are lit
-normally.
+with sky light 15 *everywhere* — including inside solid stone and caves — and block
+light 0 everywhere, even around lava. The Beta client recomputes lighting from the block
+data and schedules a correction for every disagreeing cell, and each newly streamed
+column triggered relighting floods through the neighboring terrain. On cave-riddled
+maps (e.g. classic-generated levels, which also have lava layers at the bottom — every
+lava cell was a disagreement) the correction queue grew with every chunk received while
+walking, until the client ran out of memory. This is why walking away from spawn crashed
+even before reaching the map edge.
+
+The plugin now computes **real Beta lighting** server-side, matching the client's own
+rules: sky light is full above the terrain heightmap and spreads sideways/downwards with
+per-block attenuation (cliffs, overhangs, cave mouths; water and leaves attenuate), and
+lava emits block light 15 that spreads the same way. Each column is computed with a
+16-block apron so adjacent columns agree exactly at their seams. The result is that the
+client's own recomputation agrees with what it received, leaving it essentially nothing
+to correct. Verified by decompressing the actual chunk packets on a classic-generated
+map: 435k/435k open-air cells fully lit, 121k/121k deep stone cells dark, 6400/6400 lava
+cells emitting light. Caves are now genuinely dark (with lava pockets glowing), exactly
+like real Beta.
 
 ## Console verbosity
 
