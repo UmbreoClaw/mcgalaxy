@@ -698,7 +698,12 @@ namespace MCGalaxy.Network
         /// health - the client removes its Game Over screen when the health rise arrives. </summary>
         static void Revive(Player p, string why) {
             p.Extras.Remove(DWELL_KEY);
+            // clear any still-rendered keel first, then respawn the entity fresh
+            // for everyone (the dwell despawned it) at the respawn position
+            BroadcastDeathState(p, false);
             PlayerActions.Respawn(p);
+            Entities.GlobalDespawn(p, false);
+            Entities.GlobalSpawn(p, false);
             SetHealth(p, MAX_HEALTH);
             Logger.Log(LogType.Debug, "survival: {0} revived ({1})", p.name, why);
         }
@@ -709,6 +714,10 @@ namespace MCGalaxy.Network
             if (!IsDead(p)) return;
             int left = p.Extras.GetInt(DWELL_KEY, RESPAWN_TIMEOUT_SECS) - 1;
             p.Extras[DWELL_KEY] = left;
+            // from the SECOND tick on (>= 1s dead - the keel-over has played),
+            // keep the corpse unloaded for everyone else; re-running at 1 Hz also
+            // covers viewers who joined the level mid-death
+            if (left <= RESPAWN_TIMEOUT_SECS - 2) DespawnCorpse(p);
             if (left <= 0) Revive(p, "safety timeout");
         }
 
@@ -799,6 +808,40 @@ namespace MCGalaxy.Network
             }
         }
 
+        /// <summary> SURV_PLAYER_HURT with the state byte: 1 = the player DIED (the
+        /// client keels the entity over like a dying mob), 2 = REVIVED (stand back
+        /// up / clear the keel). Clients predating the state byte read only the
+        /// entity id and show a plain hurt wobble - graceful degradation. The
+        /// visual despawn-during-dwell is separate (TickDeathDwell). </summary>
+        static void BroadcastDeathState(Player victim, bool died) {
+            Level lvl = victim.level;
+            Player[] players = PlayerInfo.Online.Items;
+            foreach (Player viewer in players)
+            {
+                byte eid;
+                if (viewer == victim || viewer.level != lvl) continue;
+                if (!Active(viewer, lvl)) continue;
+                if (!viewer.EntityList.TryGetVisibleID(victim, out eid)) continue;
+                byte[] msg = new byte[Packet.PluginMessageDataLength];
+                msg[0] = PLAYER_HURT;
+                msg[1] = eid;
+                msg[2] = (byte)(died ? 1 : 2);
+                SendMessage(viewer, msg);
+            }
+        }
+
+        // The corpse must not stand around during the death dwell: unload the dead
+        // player's entity for every other viewer on the level (classic clients
+        // included - they can't render the keel-over at all). Runs at 1 Hz from
+        // TickDeathDwell, which also heals viewers who join mid-death.
+        static void DespawnCorpse(Player p) {
+            Player[] players = PlayerInfo.Online.Items;
+            foreach (Player pl in players)
+            {
+                if (pl != p && pl.level == p.level) Entities.Despawn(pl, p);
+            }
+        }
+
         // Genuine Mob.knockBack strength is 0.4 blocks/tick on each axis. The CPE
         // VelocityControl wire unit is JUMP HEIGHT in blocks (the client converts
         // through CalcJumpVelocity; its anchor: 1.233 -> the default 0.42 jump), so
@@ -846,6 +889,9 @@ namespace MCGalaxy.Network
             // death resets your place on the map: the respawn goes to spawn, and so
             // should a rejoin (never restore a pre-death position)
             SurvivalInventory.ClearSavedPosition(p, p.level);
+            // other survival viewers see the body keel over like a dying mob
+            // (the dwell tick unloads it a second later)
+            BroadcastDeathState(p, true);
             // phase 5: scatter the inventory as drop entities (map opt-out via
             // SurvivalDeathDrops; creative maps keep the local palette, no scatter)
             if (p.level.Config.SurvivalDeathDrops && !p.level.Config.SurvivalCreative)
