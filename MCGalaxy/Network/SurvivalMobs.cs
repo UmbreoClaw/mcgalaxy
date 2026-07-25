@@ -544,9 +544,6 @@ namespace MCGalaxy.Network
             if (!Types[m.Type].Passive) {
                 if (attacker != null)         { m.Target = attacker; m.TargetMob = null; }
                 else if (attackerMob != null) {
-                    if (m.TargetMob != attackerMob)
-                        Logger.Log(LogType.Debug, "survival: {0} #{1} now targets {2} #{3} (infight)",
-                                   Types[m.Type].Name, m.Id, Types[attackerMob.Type].Name, attackerMob.Id);
                     m.TargetMob = attackerMob; m.Target = null;
                 }
             }
@@ -716,6 +713,7 @@ namespace MCGalaxy.Network
         public static void HandleAttack(Player p, int targetKind, int targetId) {
             Level lvl = p.level;
             if (lvl == null || !SurvivalNet.Active(p, lvl) || SurvivalNet.IsDead(p)) return;
+            if (Commands.World.CmdSpectate.IsSpectating(p)) return; // observers don't punch
             // targetKind 2 = a primed TNT (c0.30 PrimedTnt.hurt melee defuse)
             if (targetKind == 2) { SurvivalTnt.Defuse(lvl, targetId, p); return; }
             // targetKind 1 = another player (PvP melee, gated on the map flag)
@@ -837,7 +835,8 @@ namespace MCGalaxy.Network
 
             // drop a target that left / died / went to another level
             if (target != null && (target.level != lvl || target.Session == null ||
-                                   !target.Session.hasSurvival || SurvivalNet.IsDead(target))) {
+                                   !target.Session.hasSurvival || SurvivalNet.IsDead(target) ||
+                                   Commands.World.CmdSpectate.IsSpectating(target))) {
                 m.Target = null; target = null;
             }
 
@@ -847,7 +846,7 @@ namespace MCGalaxy.Network
                 double bestSq = 256.0;
                 foreach (Player p in watchers)
                 {
-                    if (SurvivalNet.IsDead(p)) continue;
+                    if (SurvivalNet.IsDead(p) || Commands.World.CmdSpectate.IsSpectating(p)) continue;
                     double dx = p.Pos.X / 32.0 - m.X, dy = (p.Pos.Y - Entities.CharacterHeight) / 32.0 - m.Y,
                            dz = p.Pos.Z / 32.0 - m.Z;
                     double distSq = dx * dx + dy * dy + dz * dz;
@@ -1276,7 +1275,8 @@ namespace MCGalaxy.Network
 
             Player target = m.Target;
             if (target != null && (target.level != lvl || target.Session == null ||
-                                   !target.Session.hasSurvival || SurvivalNet.IsDead(target))) {
+                                   !target.Session.hasSurvival || SurvivalNet.IsDead(target) ||
+                                   Commands.World.CmdSpectate.IsSpectating(target))) {
                 m.Target = null; target = null; m.PathCount = 0;
             }
             // a mob victim (arrow retaliation / infighting melee) - the last hit's
@@ -1302,7 +1302,7 @@ namespace MCGalaxy.Network
                 if (canHunt) {
                     double bestSq = 256.0;
                     foreach (Player p in watchers) {
-                        if (SurvivalNet.IsDead(p)) continue;
+                        if (SurvivalNet.IsDead(p) || Commands.World.CmdSpectate.IsSpectating(p)) continue;
                         double dx = p.Pos.X / 32.0 - m.X, dy = (p.Pos.Y - Entities.CharacterHeight) / 32.0 - m.Y, dz = p.Pos.Z / 32.0 - m.Z;
                         double d2 = dx * dx + dy * dy + dz * dz;
                         if (d2 < bestSq) { bestSq = d2; m.Target = p; }
@@ -1463,9 +1463,9 @@ namespace MCGalaxy.Network
                 if (!SpawnValid(lvl, cx, cy, cz)) continue;
                 SpawnMob(lvl, lm, type, cx + 0.5, cy, cz + 0.5, (float)(rng.NextDouble() * 360.0));
                 lm.Stats.Spawned++;
+                // no per-spawn console log - spawns fire constantly and clog the
+                // logs; /Mobs stats still expose Spawned + LastSpawn on demand
                 lm.Stats.LastSpawn = Types[type].Name + " at (" + cx + ", " + cy + ", " + cz + ")";
-                Logger.Log(LogType.Debug, "survival: spawner placed a {0} at ({1}, {2}, {3}) on {4}",
-                           Types[type].Name, cx, cy, cz, lvl.name);
             }
         }
 

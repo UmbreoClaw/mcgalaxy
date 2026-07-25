@@ -155,6 +155,7 @@ namespace MCGalaxy.Network
         public static void FireFromPlayer(Player p, double yawDeg, double pitchDeg, int kind) {
             Level lvl = p.level;
             if (lvl == null || !SurvivalNet.Active(p, lvl) || SurvivalNet.IsDead(p)) return;
+            if (Commands.World.CmdSpectate.IsSpectating(p)) return; // observers don't shoot
             if (lvl.Config.SurvivalCreative) return;
             bool indev = lvl.Config.SurvivalMode == SurvivalMode.Indev;
 
@@ -385,6 +386,7 @@ namespace MCGalaxy.Network
                 if (p.level != lvl || !SurvivalNet.Active(p, lvl) || SurvivalNet.IsDead(p)) continue;
                 if (p == a.OwnerPlayer) continue;
                 if (p.Game.Referee) continue; // observers aren't targets
+                if (Commands.World.CmdSpectate.IsSpectating(p)) continue; // nor are spectators
                 double fx = p.Pos.X / 32.0, fy = (p.Pos.Y - Entities.CharacterHeight) / 32.0, fz = p.Pos.Z / 32.0;
                 if (BoxHit(x, y, z, fx, fy, fz, 0.3, 1.8)) {
                     string who = a.OwnerPlayer != null ? a.OwnerPlayer.name : "an arrow";

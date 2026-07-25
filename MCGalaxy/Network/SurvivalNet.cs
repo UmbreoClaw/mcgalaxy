@@ -734,6 +734,7 @@ namespace MCGalaxy.Network
         /// knockback on it (genuine hurt() knocks back only on a landing hit). </summary>
         public static bool DamagePlayer(Player p, int damage, string deathMsg) {
             if (!Active(p, p.level) || IsDead(p) || damage <= 0) return false;
+            if (Commands.World.CmdSpectate.IsSpectating(p)) return false; // spectators are invulnerable
 
             int invinc = p.Extras.GetInt(INVINC_KEY, 0);
             int health = GetHealth(p);
@@ -853,6 +854,10 @@ namespace MCGalaxy.Network
         /// Registered on OnPlayerDyingEvent. </summary>
         public static void OnPlayerDying(Player p, BlockID cause, ref bool cancel) {
             if (HoldsDeathScreen(p)) cancel = true;
+            // spectators are invulnerable - MCGalaxy's own hazard deaths (killer
+            // blocks, drown/fall detection) must not kill a hidden observer riding
+            // someone through lava
+            if (Commands.World.CmdSpectate.IsSpectating(p)) cancel = true;
         }
 
         /// <summary> A map change tears down the client's per-map survival state (death screen included),
@@ -878,16 +883,15 @@ namespace MCGalaxy.Network
 
         // ==================== test / debug ====================
 
-        /// <summary> Test aid: on connect, tell the player (and the server console) whether their
-        /// client was detected as a survival-test client via the CPE handshake, or as a normal client. </summary>
-        /// <remarks> Called from ConnectHandler.HandleConnect. Purely diagnostic - safe to gate behind a
-        /// config flag or remove once wire testing is done; it is the only place that announces detection. </remarks>
+        /// <summary> Logs (console only) whether a connecting client was detected as a
+        /// survival-test client via the CPE handshake. The old player-facing chat line
+        /// was wire-testing debug output - players don't need to be told what their
+        /// own client is. </summary>
+        /// <remarks> Called from ConnectHandler.HandleConnect. </remarks>
         public static void AnnounceClient(Player p) {
             if (p.Session != null && p.Session.hasSurvival) {
-                p.Message("&aConnected via the survival client &S(handshake verified)");
                 Logger.Log(LogType.UserActivity, "{0} connected via the survival client (SurvivalTest handshake verified)", p.name);
             } else {
-                p.Message("&eConnected via a normal client &S(no survival handshake)");
                 Logger.Log(LogType.UserActivity, "{0} connected via a normal client (no SurvivalTest handshake)", p.name);
             }
         }

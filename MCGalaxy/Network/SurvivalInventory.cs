@@ -394,6 +394,7 @@ namespace MCGalaxy.Network
             Level lvl = p.level;
             if (lvl == null || lvl.Config.SurvivalMode != SurvivalMode.Indev) return;
             if (!SurvivalNet.Active(p, lvl) || SurvivalNet.IsDead(p)) return;
+            if (CmdSpectate.IsSpectating(p)) return; // observers don't use items
             if (lvl.Config.SurvivalCreative) return; // v1: no container/item-use sync in creative
 
             if (held < 0 || held > 8) held = 0;
@@ -901,10 +902,10 @@ namespace MCGalaxy.Network
         /// Called from SurvivalNet.OnJoinedLevel. </summary>
         public static void OnLeftLevel(Player p) {
             p.Extras.Remove(OPEN_KEY);
-            // a spectating viewer who changes level loses the follow (server follow
-            // tick) and the view (above) - drop the session marker so /Spectate
-            // stop doesn't later claim a phantom session
-            p.Extras.Remove(CmdSpectate.SPEC_KEY);
+            // a spectating viewer who changes level ends their session completely
+            // (unhide, stop following, re-show the target) - never leave them
+            // hidden/invulnerable on the new map
+            CmdSpectate.EndSession(p, false);
         }
 
         /// <summary> Opens a chest-style view of another player's inventory
@@ -958,14 +959,14 @@ namespace MCGalaxy.Network
             SurvivalNet.SendContOpen(p, CONT_NONE, 0);
         }
 
-        // If the viewer was /Spectate-ing this target, end the spectate session's
-        // bookkeeping too (its follow half was already torn down by the server's
-        // follow tick / the disconnect), so /Spectate stop doesn't claim a phantom.
+        // If the viewer was /Spectate-ing this target, tear the whole session down
+        // (unhide, stop following, respawn the target's body, clear the state) -
+        // a spectator must never be left hidden/invulnerable by an implicit exit.
         static void EndSpectateOf(Player viewer, Player target) {
             object o;
             if (!viewer.Extras.TryGet(CmdSpectate.SPEC_KEY, out o)) return;
             if (!((string)o).CaselessEq(target.name)) return;
-            viewer.Extras.Remove(CmdSpectate.SPEC_KEY);
+            CmdSpectate.EndSession(viewer, false); // caller sends its own message
         }
 
         /// <summary> A player disconnected: force-close every open /Inventory view
@@ -973,6 +974,10 @@ namespace MCGalaxy.Network
         /// OnPlayerDisconnectEvent. </summary>
         public static void OnPlayerDisconnect(Player target, string reason) {
             SaveInv(target); // persist the survival inventory (no-op if never touched)
+            // a SPECTATOR disconnecting mid-session: clear the state + persisted
+            // hidden flag (no entity/chat side effects mid-teardown), so they
+            // don't rejoin invisible next session
+            CmdSpectate.EndSessionQuiet(target);
             Player[] players = PlayerInfo.Online.Items;
             foreach (Player pl in players)
             {
@@ -1557,6 +1562,13 @@ namespace MCGalaxy.Network
         public static void OnBlockChanging(Player p, ushort x, ushort y, ushort z, BlockID block, bool placing, ref bool cancel) {
             Level lvl = p.level;
             if (lvl == null || lvl.Config.SurvivalMode == SurvivalMode.Off) return;
+            // spectators are pure observers: no building/mining at all (their
+            // client shows the edit briefly - revert it authoritatively)
+            if (CmdSpectate.IsSpectating(p)) {
+                p.RevertBlock(x, y, z);
+                cancel = true;
+                return;
+            }
             if (lvl.Config.SurvivalCreative) {
                 // creative: free build for everyone, no pickup/consume - but the
                 // Indev placement shaping (furnace/chest facing, torch mounting,

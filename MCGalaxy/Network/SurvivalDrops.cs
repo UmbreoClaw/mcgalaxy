@@ -210,6 +210,7 @@ namespace MCGalaxy.Network
         public static void Toss(Player p, int slot, bool whole) {
             Level lvl = p.level;
             if (lvl == null || !SurvivalNet.Active(p, lvl)) return;
+            if (Commands.World.CmdSpectate.IsSpectating(p)) return; // observers don't toss
             if (lvl.Config.SurvivalCreative) return; // creative keeps the local palette
 
             ushort id; byte count;
@@ -307,6 +308,9 @@ namespace MCGalaxy.Network
         static Player FindPicker(Player[] watchers, Drop d) {
             foreach (Player p in watchers)
             {
+                // a hidden spectator riding the miner's camera stands exactly where
+                // the miner is - they must never race them for the pickup
+                if (Commands.World.CmdSpectate.IsSpectating(p)) continue;
                 double px = p.Pos.X / 32.0;
                 double py = (p.Pos.Y - Entities.CharacterHeight) / 32.0; // feet
                 double pz = p.Pos.Z / 32.0;
