@@ -575,6 +575,7 @@ namespace MCGalaxy.Network
                 if (Active(p, p.level)) {
                     SendTime(p);
                     TickDeathDwell(p);
+                    SurvivalInventory.TrackPosition(p); // 1 Hz "where was I" refresh
                 } else if (p.level != null && p.Session != null &&
                            p.level.Config.SurvivalMode != SurvivalMode.Off) {
                     // §21 fallback: non-survival clients see the day/night cycle
@@ -842,6 +843,9 @@ namespace MCGalaxy.Network
             if (!Active(p, p.level)) return;
             SetHealth(p, 0); // SURV_HEALTH(0): death camera + Game Over screen, held until revive
             p.Extras[DWELL_KEY] = RESPAWN_TIMEOUT_SECS;
+            // death resets your place on the map: the respawn goes to spawn, and so
+            // should a rejoin (never restore a pre-death position)
+            SurvivalInventory.ClearSavedPosition(p, p.level);
             // phase 5: scatter the inventory as drop entities (map opt-out via
             // SurvivalDeathDrops; creative maps keep the local palette, no scatter)
             if (p.level.Config.SurvivalDeathDrops && !p.level.Config.SurvivalCreative)
@@ -875,9 +879,60 @@ namespace MCGalaxy.Network
             if (p.Session == null || !p.Session.hasSurvival) return;
             // any container the player had open belonged to the previous level
             SurvivalInventory.OnLeftLevel(p);
-            if (!IsDead(p)) return;
-            p.Extras.Remove(DWELL_KEY);
-            SetHealth(p, MAX_HEALTH);
+            if (IsDead(p)) {
+                p.Extras.Remove(DWELL_KEY);
+                SetHealth(p, MAX_HEALTH);
+            }
+            // Survival players resume at their last saved position on this map
+            // (1 Hz-tracked, persisted with the .inv file); classic clients and
+            // first visits stay at the map spawn. An op /TP-ing in still wins:
+            // CmdTp sends its own position packet after the map change completes.
+            if (Active(p, level)) SurvivalInventory.TryRestorePosition(p, level);
+        }
+
+        /// <summary> Blocks free teleporting for non-operators when the source map -
+        /// or, for /TP onto a player, the DESTINATION map - is a non-creative
+        /// survival level. Survival travel is walking; teleports skip the danger.
+        /// Registered on OnPlayerCommandEvent (command names arrive alias-resolved). </summary>
+        public static void OnPlayerCommand(Player p, string cmd, string args, CommandData data) {
+            if (!cmd.CaselessEq("tp") && !cmd.CaselessEq("warp")) return;
+            if (data.Rank >= LevelPermission.Operator || p.Game.Referee) return;
+
+            bool blocked = IsSurvivalWorld(p.level);
+            if (!blocked && cmd.CaselessEq("tp") && args.Length > 0) {
+                // "/tp <player>" into a survival map is free travel too. Only a
+                // single-token player form is checked - coord forms are same-map
+                // (covered above) and unresolvable names just fall through to
+                // the command's own handling.
+                string[] bits = args.SplitSpaces();
+                if (bits.Length == 1) {
+                    Player target = FindOnlineQuiet(bits[0]);
+                    blocked = target != null && IsSurvivalWorld(target.level);
+                }
+            }
+            if (!blocked) return;
+            p.cancelcommand = true;
+            p.Message("&WTeleporting is disabled on survival maps &S(operators exempt).");
+            p.Message("&SLeaving via &T/Goto &Sworks - you resume where you left off when you return.");
+        }
+
+        static bool IsSurvivalWorld(Level lvl) {
+            return lvl != null && lvl.Config.SurvivalMode != SurvivalMode.Off &&
+                   !lvl.Config.SurvivalCreative;
+        }
+
+        // Exact-first then unique-substring online match, with NO chat output -
+        // this runs on a probe that may not even block the command, so the
+        // matcher's "did you mean" spam would be wrong here.
+        static Player FindOnlineQuiet(string name) {
+            Player match = null; int count = 0;
+            Player[] players = PlayerInfo.Online.Items;
+            foreach (Player pl in players)
+            {
+                if (pl.name.CaselessEq(name)) return pl;
+                if (pl.name.CaselessContains(name)) { match = pl; count++; }
+            }
+            return count == 1 ? match : null;
         }
 
 

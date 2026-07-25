@@ -68,6 +68,11 @@ namespace MCGalaxy.Network
             public Slot[] Slots = new Slot[TOTAL_SLOTS];
             public Slot   Cursor;
             public int    HeldSlot; // hotbar index from SURV_HELD_SLOT
+            // Last known position PER SURVIVAL MAP (lowercase level name ->
+            // [X, Y, Z raw units, yaw, pitch]), refreshed at 1 Hz by TrackPosition
+            // and persisted with the .inv file - a returning survival player
+            // resumes where they left off instead of at map spawn.
+            public Dictionary<string, int[]> MapPos = new Dictionary<string, int[]>();
         }
 
         const string INV_KEY = "survival.inventory";
@@ -109,6 +114,16 @@ namespace MCGalaxy.Network
             {
                 if (line.Length == 0 || line[0] == '#') continue;
                 string[] parts = line.Split(' ');
+                if (parts.Length >= 7 && parts[0] == "pos") {
+                    // pos <level> <x> <y> <z> <yaw> <pitch> (raw position units)
+                    int px, py, pz, yaw, pitch;
+                    if (int.TryParse(parts[2], out px) && int.TryParse(parts[3], out py) &&
+                        int.TryParse(parts[4], out pz) && int.TryParse(parts[5], out yaw) &&
+                        int.TryParse(parts[6], out pitch)) {
+                        inv.MapPos[parts[1]] = new int[] { px, py, pz, yaw, pitch };
+                    }
+                    continue;
+                }
                 if (parts.Length < 5 || parts[0] != "s") continue;
                 int idx; ushort id; byte count; short dmg;
                 if (!int.TryParse(parts[1], out idx) || !ushort.TryParse(parts[2], out id) ||
@@ -117,6 +132,50 @@ namespace MCGalaxy.Network
                 if (!valid || count == 0) continue;
                 inv.Slots[idx].Id = id; inv.Slots[idx].Count = count; inv.Slots[idx].Damage = dmg;
             }
+        }
+
+        // ==================== per-map position persistence ====================
+        // "Where was I on this map?" - refreshed at 1 Hz (SurvivalNet.TimeTick)
+        // rather than captured on level-leave, because OnJoinedLevel fires AFTER
+        // the switch (the old position is already gone by then) and a crash/kick
+        // never fires a leave at all. Dead players and spectators are skipped:
+        // death resumes at spawn (genuine), and a spectator's camera position is
+        // the target's, not theirs.
+
+        /// <summary> Records a survival player's current position for their current
+        /// map. Called at 1 Hz from the survival clock tick. </summary>
+        public static void TrackPosition(Player p) {
+            Level lvl = p.level;
+            if (lvl == null || lvl.Config.SurvivalCreative) return;
+            if (SurvivalNet.IsDead(p) || CmdSpectate.IsSpectating(p)) return;
+            PlayerInv inv = Get(p);
+            inv.MapPos[lvl.name.ToLower()] =
+                new int[] { p.Pos.X, p.Pos.Y, p.Pos.Z, p.Rot.RotY, p.Rot.HeadX };
+        }
+
+        /// <summary> Moves a survival player who just joined a survival map back to
+        /// their last saved position on it (classic clients and first visits stay
+        /// at the map spawn). Returns whether a saved position was applied. </summary>
+        public static bool TryRestorePosition(Player p, Level lvl) {
+            if (lvl == null || lvl.Config.SurvivalCreative) return false;
+            PlayerInv inv = Get(p);
+            int[] pos;
+            if (!inv.MapPos.TryGetValue(lvl.name.ToLower(), out pos)) return false;
+            // stale guard: the map may have been resized/regenerated since
+            int bx = pos[0] / 32, by = pos[1] / 32, bz = pos[2] / 32;
+            if (bx < 0 || by < 0 || bz < 0 || bx >= lvl.Width || by >= lvl.Height || bz >= lvl.Length)
+                return false;
+            Position at = new Position(pos[0], pos[1], pos[2]);
+            Orientation rot = new Orientation((byte)pos[3], (byte)pos[4]);
+            p.SendPosition(at, rot);
+            return true;
+        }
+
+        /// <summary> Forgets a player's saved position for a map (death: the next
+        /// visit resumes at spawn, like the respawn itself). </summary>
+        public static void ClearSavedPosition(Player p, Level lvl) {
+            if (lvl == null) return;
+            Get(p).MapPos.Remove(lvl.name.ToLower());
         }
 
         /// <summary> Whether an OFFLINE player has a persisted survival inventory
@@ -165,6 +224,9 @@ namespace MCGalaxy.Network
                     for (int i = ARMOR_BASE; i < ARMOR_BASE + ARMOR_SLOTS; i++)
                         if (inv.Slots[i].Count > 0)
                             w.WriteLine("s {0} {1} {2} {3}", i, inv.Slots[i].Id, inv.Slots[i].Count, inv.Slots[i].Damage);
+                    foreach (KeyValuePair<string, int[]> kv in inv.MapPos)
+                        w.WriteLine("pos {0} {1} {2} {3} {4} {5}", kv.Key,
+                                    kv.Value[0], kv.Value[1], kv.Value[2], kv.Value[3], kv.Value[4]);
                 }
                 if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
                 System.IO.File.Move(tmp, path);
