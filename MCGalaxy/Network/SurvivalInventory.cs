@@ -1244,10 +1244,23 @@ namespace MCGalaxy.Network
         // spawned to the other), which is why the handshake doesn't send equip itself.
         static readonly object equipQueueLock = new object();
         static readonly List<KeyValuePair<Player, Player>> equipQueue = new List<KeyValuePair<Player, Player>>();
+        // (viewer, target) pairs whose target's body must be re-hidden: the target's
+        // entity was respawned to a viewer who is spectating them (see OnEntitySpawned)
+        static readonly List<KeyValuePair<Player, Player>> hideQueue = new List<KeyValuePair<Player, Player>>();
 
         public static void OnEntitySpawned(Entity e, ref string name, ref string skin, ref string model, Player dst) {
             Player equipped = e as Player;
             if (equipped == null || dst == null || equipped == dst) return;
+            // A spectator must NEVER see their own target's body - the camera rides
+            // inside it, so any respawn of the target's entity (the death handler's
+            // global respawn cycle, revive, /hide toggles) would fill the screen
+            // with the inside of their head (user-reported). Queue a despawn,
+            // flushed on the next survival tick like the equip sends below - doing
+            // sends inside the spawn event is what the queue pattern avoids.
+            if (CmdSpectate.IsSpectatingTarget(dst, equipped)) {
+                lock (equipQueueLock) hideQueue.Add(new KeyValuePair<Player, Player>(dst, equipped));
+                return; // no point queueing an equip send for a body being re-hidden
+            }
             if (!SurvivalNet.Active(equipped, equipped.level) || !SurvivalNet.Active(dst, dst.level)) return;
             lock (equipQueueLock) equipQueue.Add(new KeyValuePair<Player, Player>(dst, equipped));
         }
@@ -1255,11 +1268,19 @@ namespace MCGalaxy.Network
         /// <summary> Flushes queued "entity became visible" equip sends (called once per
         /// survival tick from SurvivalMobs). </summary>
         public static void FlushEquip() {
-            KeyValuePair<Player, Player>[] pending;
+            KeyValuePair<Player, Player>[] pending, hides;
             lock (equipQueueLock) {
-                if (equipQueue.Count == 0) return;
+                if (equipQueue.Count == 0 && hideQueue.Count == 0) return;
                 pending = equipQueue.ToArray();
                 equipQueue.Clear();
+                hides = hideQueue.ToArray();
+                hideQueue.Clear();
+            }
+            foreach (KeyValuePair<Player, Player> kv in hides) {
+                // still spectating that target? (the session may have ended in the
+                // 50ms since the spawn event) - then keep the body hidden
+                if (CmdSpectate.IsSpectatingTarget(kv.Key, kv.Value))
+                    Entities.Despawn(kv.Key, kv.Value); // key = viewer, value = target
             }
             foreach (KeyValuePair<Player, Player> kv in pending)
                 SendEquipTo(kv.Key, kv.Value); // key = viewer, value = equipped

@@ -704,6 +704,14 @@ namespace MCGalaxy.Network
             PlayerActions.Respawn(p);
             Entities.GlobalDespawn(p, false);
             Entities.GlobalSpawn(p, false);
+            // the GlobalSpawn re-added p's body to a spectator riding their camera
+            // (user-reported: the revived body blocks the spectator's view) - a
+            // spectator must never see their own target's body
+            Player[] players = PlayerInfo.Online.Items;
+            foreach (Player pl in players)
+            {
+                if (Commands.World.CmdSpectate.IsSpectatingTarget(pl, p)) Entities.Despawn(pl, p);
+            }
             SetHealth(p, MAX_HEALTH);
             Logger.Log(LogType.Debug, "survival: {0} revived ({1})", p.name, why);
         }

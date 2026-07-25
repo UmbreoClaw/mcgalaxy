@@ -60,6 +60,16 @@ namespace MCGalaxy.Commands.World
             return p != null && p.Extras.TryGet(SPEC_KEY, out o);
         }
 
+        /// <summary> Whether viewer is currently spectating THIS target. Used to
+        /// re-hide the target's body from their spectator after anything respawns
+        /// their entity globally (e.g. the death-revive cycle) - the camera rides
+        /// inside that body, so re-adding it blocks the spectator's view. </summary>
+        public static bool IsSpectatingTarget(Player viewer, Player target) {
+            object o;
+            if (viewer == null || target == null) return false;
+            return viewer.Extras.TryGet(SPEC_KEY, out o) && ((string)o).CaselessEq(target.name);
+        }
+
         public override void Use(Player p, string message, CommandData data) {
             if (message.Length == 0 || message.CaselessEq("stop")) { Stop(p); return; }
             if (p.possessed) { p.Message("You're currently being &4possessed&S!"); return; }
