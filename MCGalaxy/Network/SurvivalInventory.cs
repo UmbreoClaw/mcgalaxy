@@ -148,6 +148,12 @@ namespace MCGalaxy.Network
             Level lvl = p.level;
             if (lvl == null || lvl.Config.SurvivalCreative) return;
             if (SurvivalNet.IsDead(p) || CmdSpectate.IsSpectating(p)) return;
+            // During connect/map-load the player is in the online list with
+            // Pos still (0,0,0) - recording that poisoned the file and the next
+            // join restored the player INTO THE MAP CORNER underground
+            // (user-reported: spawn at raw 0,0,0 = feet block (0,-2,0)).
+            if (p.Loading) return;
+            if (p.Pos.X == 0 && p.Pos.Y == 0 && p.Pos.Z == 0) return; // unset sentinel
             PlayerInv inv = Get(p);
             inv.MapPos[lvl.name.ToLower()] =
                 new int[] { p.Pos.X, p.Pos.Y, p.Pos.Z, p.Rot.RotY, p.Rot.HeadX };
@@ -161,6 +167,10 @@ namespace MCGalaxy.Network
             PlayerInv inv = Get(p);
             int[] pos;
             if (!inv.MapPos.TryGetValue(lvl.name.ToLower(), out pos)) return false;
+            // reject the pre-fix poisoned entries (raw 0,0,0 recorded during the
+            // connect window) still sitting in saved .inv files - a legitimate
+            // position can never be the exact zero corner below ground
+            if (pos[0] == 0 && pos[1] == 0 && pos[2] == 0) return false;
             // stale guard: the map may have been resized/regenerated since
             int bx = pos[0] / 32, by = pos[1] / 32, bz = pos[2] / 32;
             if (bx < 0 || by < 0 || bz < 0 || bx >= lvl.Width || by >= lvl.Height || bz >= lvl.Length)
