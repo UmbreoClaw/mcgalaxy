@@ -98,6 +98,7 @@ namespace MCGalaxy.Commands.Moderation {
             who.Session.SendSetUserType(who.UserType());
           
             who.SendCurrentBlockPermissions();
+            who.SendMapMOTD();
             Entities.SpawnEntities(who, false);
             CheckBlockBindings(who);
             
