@@ -91,10 +91,6 @@ namespace MCGalaxy.Commands.World
         public override void Help(Player p) {
             p.Message("&T/Inventory [player]");
             p.Message("&HOpens a live view of a player's survival inventory.");
-            p.Message("&HOperators view; admins may move/edit items (drag to/from your own).");
-            p.Message("&HOperators can only view players on their own map; admins can");
-            p.Message("&Hview across maps and offline players' saved inventories (read-only).");
-            p.Message("&HNon-survival clients see a text dump instead.");
         }
     }
 }

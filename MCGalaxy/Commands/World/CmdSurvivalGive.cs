@@ -82,8 +82,7 @@ namespace MCGalaxy.Commands.World
         public override void Help(Player p) {
             p.Message("&T/Give [player] [block/item] <amount> &H(aka /SurvivalGive)");
             p.Message("&HPuts blocks/items into a survival player's inventory.");
-            p.Message("&HAccepts item names (coal, iron_pickaxe), ids 256+, or Indev block names/ids.");
-            p.Message("&HAmount defaults to 1.");
+            p.Message("&HAccepts item/block names or ids; amount defaults to 1.");
         }
     }
 }

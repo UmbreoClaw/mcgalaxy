@@ -192,11 +192,10 @@ namespace MCGalaxy.Commands.World
 
         public override void Help(Player p) {
             p.Message("&T/Survival &H- shows this level's survival settings");
-            p.Message("&T/Survival [off/classic/indev] &H- sets the survival mode (the per-map gate)");
+            p.Message("&T/Survival [off/classic/indev] &H- sets the survival mode");
             p.Message("&T/Survival theme [normal/hell/paradise/woods/floating]");
-            p.Message("&T/Survival [enhanced/creative/pvp/deathdrops] [on/off] &H- sets a flag");
-            p.Message("&T/Survival visitors [visitor/allow/deny] &H- what stock clients may do here");
-            p.Message("&HChanges apply live to survival-test clients on this level.");
+            p.Message("&T/Survival [enhanced/creative/pvp/deathdrops] [on/off]");
+            p.Message("&T/Survival visitors [visitor/allow/deny] &H- what stock clients may do");
             p.Message("&HTools: &T/SurvSpawn /Mobs /Spawner /SurvTime /Inventory /Give /Export");
         }
     }

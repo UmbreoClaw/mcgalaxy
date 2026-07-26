@@ -221,13 +221,9 @@ namespace MCGalaxy.Commands.World
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Spectate [player] &H- ride a player's camera (hidden, no fake");
-            p.Message("&Hdisconnect) and watch their survival inventory live, read-only.");
-            p.Message("&T/Spectate [player] silent &H- don't tell them they're being watched.");
+            p.Message("&T/Spectate [player] <silent> &H- ride a player's camera and mirror");
+            p.Message("&Htheir inventory, as a hidden, invulnerable observer.");
             p.Message("&T/Spectate stop &H- stop spectating.");
-            p.Message("&HWhile spectating you are invulnerable, ignored by mobs, can't");
-            p.Message("&Hpick up drops, and can't attack, use items or build.");
-            p.Message("&HOperators spectate players on their own map; admins across maps.");
         }
     }
 }

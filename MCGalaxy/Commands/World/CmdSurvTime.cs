@@ -65,8 +65,7 @@ namespace MCGalaxy.Commands.World
         public override void Help(Player p) {
             p.Message("&T/SurvTime &H- shows the survival world clock");
             p.Message("&T/SurvTime [day/noon/sunset/night/midnight/sunrise/<ticks>]");
-            p.Message("&HSets THIS map's day/night clock (each survival map keeps its own;");
-            p.Message("&Hpushed live to the map's survival players; console acts on main).");
+            p.Message("&HSets this map's own day/night clock, applied live.");
         }
     }
 }
