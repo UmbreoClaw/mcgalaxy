@@ -37,15 +37,23 @@ namespace MCGalaxy.Commands.World
             string[] args = message.SplitSpaces();
             string opt = args[0].ToLower();
             LevelConfig cfg = lvl.Config;
+            // One-line confirmation of just the edited setting - the full dump
+            // stays behind the bare /Survival (an 8-line chat wall after every
+            // flag flip was noise, user-reported).
+            string summary;
+            bool flagOn;
 
             switch (opt) {
-                case "off":     cfg.SurvivalMode = SurvivalMode.Off;     break;
-                case "classic": cfg.SurvivalMode = SurvivalMode.Classic; EnableHazards(p, lvl); break;
-                case "indev":   cfg.SurvivalMode = SurvivalMode.Indev;   EnableHazards(p, lvl); break;
+                case "off":     cfg.SurvivalMode = SurvivalMode.Off;     summary = "Survival mode &boff";   break;
+                case "classic": cfg.SurvivalMode = SurvivalMode.Classic; EnableHazards(p, lvl);
+                                summary = "Survival mode &bClassic 0.30"; break;
+                case "indev":   cfg.SurvivalMode = SurvivalMode.Indev;   EnableHazards(p, lvl);
+                                summary = "Survival mode &bIndev"; break;
                 case "theme":
                     if (args.Length < 2 || !SetTheme(cfg, args[1])) {
                         p.Message("Themes: Normal, Hell, Paradise, Woods, Floating"); return;
                     }
+                    summary = "Theme &b" + cfg.SurvivalTheme;
                     break;
                 case "visitors":
                     if (args.Length < 2 || !SetVisitors(cfg, args[1])) {
@@ -53,11 +61,13 @@ namespace MCGalaxy.Commands.World
                         p.Message("&Hvisitor = join but not build (default), allow = build, deny = no entry");
                         return;
                     }
+                    summary = "Non-survival visitors &b" + cfg.SurvivalVisitors;
                     break;
                 case "enhanced": case "creative": case "pvp": case "deathdrops":
-                    if (args.Length < 2 || !SetFlag(cfg, opt, args[1])) {
+                    if (args.Length < 2 || !SetFlag(cfg, opt, args[1], out flagOn)) {
                         p.Message("Use: &T/Survival {0} [on/off]", opt); return;
                     }
+                    summary = FlagLabel(opt) + (flagOn ? " &aenabled" : " &cdisabled");
                     break;
                 default:
                     // The former action subcommands are now standalone commands
@@ -69,8 +79,16 @@ namespace MCGalaxy.Commands.World
 
             lvl.SaveSettings();
             SurvivalNet.RefreshLevel(lvl); // apply live to survival-test clients on this level
-            p.Message("Updated survival settings for {0}&S:", lvl.ColoredName);
-            PrintInfo(p, lvl);
+            p.Message("{0} &Sfor {1}&S.", summary, lvl.ColoredName);
+        }
+
+        static string FlagLabel(string flag) {
+            switch (flag) {
+                case "pvp":        return "PvP";
+                case "deathdrops": return "Death drops";
+                case "enhanced":   return "Enhanced mode";
+                default:           return "Creative mode";
+            }
         }
 
         // Turning a map survival should make its hazards real without a second,
@@ -147,8 +165,8 @@ namespace MCGalaxy.Commands.World
             } catch { return false; }
         }
 
-        static bool SetFlag(LevelConfig cfg, string flag, string val) {
-            bool on;
+        static bool SetFlag(LevelConfig cfg, string flag, string val, out bool on) {
+            on = false;
             if (val.CaselessEq("on")  || val.CaselessEq("true"))  on = true;
             else if (val.CaselessEq("off") || val.CaselessEq("false")) on = false;
             else return false;
