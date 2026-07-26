@@ -37,15 +37,11 @@ namespace MCGalaxy.Commands.CPE
         }
 
         public override void Use(Player p, string message, CommandData data) {
-            if (message.IndexOf(' ') == -1) {
-                message = "-own " + message;
-                message = message.TrimEnd();
-            }
             UseBotOrOnline(p, data, message, "model");
         }
         
         protected override void SetBotData(Player p, PlayerBot bot, string model) {
-            model = ParseModel(p, bot, model);
+            model = PlayerOperations.ParseModel(p, bot, model);
             if (model == null) return;
             bot.UpdateModel(model);
             
@@ -54,46 +50,7 @@ namespace MCGalaxy.Commands.CPE
         }
         
         protected override void SetOnlineData(Player p, Player who, string model) {
-            string orig = model;
-            model = ParseModel(p, who, model);
-            if (model == null) return;
-            who.UpdateModel(model);
-            
-            if (p != who) {
-                Chat.MessageFrom(who, "λNICK &Shad " + who.pronouns.Object + " model changed to &c" + model);
-            } else {
-                who.Message("Changed your own model to &c" + model);
-            }
-            
-            if (!model.CaselessEq("humanoid")) {
-                Server.models.Update(who.name, model);
-            } else {
-                Server.models.Remove(who.name);
-            }
-            Server.models.Save();
-            
-            // Remove model scale too when resetting model
-            if (orig.Length == 0) CmdModelScale.UpdateSavedScale(who);
-        }
-        
-        static string ParseModel(Player dst, Entity e, string model) {
-            // Reset entity's model
-            if (model.Length == 0) {
-                e.ScaleX = 0; e.ScaleY = 0; e.ScaleZ = 0;
-                return "humanoid";
-            }
-            
-            model = model.ToLower();
-            model = model.Replace(':', '|'); // since users assume : is for scale instead of |.
-            
-            float max = ModelInfo.MaxScale(e, model);
-            // restrict player model scale, but bots can have unlimited model scale
-            if (ModelInfo.GetRawScale(model) > max) {
-                dst.Message("&WScale must be {0} or less for {1} model",
-                            max, ModelInfo.GetRawModel(model));
-                return null;
-            }
-            return model;
+            PlayerOperations.SetModel(p, who, model);
         }
 
         public override void Help(Player p) {

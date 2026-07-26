@@ -16,7 +16,9 @@
     permissions and limitations under the Licenses.
  */
 using System;
+using MCGalaxy.Commands.CPE;
 using MCGalaxy.DB;
+using MCGalaxy.Events.PlayerEvents;
 using MCGalaxy.Network;
 
 namespace MCGalaxy 
@@ -27,6 +29,52 @@ namespace MCGalaxy
     /// <remarks> See PlayerActions.cs for lower level operations. (TODO: Actually respect this distinction across both classes) </remarks>
     public static class PlayerOperations 
     {
+
+        internal static string ParseModel(Player dst, Entity e, string model) {
+            // Reset entity's model
+            if (model.Length == 0) {
+                e.ScaleX = 0; e.ScaleY = 0; e.ScaleZ = 0;
+                return "humanoid";
+            }
+
+            model = model.ToLower();
+            model = model.Replace(':', '|'); // since users assume : is for scale instead of |.
+
+            float max = ModelInfo.MaxScale(e, model);
+            // restrict player model scale, but bots can have unlimited model scale
+            if (ModelInfo.GetRawScale(model) > max) {
+                dst.Message("&WScale must be {0} or less for {1} model",
+                            max, ModelInfo.GetRawModel(model));
+                return null;
+            }
+            return model;
+        }
+        public static void SetModel(Player p, Player who, string model) {
+            bool cancel = false;
+            OnPlayerOperationEvent.Call(p, PlayerOperation.Model, who.name, who, ref model, ref cancel);
+            if (cancel) return;
+
+            string orig = model;
+            model = ParseModel(p, who, model);
+            if (model == null) return;
+            who.UpdateModel(model);
+
+            if (p != who) {
+                MessageAction(p, who.name, who, "λACTOR &Schanged λTARGET model to &c" + model);
+            } else {
+                who.Message("Changed your own model to &c" + model);
+            }
+
+            if (!model.CaselessEq("humanoid")) {
+                Server.models.Update(who.name, model);
+            } else {
+                Server.models.Remove(who.name);
+            }
+            Server.models.Save();
+
+            // Remove model scale too when resetting model
+            if (orig.Length == 0) CmdModelScale.UpdateSavedScale(who);
+        }
         /// <summary>
         /// Attempts to set the skin for the given target, which will be saved across play sessions.
         /// </summary>
@@ -36,6 +84,11 @@ namespace MCGalaxy
             if (skin == null) return;
 
             Player who = PlayerInfo.FindExact(target);
+
+            bool cancel = false;
+            OnPlayerOperationEvent.Call(p, PlayerOperation.Skin, target, who, ref skin, ref cancel);
+            if (cancel) return;
+
             if (p == who) {
                 p.Message("Changed your own skin to &c" + skin);
             } else {
@@ -48,6 +101,10 @@ namespace MCGalaxy
         /// <summary> Attempts to change the login message of the target player </summary>
         /// <remarks> Not allowed when players who cannot speak (e.g. muted) </remarks>
         public static bool SetLoginMessage(Player p, string target, string message) {
+            bool cancel = false;
+            OnPlayerOperationEvent.Call(p, PlayerOperation.LoginMessage, target, null, ref message, ref cancel);
+            if (cancel) return false;
+
             if (message.Length == 0) {
                 p.Message("Login message of {0} &Swas removed", p.FormatNick(target));
             } else {
@@ -65,6 +122,10 @@ namespace MCGalaxy
         /// <summary> Attempts to change the logout message of the target player </summary>
         /// <remarks> Not allowed when players who cannot speak (e.g. muted) </remarks>
         public static bool SetLogoutMessage(Player p, string target, string message) {
+            bool cancel = false;
+            OnPlayerOperationEvent.Call(p, PlayerOperation.LogoutMessage, target, null, ref message, ref cancel);
+            if (cancel) return false;
+
             if (message.Length == 0) {
                 p.Message("Logout message of {0} &Swas removed", p.FormatNick(target));
             } else {
@@ -83,12 +144,17 @@ namespace MCGalaxy
         /// <summary> Attempts to change the nickname of the target player </summary>
         /// <remarks> Not allowed when players who cannot speak (e.g. muted) </remarks>
         public static bool SetNick(Player p, string target, string nick) {
+            Player who = PlayerInfo.FindExact(target);
+
+            bool cancel = false;
+            OnPlayerOperationEvent.Call(p, PlayerOperation.Nick, target, who, ref nick, ref cancel);
+            if (cancel) return false;
+
             if (Colors.Strip(nick).Length >= 30) { 
                 p.Message("Nick must be under 30 letters."); 
                 return false; 
             }
-            Player who = PlayerInfo.FindExact(target);
-            
+
             if (nick.Length == 0) {
                 MessageAction(p, target, who, "λACTOR &Sremoved λTARGET nick");
                 nick = Server.ToRawUsername(target);
@@ -109,11 +175,16 @@ namespace MCGalaxy
         /// <summary> Attempts to change the title of the target player </summary>
         /// <remarks> Not allowed when players who cannot speak (e.g. muted) </remarks>
         public static bool SetTitle(Player p, string target, string title) {
+            Player who = PlayerInfo.FindExact(target);
+
+            bool cancel = false;
+            OnPlayerOperationEvent.Call(p, PlayerOperation.Title, target, who, ref title, ref cancel);
+            if (cancel) return false;
+
             if (title.Length >= 20) { 
                 p.Message("&WTitle must be under 20 characters."); 
                 return false;
             }
-            Player who = PlayerInfo.FindExact(target);
             
             if (title.Length == 0) {
                 MessageAction(p, target, who, "λACTOR &Sremoved λTARGET title");
@@ -132,14 +203,18 @@ namespace MCGalaxy
         }
         
         /// <summary> Attempts to change the title color of the target player </summary>
-        public static bool SetTitleColor(Player p, string target, string name) {
+        public static bool SetTitleColor(Player p, string target, string colorName) {
             string color = "";
             Player who = PlayerInfo.FindExact(target);
-            
-            if (name.Length == 0) {
+
+            bool cancel = false;
+            OnPlayerOperationEvent.Call(p, PlayerOperation.TitleColor, target, who, ref colorName, ref cancel);
+            if (cancel) return false;
+
+            if (colorName.Length == 0) {
                 MessageAction(p, target, who, "λACTOR &Sremoved λTARGET title color");
             } else  {
-                color = Matcher.FindColor(p, name);
+                color = Matcher.FindColor(p, colorName);
                 if (color == null) return false;
                 
                 MessageAction(p, target, who, "λACTOR &Schanged λTARGET title color to " + color + Colors.Name(color));
@@ -152,17 +227,21 @@ namespace MCGalaxy
         }
         
         /// <summary> Attempts to change the color of the target player </summary>
-        public static bool SetColor(Player p, string target, string name) {
-            string color = "";
+        public static bool SetColor(Player p, string target, string colorName) {
             Player who = PlayerInfo.FindExact(target);
-            
-            if (name.Length == 0) {
+
+            bool cancel = false;
+            OnPlayerOperationEvent.Call(p, PlayerOperation.Color, target, who, ref colorName, ref cancel);
+            if (cancel) return false;
+
+            string color;
+            if (colorName.Length == 0) {
                 color = Group.GroupIn(target).Color;
                 
                 PlayerDB.Update(target, PlayerData.ColumnColor, "");
                 MessageAction(p, target, who, "λACTOR &Sremoved λTARGET color");
             } else {
-                color = Matcher.FindColor(p, name);
+                color = Matcher.FindColor(p, colorName);
                 if (color == null) return false;
                 
                 PlayerDB.Update(target, PlayerData.ColumnColor, color);

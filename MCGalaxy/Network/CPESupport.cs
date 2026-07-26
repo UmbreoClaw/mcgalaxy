@@ -96,6 +96,7 @@ namespace MCGalaxy
         public const string CinematicGui = "CinematicGui";
         public const string NotifyAction = "NotifyAction";
         public const string ToggleBlockList = "ToggleBlockList";
+        public const string AmpersandSupport = "AmpersandSupport";
         public const string SurvivalTest = "SurvivalTest";
     }
     
@@ -159,6 +160,7 @@ namespace MCGalaxy
             new CpeExtension(CpeExt.LightingMode,        "Allows changing how the client lights worlds"),
             new CpeExtension(CpeExt.CinematicGui,        "Allows changing the visibility of some GUI components"),
             new CpeExtension(CpeExt.NotifyAction,        "Allows server to be notified of certain client events"),
+            new CpeExtension(CpeExt.AmpersandSupport,    "Allows literal '&' in chat messages without escaping to '%'"),
             // v2: SURV_WORLDINFO carries ground/water levels as i16 (floating maps
             // have genuinely negative levels which v1's u8 fields clamped away)
             // v3: CONT_OPEN kind 5 (CONT_PLAYERINV) - the /Inventory viewer renders
