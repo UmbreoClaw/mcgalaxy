@@ -16,6 +16,7 @@
     permissions and limitations under the Licenses.
  */
 using System;
+using System.Collections.Generic;
 using MCGalaxy.Blocks;
 using BlockID = System.UInt16;
 
@@ -117,6 +118,16 @@ namespace MCGalaxy.Network
                     }
 
             // destruction in genuine reverse-order (descending z, y, x)
+            // Two passes: clear EVERY destroyed block first, THEN spawn the drops.
+            // Drop spawns compute their authoritative resting spot by scanning down
+            // for solid ground - spawning mid-loop settled them on crater blocks
+            // that were removed moments later, leaving the server's pickup point
+            // floating above the real floor while the client's visual sim showed
+            // the item at ground level (user-reported: standing on creeper-blast
+            // drops that never collect). Chest/furnace content scatter defers the
+            // same way (the tile-entity registry is position-keyed, untouched by
+            // the block clear).
+            List<int[]> destroyed = new List<int[]>();
             for (int k = DIM - 1; k >= 0; k--)
                 for (int j = DIM - 1; j >= 0; j--)
                     for (int i = DIM - 1; i >= 0; i--)
@@ -136,10 +147,15 @@ namespace MCGalaxy.Network
                             SurvivalTnt.Ignite(lvl, bx, by, bz, SurvivalTnt.ChainFuse(lvl, rng));
                             continue;
                         }
-                        ExplodeDrops(lvl, bx, by, bz, id, rng);
-                        SurvivalInventory.ContainerRemovedIfAny(lvl, bx, by, bz, id); // chest/furnace scatter + TE cleanup
                         SurvivalGrowth.SetView(lvl, bx, by, bz, Block.Air);
+                        destroyed.Add(new int[] { bx, by, bz, id });
                     }
+
+            foreach (int[] d in destroyed)
+            {
+                ExplodeDrops(lvl, d[0], d[1], d[2], (ushort)d[3], rng);
+                SurvivalInventory.ContainerRemovedIfAny(lvl, d[0], d[1], d[2], (ushort)d[3]); // chest/furnace scatter + TE cleanup
+            }
         }
 
         // dropBlockAsItemWithChance(..., 0.3F) through the Indev idDropped table.
