@@ -69,6 +69,18 @@ namespace MCGalaxy.Commands.World
                     }
                     summary = FlagLabel(opt) + (flagOn ? " &aenabled" : " &cdisabled");
                     break;
+                case "mobcap":
+                    int mobCap = 0;
+                    if (args.Length < 2 || !int.TryParse(args[1], out mobCap) ||
+                        mobCap < 0 || mobCap > SurvivalMobs.MAX_MOBS_PER_LEVEL) {
+                        p.Message("Use: &T/Survival mobcap [0-{0}] &H(0 = auto by map size)",
+                                  SurvivalMobs.MAX_MOBS_PER_LEVEL); return;
+                    }
+                    cfg.SurvivalMobCap = mobCap;
+                    summary = mobCap == 0
+                        ? "Mob cap &bauto &S(" + SurvivalMobs.EffectiveCap(lvl) + ")"
+                        : "Mob cap &b" + mobCap;
+                    break;
                 default:
                     // The former action subcommands are now standalone commands
                     // (spawn -> /SurvSpawn, mobs -> /Mobs, spawner -> /Spawner,
@@ -185,8 +197,9 @@ namespace MCGalaxy.Commands.World
             p.Message("Survival on {0}&S: mode &b{1}&S, theme &b{2}", lvl.ColoredName, cfg.SurvivalMode, cfg.SurvivalTheme);
             p.Message("  flags: enhanced &b{0}&S, creative &b{1}&S, pvp &b{2}&S, deathDrops &b{3}",
                       cfg.SurvivalEnhanced, cfg.SurvivalCreative, cfg.SurvivalPvP, cfg.SurvivalDeathDrops);
-            p.Message("  hazards: death detection &b{0}&S, fall height &b{1}&S, live mobs &b{2}",
-                      cfg.SurvivalDeath, cfg.FallHeight, SurvivalMobs.CountMobs(lvl));
+            p.Message("  hazards: death detection &b{0}&S, fall height &b{1}&S, live mobs &b{2}&S/&b{3}",
+                      cfg.SurvivalDeath, cfg.FallHeight, SurvivalMobs.CountMobs(lvl),
+                      SurvivalMobs.EffectiveCap(lvl));
             p.Message("  non-survival clients: &b{0}&S (change with &T/Survival visitors&S)", cfg.SurvivalVisitors);
         }
 
@@ -196,6 +209,7 @@ namespace MCGalaxy.Commands.World
             p.Message("&T/Survival theme [normal/hell/paradise/woods/floating]");
             p.Message("&T/Survival [enhanced/creative/pvp/deathdrops] [on/off]");
             p.Message("&T/Survival visitors [visitor/allow/deny] &H- what stock clients may do");
+            p.Message("&T/Survival mobcap [0-256] &H- standing mob population (0 = auto)");
             p.Message("&HTools: &T/SurvSpawn /Mobs /Spawner /SurvTime /Inventory /Give /Export");
         }
     }

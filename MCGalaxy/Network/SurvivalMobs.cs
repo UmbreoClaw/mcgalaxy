@@ -157,6 +157,22 @@ namespace MCGalaxy.Network
 
         public const int MAX_MOBS_PER_LEVEL = 256; // matches the client's MOB_MAX pool
 
+        /// <summary> A level's standing mob-population cap. SurvivalMobCap
+        /// overrides (settable via /Survival mobcap); 0 = auto, scaled from the
+        /// map volume (area*4, deliberately lower than c0.30's swarms) up to the
+        /// 256 ceiling - the client's fixed puppet pool, the hard wire-compat
+        /// limit. The old auto clamp of 40 left big maps feeling empty
+        /// (user-reported): a 512x64x512 now autos to 256, small maps unchanged. </summary>
+        public static int EffectiveCap(Level lvl) {
+            int cap = lvl.Config.SurvivalMobCap;
+            if (cap <= 0) {
+                long volume = (long)lvl.Width * lvl.Height * lvl.Length;
+                int area = Math.Max(1, (int)(volume / 64 / 64 / 64));
+                cap = Math.Max(8, area * 4);
+            }
+            return Math.Min(cap, MAX_MOBS_PER_LEVEL);
+        }
+
         public static void Start() {
             if (scheduler == null) scheduler = new Scheduler("MCG_SurvivalMobs");
             if (tickTask != null) return;
@@ -1661,12 +1677,7 @@ namespace MCGalaxy.Network
             lm.Stats.Ticks++;
             long volume = (long)lvl.Width * lvl.Height * lvl.Length;
             int area = Math.Max(1, (int)(volume / 64 / 64 / 64));
-            // Per-map standing-population cap. SurvivalMobCap overrides; 0 = auto
-            // (scaled from the map volume, deliberately much lower than c0.30's
-            // area*20 which swarmed small maps). Always <= the client's 256 pool.
-            int cap = lvl.Config.SurvivalMobCap;
-            if (cap <= 0) cap = Math.Max(8, Math.Min(area * 4, 40));
-            lm.Cap = Math.Min(cap, MAX_MOBS_PER_LEVEL);
+            lm.Cap = EffectiveCap(lvl);
             if (!lm.InitialSpawned) {
                 lm.InitialSpawned = true;
                 if (!indev) InitialSpawnerRun(lvl, lm, (int)(volume / 6400));
