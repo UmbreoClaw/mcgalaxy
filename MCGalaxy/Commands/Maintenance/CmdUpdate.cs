@@ -40,13 +40,8 @@ namespace MCGalaxy.Commands.Maintenance
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Update check");
-            p.Message("&HChecks whether the server needs updating");
-            p.Message("&T/Update latest");
-            p.Message("&HUpdates the server to the latest unstable build");
-            p.Message("&WNote unstable builds may have more bugs or issues");
-            p.Message("&T/Update");
-            p.Message("&HUpdates the server to the latest release");
+            p.Message("&T/Update check &H- checks whether a newer build is published");
+            p.Message("&T/Update &H- updates to the newest survival-latest CI build");
         }
     }
 }

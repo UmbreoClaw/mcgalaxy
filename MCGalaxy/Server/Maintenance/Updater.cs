@@ -27,32 +27,26 @@ namespace MCGalaxy
     /// <summary> Checks for and applies software updates. </summary>
     public static class Updater 
     {    
-        public static string SourceURL = "https://github.com/ClassiCube/MCGalaxy";
-        public const string BaseURL    = "https://raw.githubusercontent.com/ClassiCube/MCGalaxy/master/";
-        public const string UploadsURL = "https://github.com/ClassiCube/MCGalaxy/tree/master/Uploads";        
-        const string CurrentVersionURL = BaseURL + "Uploads/current_version.txt";
+        // This fork updates from its OWN rolling release: every push to the
+        // survival branch republishes the survival-latest assets (see
+        // .github/workflows/survival-support.yml), so /Server update pulls the
+        // newest CI build directly - no fresh copy, no official CDN.
+        public static string SourceURL = "https://github.com/UmbreoClaw/mcgalaxy";
+        public const string BaseURL    = "https://raw.githubusercontent.com/UmbreoClaw/mcgalaxy/master/";
+        public const string UploadsURL = "https://github.com/UmbreoClaw/mcgalaxy/releases/tag/survival-latest";
+        const string RELEASE_URL       = "https://github.com/UmbreoClaw/mcgalaxy/releases/download/survival-latest/";
+        const string CurrentVersionURL = RELEASE_URL + "current_version.txt";
         const string CHANGELOG_URL     = BaseURL + "Changelog.txt";
-        
-        const string CDN_URL  = "https://cdn.classicube.net/client/mcg/{0}/";
-#if NET8_0
-        const string CDN_BASE = CDN_URL + "net80/";
-#elif NET6_0
-        const string CDN_BASE = CDN_URL + "net60/";
-#elif NET_20
-        const string CDN_BASE = CDN_URL + "net20/";
-#else
-        const string CDN_BASE = CDN_URL + "net40/";
-#endif
-        
-#if MCG_STANDALONE
-        static string DLL_URL = CDN_URL  + IOperatingSystem.DetectOS().StandaloneName;
-#elif TEN_BIT_BLOCKS
-        const string DLL_URL  = CDN_BASE + "MCGalaxy_infid.dll";
-#else
-        const string DLL_URL  = CDN_BASE + "MCGalaxy_.dll";
-#endif
-        const string GUI_URL  = CDN_BASE + "MCGalaxy.exe";
-        const string CLI_URL  = CDN_BASE + "MCGalaxyCLI.exe";
+
+        const string DLL_URL = RELEASE_URL + "MCGalaxy_.dll";
+        const string GUI_URL = RELEASE_URL + "MCGalaxy.exe";
+        const string CLI_URL = RELEASE_URL + "MCGalaxyCLI.exe";
+
+        // A rolling release has no version number to compare - the release's
+        // current_version.txt (commit sha + build date, stamped by CI) is
+        // compared against the copy saved by the last successful update.
+        // Missing local copy = "needs updating" (fresh install / pre-fix build).
+        const string VERSION_FILE = "props/build_version.txt";
 
         public static event EventHandler NewerVersionDetected;
         
@@ -77,8 +71,9 @@ namespace MCGalaxy
         
         public static bool NeedsUpdating() {
             using (WebClient client = HttpUtil.CreateWebClient()) {
-                string latest = client.DownloadString(CurrentVersionURL);
-                return new Version(latest) > new Version(Server.Version);
+                string latest  = client.DownloadString(CurrentVersionURL).Trim();
+                string current = File.Exists(VERSION_FILE) ? File.ReadAllText(VERSION_FILE).Trim() : "";
+                return latest.Length > 0 && latest != current;
             }
         }
         
@@ -94,18 +89,19 @@ namespace MCGalaxy
                 } catch {
                 }
         		
-                string mode = release ? "release" : "latest";
-                Logger.Log(LogType.SystemActivity, "Downloading {0} update files", mode);               
+                // one rolling channel - "release" and "latest" are the same build
+                Logger.Log(LogType.SystemActivity, "Downloading survival-latest update files");
                 WebClient client = HttpUtil.CreateWebClient();
-                
-                DownloadFile(client, DLL_URL.Replace("{0}", mode), "MCGalaxy_.update");
+                string newVersion = client.DownloadString(CurrentVersionURL).Trim();
+
+                DownloadFile(client, DLL_URL, "MCGalaxy_.update");
 #if MCG_STANDALONE
                 // Self contained executable, no separate CLI or GUI to download
 #elif MCG_DOTNET
-                DownloadFile(client, CLI_URL.Replace("{0}", mode), "MCGalaxyCLI.update");
+                DownloadFile(client, CLI_URL, "MCGalaxyCLI.update");
 #else
-                DownloadFile(client, GUI_URL.Replace("{0}", mode), "MCGalaxy.update");
-                DownloadFile(client, CLI_URL.Replace("{0}", mode), "MCGalaxyCLI.update");
+                DownloadFile(client, GUI_URL, "MCGalaxy.update");
+                DownloadFile(client, CLI_URL, "MCGalaxyCLI.update");
 #endif
                 DownloadFile(client, CHANGELOG_URL, "Changelog.txt");
 
@@ -130,7 +126,10 @@ namespace MCGalaxy
                 // Move update files to current files
                 FileIO.TryMove("MCGalaxy_.update",   serverDLL);
                 FileIO.TryMove("MCGalaxy.update",    serverGUI);
-                FileIO.TryMove("MCGalaxyCLI.update", serverCLI);                             
+                FileIO.TryMove("MCGalaxyCLI.update", serverCLI);
+
+                // remember which build we are now on, for the next NeedsUpdating
+                try { File.WriteAllText(VERSION_FILE, newVersion); } catch { }
 
                 Server.Stop(true, "Updating server.");
             } catch (Exception ex) {

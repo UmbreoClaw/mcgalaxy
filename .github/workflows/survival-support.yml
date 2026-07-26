@@ -62,6 +62,13 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/claude/mock-survival-server-33jx1q'
         run: cd bin/Release && zip -r ../../MCGalaxy-survival-latest.zip .
 
+      # /Server update pulls these three loose binaries + the version stamp
+      # straight from the rolling release (see Updater.cs) - a running server
+      # self-updates to this build without a fresh copy
+      - name: Stamp build version for /Server update
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/mock-survival-server-33jx1q'
+        run: printf '%s %s\n' "$(git rev-parse --short HEAD)" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > current_version.txt
+
       - name: Move rolling release tag
         if: github.event_name == 'push' && github.ref == 'refs/heads/claude/mock-survival-server-33jx1q'
         run: |
@@ -79,4 +86,9 @@ jobs:
             Rolling build of the survival server branch - updated automatically on
             every push. Unzip and run MCGalaxyCLI.exe (or MCGalaxy.exe for the GUI)
             with Mono or .NET Framework, same as an official MCGalaxy release.
-          files: MCGalaxy-survival-latest.zip
+          files: |
+            MCGalaxy-survival-latest.zip
+            bin/Release/MCGalaxy_.dll
+            bin/Release/MCGalaxy.exe
+            bin/Release/MCGalaxyCLI.exe
+            current_version.txt
