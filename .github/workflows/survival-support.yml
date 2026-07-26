@@ -58,16 +58,22 @@ jobs:
       # permanent, login-free download URL (run artifacts expire and require
       # signing in):
       #   https://github.com/${{ github.repository }}/releases/tag/survival-latest
+      # /Server update pulls the three loose binaries + the version stamp
+      # straight from the rolling release (see Updater.cs) - a running server
+      # self-updates to this build without a fresh copy. The stamp is ALSO baked
+      # into the zip as props/build_version.txt, so a manual fresh install is
+      # pre-stamped and /Update check reports up-to-date instead of spuriously
+      # "needs updating" until the first self-update.
+      - name: Stamp build version for /Server update
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/mock-survival-server-33jx1q'
+        run: |
+          printf '%s %s\n' "$(git rev-parse --short HEAD)" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > current_version.txt
+          mkdir -p bin/Release/props
+          cp current_version.txt bin/Release/props/build_version.txt
+
       - name: Zip build output for the release
         if: github.event_name == 'push' && github.ref == 'refs/heads/claude/mock-survival-server-33jx1q'
         run: cd bin/Release && zip -r ../../MCGalaxy-survival-latest.zip .
-
-      # /Server update pulls these three loose binaries + the version stamp
-      # straight from the rolling release (see Updater.cs) - a running server
-      # self-updates to this build without a fresh copy
-      - name: Stamp build version for /Server update
-        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/mock-survival-server-33jx1q'
-        run: printf '%s %s\n' "$(git rev-parse --short HEAD)" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > current_version.txt
 
       - name: Move rolling release tag
         if: github.event_name == 'push' && github.ref == 'refs/heads/claude/mock-survival-server-33jx1q'
