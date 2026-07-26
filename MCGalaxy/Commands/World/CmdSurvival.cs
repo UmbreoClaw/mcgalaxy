@@ -200,6 +200,11 @@ namespace MCGalaxy.Commands.World
             p.Message("  hazards: death detection &b{0}&S, fall height &b{1}&S, live mobs &b{2}&S/&b{3}",
                       cfg.SurvivalDeath, cfg.FallHeight, SurvivalMobs.CountMobs(lvl),
                       SurvivalMobs.EffectiveCap(lvl));
+            if (cfg.SurvivalMode == SurvivalMode.Indev)
+                p.Message("  herds: &b{0}&S/&b{1} &Sanimals, &b{2}&S/&b{3} &Smonsters (genuine Indev caps)",
+                          SurvivalMobs.CountMobs(lvl, true), SurvivalMobs.IndevAnimalCap(lvl),
+                          SurvivalMobs.CountMobs(lvl, false),
+                          Math.Min(SurvivalMobs.IndevMonsterCap(lvl), SurvivalMobs.EffectiveCap(lvl)));
             p.Message("  non-survival clients: &b{0}&S (change with &T/Survival visitors&S)", cfg.SurvivalVisitors);
         }
 

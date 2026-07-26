@@ -173,6 +173,29 @@ namespace MCGalaxy.Network
             return Math.Min(cap, MAX_MOBS_PER_LEVEL);
         }
 
+        // Genuine Indev runs SEPARATE monster and animal spawn passes, each with
+        // its own cap (MobSpawner.performSpawning): animals W*L/4000, monsters
+        // volume*20/64^3 halved by difficulty Normal. The merged EffectiveCap
+        // alone let daytime top-ups - where only lit (= animal) spawns can land -
+        // fill a big map's whole budget with pigs and sheep (user-reported herd
+        // swarm on 512x128x512, whose genuine animal cap is just 65).
+        public static int IndevAnimalCap(Level lvl) {
+            return lvl.Width * lvl.Length / 4000;
+        }
+
+        public static int IndevMonsterCap(Level lvl) {
+            long volume = (long)lvl.Width * lvl.Height * lvl.Length;
+            return (int)(volume * 20 / 64 / 64 / 64) / 2;
+        }
+
+        static int CountKind(LevelMobs lm, bool passive) {
+            int n = 0;
+            foreach (SurvMob m in lm.Mobs) {
+                if (!m.Dead && Types[m.Type].Passive == passive) n++;
+            }
+            return n;
+        }
+
         public static void Start() {
             if (scheduler == null) scheduler = new Scheduler("MCG_SurvivalMobs");
             if (tickTask != null) return;
@@ -1450,6 +1473,31 @@ namespace MCGalaxy.Network
         static readonly byte[] monsterTypes = { TYPE_ZOMBIE, TYPE_SKELETON, TYPE_CREEPER, TYPE_SPIDER };
         static readonly byte[] animalTypes  = { TYPE_PIG, TYPE_SHEEP };
 
+        // The merged-cap era could leave a map with far more animals than the
+        // genuine cap ever allows, and passives never despawn naturally. Cull
+        // one animal per call - the one farthest from every player - until the
+        // herd is back at the genuine cap. No loot: population correction, not
+        // a kill.
+        static void TrimExcessAnimals(Level lvl, LevelMobs lm, Player[] viewers) {
+            if (CountKind(lm, true) <= IndevAnimalCap(lvl)) return;
+
+            SurvMob far = null; double farD = -1;
+            foreach (SurvMob m in lm.Mobs)
+            {
+                if (m.Dead || !Types[m.Type].Passive) continue;
+                double d = 0;
+                foreach (Player p in viewers)
+                {
+                    double dx = p.Pos.X / 32.0 - m.X, dz = p.Pos.Z / 32.0 - m.Z;
+                    double d2 = dx * dx + dz * dz;
+                    if (d == 0 || d2 < d) d = d2;
+                }
+                if (d > farD) { farD = d; far = m; }
+            }
+            if (far == null) return;
+            far.Health = 0; far.Dead = true; far.DeathTicks = 0;
+        }
+
         // The old fully-random Y wasted ~97% of attempts underground or in the air
         // ("awfully slow for mobs to spawn" - live-testing report), and pre-rolling
         // the type wasted most of the rest on the light rule. Now the COLUMN is
@@ -1472,10 +1520,15 @@ namespace MCGalaxy.Network
             if (y < 0) { lm.Stats.RejNoGround++; return; }
 
             byte type;
+            int kindCap = int.MaxValue, kindCount = 0;
             if (indev) {
                 bool dark = !ColumnLit(lvl, x, y, z);
                 byte[] pool = dark ? monsterTypes : animalTypes;
                 type = pool[rng.Next(pool.Length)];
+                // the genuine per-kind cap for the pool the light rule picked
+                kindCap   = dark ? IndevMonsterCap(lvl) : IndevAnimalCap(lvl);
+                kindCount = CountKind(lm, !dark);
+                if (kindCount >= kindCap) { lm.Stats.RejCap++; return; }
             } else {
                 type = (byte)rng.Next(SPAWN_TYPES); // c0.30 has no light rule
             }
@@ -1484,11 +1537,12 @@ namespace MCGalaxy.Network
             // v1 - the genuine 9-roll cluster with jitter walks is trimmed to
             // keep server populations tame)
             int cluster = 1 + rng.Next(3);
-            for (int i = 0; i < cluster && lm.Mobs.Count < lm.Cap; i++)
+            for (int i = 0; i < cluster && lm.Mobs.Count < lm.Cap && kindCount < kindCap; i++)
             {
                 int cx = x + rng.Next(7) - 3, cy = y, cz = z + rng.Next(7) - 3;
                 if (!SpawnValid(lvl, cx, cy, cz)) continue;
                 SpawnMob(lvl, lm, type, cx + 0.5, cy, cz + 0.5, (float)(rng.NextDouble() * 360.0));
+                kindCount++;
                 lm.Stats.Spawned++;
                 // no per-spawn console log - spawns fire constantly and clog the
                 // logs; /Mobs stats still expose Spawned + LastSpawn on demand
@@ -1697,6 +1751,10 @@ namespace MCGalaxy.Network
                 // feels alive; hostile targeting stays survival-clients-only
                 TopUpSpawnerRun(lvl, lm, viewers, 2); // column-scan attempts nearly always land
             }
+            // drain herds that pre-date the per-kind caps back down to the
+            // genuine animal cap: one animal per second, farthest from every
+            // player, so an over-populated live map quietly self-corrects
+            if (indev && lm.Stats.Ticks % 20 == 0) TrimExcessAnimals(lvl, lm, viewers);
 
             for (int i = lm.Mobs.Count - 1; i >= 0; i--)
             {
@@ -1984,6 +2042,12 @@ namespace MCGalaxy.Network
             LevelMobs lm = GetLevel(lvl, false);
             if (lm == null) return 0;
             lock (lm.Mobs) return lm.Mobs.Count;
+        }
+
+        public static int CountMobs(Level lvl, bool passive) {
+            LevelMobs lm = GetLevel(lvl, false);
+            if (lm == null) return 0;
+            lock (lm.Mobs) return CountKind(lm, passive);
         }
     }
 }
