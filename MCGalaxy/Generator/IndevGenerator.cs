@@ -17,6 +17,7 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using MCGalaxy.Network;
 using BlockID = System.UInt16;
 
@@ -365,11 +366,18 @@ namespace MCGalaxy.Generator
         // ==================== terrain passes ====================
 
         // "Raising.." + "Eroding.." - the distorted-noise heightmap
+        // The heavy per-column passes below run PARALLEL over x. This is
+        // output-identical to the sequential loops: all randomness happens in
+        // the noise constructors (Perlin's perm table is readonly after that,
+        // Noise() is pure), the loop bodies never touch rnd, and each (x,z)
+        // column reads/writes only its own heightmap/blocks cells. A 1024x512
+        // x1024 floating map (10 island layers) spent ~185 of its 230 s here
+        // single-threaded (user-timed).
         void RaiseAndErode() {
             Distort d1 = new Distort(rnd, 8), d2 = new Distort(rnd, 8);
             Octaves o1 = new Octaves(rnd, 6), o2 = new Octaves(rnd, 2);
 
-            for (int x = 0; x < width; x++) {
+            Parallel.For(0, width, x => {
                 double distFromCentreX = (x / (width - 1.0) - 0.5) * 2.0;
                 if (distFromCentreX < 0) distFromCentreX = -distFromCentreX;
 
@@ -401,21 +409,21 @@ namespace MCGalaxy.Generator
 
                     heightmap[x + z * width] = (int)h;
                 }
-            }
+            });
 
-            d1 = new Distort(rnd, 8);
-            d2 = new Distort(rnd, 8);
-            for (int x = 0; x < width; x++) {
+            Distort e1 = new Distort(rnd, 8);
+            Distort e2 = new Distort(rnd, 8);
+            Parallel.For(0, width, x => {
                 for (int z = 0; z < length; z++) {
-                    double erode = d1.Noise(x << 1, z << 1) / 8.0;
-                    int eroded   = d2.Noise(x << 1, z << 1) > 0.0 ? 1 : 0;
+                    double erode = e1.Noise(x << 1, z << 1) / 8.0;
+                    int eroded   = e2.Noise(x << 1, z << 1) > 0.0 ? 1 : 0;
                     if (erode > 2.0) {
                         int sh = heightmap[x + z * width];
                         sh = ((sh - eroded) / 2 << 1) + eroded;
                         heightmap[x + z * width] = sh;
                     }
                 }
-            }
+            });
         }
 
         // "Soiling.." - dirt over stone under the heightmap (with the floating-
@@ -423,7 +431,7 @@ namespace MCGalaxy.Generator
         void Soil() {
             Octaves o1 = new Octaves(rnd, 8), o2 = new Octaves(rnd, 8);
 
-            for (int x = 0; x < width; x++) {
+            Parallel.For(0, width, x => {
                 double distX = (x / (width - 1.0) - 0.5) * 2.0;
                 if (distX < 0) distX = -distX;
 
@@ -447,7 +455,12 @@ namespace MCGalaxy.Generator
                     floatCut = (int)(floatCut * (1.0 - corner) + corner * height);
                     if (floatCut > waterLevel) floatCut = height;
 
-                    for (int y = 0; y < height; y++) {
+                    // above max(dirtY, stoneY) the id is always 0 and writing 0
+                    // over an empty cell is a no-op - skipping those cells is
+                    // byte-identical and avoids sweeping empty sky every layer
+                    int yMax = Math.Max(dirtY, stoneY);
+                    if (yMax > height - 1) yMax = height - 1;
+                    for (int y = 0; y <= yMax; y++) {
                         int index = (y * length + z) * width + x;
                         int id = 0;
                         if (y <= dirtY)  id = Block.Dirt;
@@ -457,7 +470,7 @@ namespace MCGalaxy.Generator
                         if (blocks[index] == 0) blocks[index] = (byte)id;
                     }
                 }
-            }
+            });
         }
 
         // "Growing.." - surface pass: gravel under shallow water, sand (or hell
@@ -467,7 +480,7 @@ namespace MCGalaxy.Generator
             int sandY = waterLevel - 1;
             if (theme == 2) sandY += 2; // paradise: beaches reach higher
 
-            for (int x = 0; x < width; x++) {
+            Parallel.For(0, width, x => {
                 for (int z = 0; z < length; z++) {
                     bool sandNoise = o1.Noise(x, z) > 8.0;
                     if (IsIsland)   sandNoise = o1.Noise(x, z) > -8.0;
@@ -495,7 +508,7 @@ namespace MCGalaxy.Generator
                         if (blocks[index] != 0 && id > 0) blocks[index] = (byte)id;
                     }
                 }
-            }
+            });
         }
 
         // "Carving.." - the worm-tunnel caves
@@ -1180,6 +1193,11 @@ namespace MCGalaxy.Generator
             for (int layer = 0; layer < layers; layer++) {
                 waterLevel  = height - 32 - layer * 48;
                 groundLevel = waterLevel - 2;
+
+                // layers beyond the first used to run in SILENCE after
+                // "Growing.." - on a tall floating map that's most of the whole
+                // generation time, and it looked stuck (user-reported)
+                if (layer > 0) Status("Islands " + (layer + 1) + "/" + layers + "..");
 
                 if (IsFlat) {
                     for (int i = 0; i < width * length; i++) heightmap[i] = 0;
