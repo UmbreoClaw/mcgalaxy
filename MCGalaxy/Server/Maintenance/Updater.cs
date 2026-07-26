@@ -70,9 +70,14 @@ namespace MCGalaxy
         }
         
         public static bool NeedsUpdating() {
+            string latest, current;
+            return NeedsUpdating(out latest, out current);
+        }
+
+        public static bool NeedsUpdating(out string latest, out string current) {
             using (WebClient client = HttpUtil.CreateWebClient()) {
-                string latest  = client.DownloadString(CurrentVersionURL).Trim();
-                string current = File.Exists(VERSION_FILE) ? File.ReadAllText(VERSION_FILE).Trim() : "";
+                latest  = client.DownloadString(CurrentVersionURL).Trim();
+                current = File.Exists(VERSION_FILE) ? File.ReadAllText(VERSION_FILE).Trim() : "";
                 return latest.Length > 0 && latest != current;
             }
         }
@@ -128,8 +133,17 @@ namespace MCGalaxy
                 FileIO.TryMove("MCGalaxy.update",    serverGUI);
                 FileIO.TryMove("MCGalaxyCLI.update", serverCLI);
 
-                // remember which build we are now on, for the next NeedsUpdating
-                try { File.WriteAllText(VERSION_FILE, newVersion); } catch { }
+                // Remember which build we are now on, for the next NeedsUpdating.
+                // WriteAllText does not create missing directories, and installs
+                // unpacked from the CI run artifact have no props/ folder - the
+                // swallowed failure made /Update check report "needs updating"
+                // forever, right after a successful update.
+                try {
+                    Directory.CreateDirectory(Path.GetDirectoryName(VERSION_FILE));
+                    File.WriteAllText(VERSION_FILE, newVersion);
+                } catch (Exception ex) {
+                    Logger.LogError("Error saving build version stamp", ex);
+                }
 
                 Server.Stop(true, "Updating server.");
             } catch (Exception ex) {

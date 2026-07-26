@@ -28,8 +28,11 @@ namespace MCGalaxy.Commands.Maintenance
         public override void Use(Player p, string message, CommandData data) {
             if (message.CaselessEq("check")) {
                 p.Message("Checking for updates..");
-                bool needsUpdating = Updater.NeedsUpdating();
-                p.Message("Server {0}", needsUpdating ? "&cneeds updating" : "&ais up to date");
+                string latest, current;
+                bool needsUpdating = Updater.NeedsUpdating(out latest, out current);
+                p.Message("Server {0} &S(running {1}, latest {2})",
+                          needsUpdating ? "&cneeds updating" : "&ais up to date",
+                          current.Length == 0 ? "unstamped build" : current, latest);
             } else if (message.CaselessEq("latest")) {
                 Updater.PerformUpdate(false);
             }  else if (message.Length == 0) {
