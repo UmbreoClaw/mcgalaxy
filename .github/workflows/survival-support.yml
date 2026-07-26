@@ -67,7 +67,7 @@ jobs:
       - name: Stamp build version for /Server update
         if: github.event_name == 'push' && github.ref == 'refs/heads/claude/mock-survival-server-33jx1q'
         run: |
-          printf '%s %s\n' "$(git rev-parse --short HEAD)" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > current_version.txt
+          printf 'build %s (%s)\n' "${{ github.run_number }}" "$(git rev-parse --short HEAD)" > current_version.txt
           mkdir -p bin/Release/props
           cp current_version.txt bin/Release/props/build_version.txt
 
@@ -86,7 +86,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: survival-latest
-          name: SurvivalTest server - latest branch build
+          name: SurvivalTest server - build ${{ github.run_number }}
           prerelease: true
           body: |
             Rolling build of the survival server branch - updated automatically on

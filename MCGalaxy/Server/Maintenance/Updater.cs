@@ -77,8 +77,20 @@ namespace MCGalaxy
         public static bool NeedsUpdating(out string latest, out string current) {
             using (WebClient client = HttpUtil.CreateWebClient()) {
                 latest  = client.DownloadString(CurrentVersionURL).Trim();
-                current = File.Exists(VERSION_FILE) ? File.ReadAllText(VERSION_FILE).Trim() : "";
+                current = CurrentBuild;
                 return latest.Length > 0 && latest != current;
+            }
+        }
+
+        /// <summary> Build stamp of the currently running install
+        /// (e.g. "build 47 (0e64925)"), or "" if unstamped </summary>
+        public static string CurrentBuild {
+            get {
+                try {
+                    return File.Exists(VERSION_FILE) ? File.ReadAllText(VERSION_FILE).Trim() : "";
+                } catch {
+                    return "";
+                }
             }
         }
         

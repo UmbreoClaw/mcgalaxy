@@ -30,9 +30,13 @@ namespace MCGalaxy.Commands.Maintenance
                 p.Message("Checking for updates..");
                 string latest, current;
                 bool needsUpdating = Updater.NeedsUpdating(out latest, out current);
-                p.Message("Server {0} &S(running {1}, latest {2})",
-                          needsUpdating ? "&cneeds updating" : "&ais up to date",
-                          current.Length == 0 ? "unstamped build" : current, latest);
+                if (current.Length == 0) current = "unstamped build";
+
+                if (needsUpdating) {
+                    p.Message("Server &cneeds updating&S: running {0}, latest is {1}", current, latest);
+                } else {
+                    p.Message("Server &ais up to date &S- {0}", current);
+                }
             } else if (message.CaselessEq("latest")) {
                 Updater.PerformUpdate(false);
             }  else if (message.Length == 0) {
