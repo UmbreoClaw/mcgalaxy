@@ -754,6 +754,14 @@ namespace MCGalaxy.Network
                     return;
                 }
 
+                // A referee punch is moderation, not play: the mob dies outright
+                // with no shear, no loot and no score (same fields KillMob sets,
+                // minus the rewards) - viewers still see the death flop.
+                if (p.Game.Referee) {
+                    m.Health = 0; m.Dead = true; m.DeathTicks = 0;
+                    return;
+                }
+
                 // Sheep shear before damage: c0.30 replaces the hit entirely; Indev
                 // shears AND falls through to damage. A punched furred sheep scatters
                 // wool (Indev 1+rand(3) GRAY cloth at head height; c0.30 1-3 WHITE).
@@ -787,6 +795,7 @@ namespace MCGalaxy.Network
         /// like any landed melee hit. </summary>
         static void HandlePvPAttack(Player p, Level lvl, int targetId) {
             if (!lvl.Config.SurvivalPvP) return;
+            if (p.Game.Referee) return; // out-of-game observers deal no pvp damage
 
             // reverse the attacker's per-viewer entity id table to find the victim
             Player victim = null;
@@ -854,7 +863,7 @@ namespace MCGalaxy.Network
             // drop a target that left / died / went to another level
             if (target != null && (target.level != lvl || target.Session == null ||
                                    !target.Session.hasSurvival || SurvivalNet.IsDead(target) ||
-                                   Commands.World.CmdSpectate.IsSpectating(target))) {
+                                   SurvivalNet.IsObserver(target))) {
                 m.Target = null; target = null;
             }
 
@@ -864,7 +873,7 @@ namespace MCGalaxy.Network
                 double bestSq = 256.0;
                 foreach (Player p in watchers)
                 {
-                    if (SurvivalNet.IsDead(p) || Commands.World.CmdSpectate.IsSpectating(p)) continue;
+                    if (SurvivalNet.IsDead(p) || SurvivalNet.IsObserver(p)) continue;
                     double dx = p.Pos.X / 32.0 - m.X, dy = (p.Pos.Y - Entities.CharacterHeight) / 32.0 - m.Y,
                            dz = p.Pos.Z / 32.0 - m.Z;
                     double distSq = dx * dx + dy * dy + dz * dz;
@@ -1294,7 +1303,7 @@ namespace MCGalaxy.Network
             Player target = m.Target;
             if (target != null && (target.level != lvl || target.Session == null ||
                                    !target.Session.hasSurvival || SurvivalNet.IsDead(target) ||
-                                   Commands.World.CmdSpectate.IsSpectating(target))) {
+                                   SurvivalNet.IsObserver(target))) {
                 m.Target = null; target = null; m.PathCount = 0;
             }
             // a mob victim (arrow retaliation / infighting melee) - the last hit's
@@ -1320,7 +1329,7 @@ namespace MCGalaxy.Network
                 if (canHunt) {
                     double bestSq = 256.0;
                     foreach (Player p in watchers) {
-                        if (SurvivalNet.IsDead(p) || Commands.World.CmdSpectate.IsSpectating(p)) continue;
+                        if (SurvivalNet.IsDead(p) || SurvivalNet.IsObserver(p)) continue;
                         double dx = p.Pos.X / 32.0 - m.X, dy = (p.Pos.Y - Entities.CharacterHeight) / 32.0 - m.Y, dz = p.Pos.Z / 32.0 - m.Z;
                         double d2 = dx * dx + dy * dy + dz * dz;
                         if (d2 < bestSq) { bestSq = d2; m.Target = p; }

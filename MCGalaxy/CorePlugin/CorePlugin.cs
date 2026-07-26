@@ -46,6 +46,7 @@ namespace MCGalaxy.Core {
             OnPlayerDyingEvent.Register(Network.SurvivalNet.OnPlayerDying, Priority.Low);
             OnJoinedLevelEvent.Register(Network.SurvivalNet.OnJoinedLevel, Priority.Low);
             OnPlayerCommandEvent.Register(Network.SurvivalNet.OnPlayerCommand, Priority.Low);
+            OnPlayerActionEvent.Register(Network.SurvivalNet.OnPlayerAction, Priority.Low);
             OnBlockChangingEvent.Register(Network.SurvivalInventory.OnBlockChanging, Priority.Low);
             OnBlockChangedEvent.Register(Network.SurvivalPhysics.OnBlockChanged, Priority.Low);
             OnEntitySpawnedEvent.Register(Network.SurvivalInventory.OnEntitySpawned, Priority.Low);
@@ -79,6 +80,7 @@ namespace MCGalaxy.Core {
             OnPlayerDyingEvent.Unregister(Network.SurvivalNet.OnPlayerDying);
             OnJoinedLevelEvent.Unregister(Network.SurvivalNet.OnJoinedLevel);
             OnPlayerCommandEvent.Unregister(Network.SurvivalNet.OnPlayerCommand);
+            OnPlayerActionEvent.Unregister(Network.SurvivalNet.OnPlayerAction);
             OnBlockChangingEvent.Unregister(Network.SurvivalInventory.OnBlockChanging);
             OnBlockChangedEvent.Unregister(Network.SurvivalPhysics.OnBlockChanged);
             OnJoiningLevelEvent.Unregister(Network.SurvivalInventory.OnJoiningLevel);

@@ -1703,6 +1703,12 @@ namespace MCGalaxy.Network
             if (SurvivalNet.IsDead(p)) { cancel = true; p.RevertBlock(x, y, z); return; }
 
             PlayerInv inv = Get(p);
+            // Referee edits are moderation, not play: nothing is consumed, no
+            // tool wear, no drops, and mined TNT is removed instead of primed.
+            // Indev placement validation/shaping still applies so the world
+            // stays legal, and mined containers still scatter their contents
+            // (deleting other players' items is never the intent).
+            bool refClean = p.Game.Referee;
 
             if (placing) {
                 ushort raw  = p.Session.ConvertBlock(block);
@@ -1716,7 +1722,9 @@ namespace MCGalaxy.Network
 
                 ushort cost = raw <= Block.CLASSIC_MAX_BLOCK ? raw
                             : indev ? SurvivalBlocks.PlaceCost(raw) : (ushort)0;
-                if (cost != 0) {
+                if (refClean) {
+                    // referees place from the creative palette - nothing consumed
+                } else if (cost != 0) {
                     int idx = ConsumeSlot(p, inv, cost);
                     if (idx < 0) {
                         cancel = true;
@@ -1747,7 +1755,7 @@ namespace MCGalaxy.Network
                 // EVERY removal (mined or instant), so the held tool wears exactly
                 // once per block broken - pick/shovel/axe 1, sword 2, others none.
                 // Indev-only (ToolUseWear no-ops off Indev tools / a bare fist).
-                if (indev)
+                if (indev && !refClean)
                     DamageHeldTool(p, inv, inv.HeldSlot, SurvivalItems.ToolUseWear(
                         inv.HeldSlot >= 0 && inv.HeldSlot < 9 ? inv.Slots[inv.HeldSlot].Id : (ushort)0, false));
                 // a mined container discards its tile entity + force-closes viewers
@@ -1762,9 +1770,10 @@ namespace MCGalaxy.Network
                 // the mine removes the block and TNTPhysics.onBreak primes a full-fuse
                 // PrimedTnt entity in its place (both c0.30 and Indev).
                 if (raw == Block.TNT) {
-                    SurvivalTnt.Ignite(lvl, x, y, z, SurvivalTnt.DefaultFuse(lvl));
+                    if (!refClean) SurvivalTnt.Ignite(lvl, x, y, z, SurvivalTnt.DefaultFuse(lvl));
                     return;
                 }
+                if (refClean) return; // moderation removal - the block yields nothing
 
                 // phase 5: mining no longer teleports the yield into the inventory -
                 // it spawns physical drop entities (the genuine Indev drop table on

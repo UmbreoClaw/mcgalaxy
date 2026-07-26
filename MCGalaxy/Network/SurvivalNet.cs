@@ -16,6 +16,7 @@
     permissions and limitations under the Licenses.
  */
 using System;
+using MCGalaxy.Events.PlayerEvents;
 using MCGalaxy.Tasks;
 using BlockID = System.UInt16;
 
@@ -190,7 +191,7 @@ namespace MCGalaxy.Network
             // there the client keeps the genuine local palette inventory (the
             // server tracks no inventory in creative: free build, no consume),
             // and streaming would wipe the palette the HELLO just filled.
-            if (!cfg.SurvivalCreative) SurvivalInventory.SendAll(p);
+            if (!cfg.SurvivalCreative && !p.Game.Referee) SurvivalInventory.SendAll(p);
             Logger.Log(LogType.Debug, "survival: sent handshake to {0} for {1} (mode {2})",
                        p.name, lvl.name, cfg.SurvivalMode);
         }
@@ -228,10 +229,18 @@ namespace MCGalaxy.Network
         }
 
         static void SendHello(Player p, LevelConfig cfg) {
+            HelloFlags flags = HelloFlagsFor(cfg);
+            // Referees observe from Indev creative: palette inventory, instant
+            // break, no health bar. Their survival inventory is untouched while
+            // the mode is on (OnBlockChanging consumes/drops nothing for them)
+            // and streams back on the un-ref handshake.
+            if (p.Game.Referee && cfg.SurvivalMode != SurvivalMode.Off)
+                flags |= HelloFlags.Creative;
+
             byte[] msg = new byte[Packet.PluginMessageDataLength];
             msg[0] = HELLO;
             msg[1] = (byte)cfg.SurvivalMode;
-            msg[2] = (byte)HelloFlagsFor(cfg);
+            msg[2] = (byte)flags;
             msg[3] = ProtoVersion;
             SendMessage(p, msg);
         }
@@ -782,9 +791,15 @@ namespace MCGalaxy.Network
         /// Returns whether the hit actually LANDED (reduced health / killed) - false
         /// when absorbed by the invulnerability window or armor, so callers can gate
         /// knockback on it (genuine hurt() knocks back only on a landing hit). </summary>
+        /// <summary> Out-of-game observers: referees and hidden spectators. They take
+        /// no damage, are never acquired as mob targets, and don't collect drops. </summary>
+        public static bool IsObserver(Player p) {
+            return p.Game.Referee || Commands.World.CmdSpectate.IsSpectating(p);
+        }
+
         public static bool DamagePlayer(Player p, int damage, string deathMsg) {
             if (!Active(p, p.level) || IsDead(p) || damage <= 0) return false;
-            if (Commands.World.CmdSpectate.IsSpectating(p)) return false; // spectators are invulnerable
+            if (IsObserver(p)) return false; // observers are invulnerable
 
             int invinc = p.Extras.GetInt(INVINC_KEY, 0);
             int health = GetHealth(p);
@@ -1005,6 +1020,18 @@ namespace MCGalaxy.Network
         static bool IsSurvivalWorld(Level lvl) {
             return lvl != null && lvl.Config.SurvivalMode != SurvivalMode.Off &&
                    !lvl.Config.SurvivalCreative;
+        }
+
+        /// <summary> A referee toggle re-negotiates the survival handshake: entering
+        /// referee switches the client to Indev creative for observing (SendHello
+        /// forces the flag), leaving re-sends the genuine mode and streams the
+        /// untouched survival inventory back. CmdReferee raises this event BEFORE
+        /// mutating p.Game.Referee, so flip it here first (the RoundsGame plugin
+        /// follows the same pattern) - the handshake must see the new state. </summary>
+        public static void OnPlayerAction(Player p, PlayerAction action, string message, bool stealth) {
+            if (action != PlayerAction.Referee && action != PlayerAction.UnReferee) return;
+            p.Game.Referee = action == PlayerAction.Referee;
+            if (Active(p, p.level)) SendHandshake(p, p.level);
         }
 
         // Exact-first then unique-substring online match, with NO chat output -
