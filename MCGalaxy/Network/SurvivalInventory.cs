@@ -537,10 +537,17 @@ namespace MCGalaxy.Network
                     return;
                 }
 
-                // Item.onItemUse: hoe tilling, seed planting, flint&steel ignition
+                // Item.onItemUse: hoe tilling, seed planting, flint&steel ignition,
+                // hanging paintings on the clicked wall face
                 if (UseHoe(p, lvl, inv, held, heldId, x, y, z)) return;
                 if (UseSeeds(p, lvl, inv, held, heldId, x, y, z)) return;
                 if (UseFlintSteel(p, lvl, inv, held, heldId, x, y, z, face)) return;
+                bool paintPlaced; int paintConsume;
+                if (SurvivalPaintings.UsePainting(p, lvl, heldId, x, y, z, face,
+                                                  out paintPlaced, out paintConsume)) {
+                    if (paintConsume > 0) { ConsumeHeld(inv, held, paintConsume); SendSlot(p, inv, held); }
+                    return;
+                }
             }
 
             // TryEat: a held food is eaten with or without a target block

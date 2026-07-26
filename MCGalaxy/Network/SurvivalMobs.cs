@@ -716,6 +716,8 @@ namespace MCGalaxy.Network
             if (Commands.World.CmdSpectate.IsSpectating(p)) return; // observers don't punch
             // targetKind 2 = a primed TNT (c0.30 PrimedTnt.hurt melee defuse)
             if (targetKind == 2) { SurvivalTnt.Defuse(lvl, targetId, p); return; }
+            // targetKind 3 = a painting (EntityPainting.attackEntityFrom pop)
+            if (targetKind == 3) { SurvivalPaintings.HandleAttack(p, lvl, targetId); return; }
             // targetKind 1 = another player (PvP melee, gated on the map flag)
             if (targetKind == 1) { HandlePvPAttack(p, lvl, targetId); return; }
             if (targetKind != 0) return;
@@ -1637,6 +1639,7 @@ namespace MCGalaxy.Network
             SurvivalTnt.Prune(loaded);   // primed-TNT registries are Level-keyed too
             SurvivalGrowth.Prune(loaded); // growth/light caches are Level-keyed too
             SurvivalPhysics.Prune(loaded); // fire/fluid schedules are Level-keyed too
+            SurvivalPaintings.Prune(loaded); // painting registries are Level-keyed too
             SurvivalInventory.FlushEquip(); // send equipment for entities that became visible this tick
         }
 
@@ -1704,6 +1707,9 @@ namespace MCGalaxy.Network
             // into trees and grass spreads on the genuine random-block-tick rate
             // (server-authoritative; the client's own growth loop is gated off).
             if (indev) SurvivalGrowth.Tick(lvl);
+
+            // paintings run their genuine once-at-100-ticks wall check
+            if (indev) SurvivalPaintings.Tick(lvl);
 
             // Indev block physics: fire spread/burn-out and the genuine finite
             // fluids (springs, volume-conserving flow), on the same cadence.

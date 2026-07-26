@@ -40,7 +40,8 @@ namespace MCGalaxy.Network
             // an "empty" snapshot here is a lie, not a state. Never clobber a real
             // sidecar with it (LevelActions.Replace removes the level from Loaded
             // long before unloading it, so the prune can beat the unload-save).
-            if (!SurvivalMobs.HasRegistry(lvl) && !SurvivalInventory.HasContainers(lvl)) return;
+            if (!SurvivalMobs.HasRegistry(lvl) && !SurvivalInventory.HasContainers(lvl) &&
+                !SurvivalPaintings.HasPaintings(lvl)) return;
             try {
                 Directory.CreateDirectory("extra/survival");
                 string path = Path(lvl), tmp = path + ".tmp";
@@ -48,6 +49,7 @@ namespace MCGalaxy.Network
                     w.WriteLine("# survival sidecar v1: " + lvl.name);
                     SurvivalMobs.SaveMobs(lvl, w);
                     SurvivalInventory.SaveContainers(lvl, w);
+                    SurvivalPaintings.SavePaintings(lvl, w);
                 }
                 // atomic replace where possible so a crash can't lose both copies
                 if (File.Exists(path)) File.Replace(tmp, path, null);
@@ -70,8 +72,9 @@ namespace MCGalaxy.Network
                 {
                     if (line.Length == 0 || line[0] == '#') continue;
                     string[] parts = line.Split(' ');
-                    if (parts[0] == "mob")       SurvivalMobs.RestoreMob(lvl, parts);
-                    else if (parts[0] == "cont") SurvivalInventory.RestoreContainer(lvl, parts);
+                    if (parts[0] == "mob")        SurvivalMobs.RestoreMob(lvl, parts);
+                    else if (parts[0] == "cont")  SurvivalInventory.RestoreContainer(lvl, parts);
+                    else if (parts[0] == "paint") SurvivalPaintings.RestorePainting(lvl, parts);
                 }
                 File.Delete(path); // consumed - each sidecar restores exactly once
             } catch (Exception ex) {

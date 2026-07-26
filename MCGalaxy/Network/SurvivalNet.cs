@@ -108,6 +108,8 @@ namespace MCGalaxy.Network
         public const byte ARROW_AMMO   = 0x36;
         public const byte TNT_SPAWN    = 0x37;
         public const byte TNT_REMOVE   = 0x38;
+        public const byte PAINT_SPAWN  = 0x39;
+        public const byte PAINT_REMOVE = 0x3A;
         public const byte BLOCKMETA    = 0x40;
         public const byte PLAYER_EQUIP = 0x50;
         public const byte PLAYER_HURT  = 0x51;
@@ -179,6 +181,7 @@ namespace MCGalaxy.Network
             SurvivalDrops.SendLevelDrops(p, lvl); // phase 5: the level's dropped items (at rest)
             SurvivalArrows.SendLevelArrows(p, lvl); // phase 5: in-flight + stuck arrows
             SurvivalTnt.SendLevel(p, lvl);        // primed TNT mid-fuse
+            SurvivalPaintings.SendLevel(p, lvl);  // hung paintings
             SurvivalArrows.SendInitialAmmo(p, lvl); // c0.30 quiver count for the HUD
             // other players' equipment (SURV_PLAYER_EQUIP) is sent per entity as it
             // becomes visible (SurvivalInventory.OnEntitySpawned), not here - the
@@ -491,6 +494,35 @@ namespace MCGalaxy.Network
             msg[0] = TNT_REMOVE;
             msg[1] = (byte)(tntId >> 8); msg[2] = (byte)tntId;
             msg[3] = reason;
+            SendMessage(p, msg);
+        }
+
+
+        // ==================== paintings (SURV_PAINT_*) ====================
+
+        /// <summary> SURV_PAINT_SPAWN: [paintId:u16][tileX:i16][tileY:i16][tileZ:i16]
+        /// [dir(0..3)][art]. The client derives the full genuine geometry from the
+        /// wall tile + direction + art id, same as its own placement. </summary>
+        public static void SendPaintSpawn(Player p, int paintId, int x, int y, int z, byte dir, byte art) {
+            if (!Active(p, p.level)) return;
+            byte[] msg = new byte[Packet.PluginMessageDataLength];
+            msg[0]  = PAINT_SPAWN;
+            msg[1]  = (byte)(paintId >> 8); msg[2] = (byte)paintId;
+            msg[3]  = (byte)(x >> 8); msg[4] = (byte)x;
+            msg[5]  = (byte)(y >> 8); msg[6] = (byte)y;
+            msg[7]  = (byte)(z >> 8); msg[8] = (byte)z;
+            msg[9]  = dir;
+            msg[10] = art;
+            SendMessage(p, msg);
+        }
+
+        /// <summary> SURV_PAINT_REMOVE: [paintId:u16]. The pop's dropped painting
+        /// item arrives separately as a normal SURV_DROP_SPAWN. </summary>
+        public static void SendPaintRemove(Player p, int paintId) {
+            if (!Active(p, p.level)) return;
+            byte[] msg = new byte[Packet.PluginMessageDataLength];
+            msg[0] = PAINT_REMOVE;
+            msg[1] = (byte)(paintId >> 8); msg[2] = (byte)paintId;
             SendMessage(p, msg);
         }
 
