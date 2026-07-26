@@ -96,8 +96,15 @@ namespace MCGalaxy.Commands.Moderation {
             
             Entities.DespawnEntities(who, false);
             who.Session.SendSetUserType(who.UserType());
-          
+
             who.SendCurrentBlockPermissions();
+            // The SetUserType packet makes the client re-derive its hack
+            // permissions from the MOTD flag string, WIPING any HackControl the
+            // map sent (user-reported: promoted to admin on a survival map ->
+            // fly/noclip re-armed). Re-send the motd so HackControl - including
+            // the survival override and rank-sensitive -ophax flags - is
+            // re-asserted after the user type change.
+            who.SendMapMotd();
             Entities.SpawnEntities(who, false);
             CheckBlockBindings(who);
             
