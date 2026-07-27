@@ -76,6 +76,15 @@ namespace MCGalaxy.Commands.World
                 p.Message("&W{0}'s &Winventory is full.", target.name);
             } else {
                 p.Message("Gave {0} &b{1}&Sx &b{2}&S (id {3}).", target.ColoredName, given, name, raw);
+                // A creative-mode client (referee, or a creative map) ignores the
+                // inventory stream to protect its palette, so the given items are
+                // invisible until survival mode returns - say so, or the give
+                // reads as silently doing nothing (user-reported).
+                if (target.Game.Referee) {
+                    p.Message("&S({0} &Sis in referee mode - the items are stashed in their survival inventory, visible once they &T/Ref &Sback out.)", target.ColoredName);
+                } else if (target.level != null && target.level.Config.SurvivalCreative) {
+                    p.Message("&S({0} &Sis on a creative map - the items sit in their hidden survival inventory.)", target.ColoredName);
+                }
             }
         }
 

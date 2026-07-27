@@ -312,6 +312,9 @@ namespace MCGalaxy.Network
                 // stands exactly where the miner is, and a referee walking the
                 // map must not vacuum up loot that isn't theirs
                 if (SurvivalNet.IsObserver(p)) continue;
+                // a corpse on the death screen stands right on top of its own
+                // scattered inventory - collecting starts after respawning
+                if (SurvivalNet.IsDead(p)) continue;
                 double px = p.Pos.X / 32.0;
                 double py = (p.Pos.Y - Entities.CharacterHeight) / 32.0; // feet
                 double pz = p.Pos.Z / 32.0;
