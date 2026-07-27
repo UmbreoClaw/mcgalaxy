@@ -1845,6 +1845,13 @@ namespace MCGalaxy.Network
             // classic place packet doesn't carry - a documented deviation when
             // several supports exist)
             if (raw == SurvivalBlocks.TORCH) {
+                // A canonical (upright) torch means the FLOOR was clicked: fork
+                // clients resolve the clicked face locally and declare wall mounts
+                // as TORCH_W* (below), so prefer the floor whenever it supports
+                // one. The wall-first auto-scan is only the fallback for a torch
+                // with nothing underneath - genuine onBlockAdded behaviour, and
+                // the only path a stock client (which cannot declare a face) has.
+                if (NormalCube(lvl, x, y - 1, z)) return true;
                 int meta = TorchAutoMeta(lvl, x, y, z);
                 if (meta == 0) return false;
                 if (meta != 5) view = (ushort)(SurvivalBlocks.TORCH_W1 + meta - 1);
