@@ -104,9 +104,22 @@ namespace MCGalaxy.Commands.Moderation {
             names = new string[count];
             
             for (int i = 0; i < names.Length; i++) {
+                // Virtual authors - "(console)" and the survival simulation's
+                // "(creeper)", "(tnt)", "(fire)" - have no PlayerDB entry;
+                // match them literally so their changes can be rolled back too
+                if (parts[i].Length > 2 && parts[i][0] == '(' && parts[i][parts[i].Length - 1] == ')') {
+                    names[i] = parts[i];
+                    int[] found = NameConverter.FindIds(names[i]);
+                    if (found.Length == 0) {
+                        p.Message("&WNo block changes are recorded for {0}", names[i]); return null;
+                    }
+                    ids.AddRange(found);
+                    continue;
+                }
+
                 names[i] = PlayerDB.MatchNames(p, parts[i]);
                 if (names[i] == null) return null;
-                
+
                 Group grp = PlayerInfo.GetGroup(names[i]);
                 if (!CheckRank(p, data, names[i], grp.Permission, "undo", false)) return null;
                 ids.AddRange(NameConverter.FindIds(names[i]));

@@ -689,7 +689,8 @@ namespace MCGalaxy.Network
         // A creeper's death blast: World.createExplosion centred on the creeper.
         static void CreeperExplode(Level lvl, LevelMobs lm, SurvMob m, float radius) {
             double off = Types[m.Type].HeightOff; // eye-ish anchor (createExplosion's entity.y)
-            ExplodeAt(lvl, lm, m.X, m.Y + off, m.Z, radius, m, "@p was blown up by a creeper");
+            ExplodeAt(lvl, lm, m.X, m.Y + off, m.Z, radius, m, "@p was blown up by a creeper",
+                      SurvivalActors.Creeper);
         }
 
         /// <summary> World.createExplosion: density-falloff damage to every player
@@ -698,7 +699,7 @@ namespace MCGalaxy.Network
         /// SurvivalBlockDamage). Called under lock(lm.Mobs). owner = the exploding
         /// mob (excluded + credited), null for TNT/environment. </summary>
         static void ExplodeAt(Level lvl, LevelMobs lm, double cx, double cy, double cz,
-                              float r, SurvMob owner, string deathMsg) {
+                              float r, SurvMob owner, string deathMsg, Player blockAuthor) {
             double diam = r * 2.0;
 
             // players (before any block is removed, so the density rays see intact world)
@@ -736,7 +737,7 @@ namespace MCGalaxy.Network
                 if (dist > 0.0001) { e.VX += dx / dist * f; e.VY += dy / dist * f; e.VZ += dz / dist * f; }
             }
 
-            SurvivalExplosions.DestroyBlocks(lvl, cx, cy, cz, r, lm.Rng);
+            SurvivalExplosions.DestroyBlocks(lvl, blockAuthor, cx, cy, cz, r, lm.Rng);
         }
 
         /// <summary> A TNT-style blast at a block cell (SurvivalPhysics fire->TNT).
@@ -744,7 +745,9 @@ namespace MCGalaxy.Network
         /// under the survival tick lock. </summary>
         internal static void ExplodeAt(Level lvl, double x, double y, double z, float r) {
             LevelMobs lm = GetLevel(lvl, true);
-            ExplodeAt(lvl, lm, x, y, z, r, null, "@p was caught in an explosion");
+            // every non-creeper blast reaches here via a primed TNT entity
+            ExplodeAt(lvl, lm, x, y, z, r, null, "@p was caught in an explosion",
+                      SurvivalActors.Tnt);
         }
 
         /// <summary> Handles a SURV_ATTACK intent: validates reach + state, then applies

@@ -87,6 +87,12 @@ namespace MCGalaxy.Network
         /// drop roll) in descending order. No-op on maps with SurvivalBlockDamage
         /// off. Called under the survival tick lock. </summary>
         public static void DestroyBlocks(Level lvl, double cx, double cy, double cz, float r, Random rng) {
+            DestroyBlocks(lvl, Player.Console, cx, cy, cz, r, rng);
+        }
+
+        /// <summary> author is the BlockDB-visible cause - SurvivalActors.Creeper
+        /// or .Tnt - so /About names the culprit and /UndoPlayer can revert it. </summary>
+        public static void DestroyBlocks(Level lvl, Player author, double cx, double cy, double cz, float r, Random rng) {
             if (!lvl.Config.SurvivalBlockDamage) return;
             Array.Clear(bits, 0, bits.Length);
             int icx = (int)cx, icy = (int)cy, icz = (int)cz;
@@ -143,11 +149,11 @@ namespace MCGalaxy.Network
                         // entity with a short randomized fuse (the classic chain
                         // reaction) instead of dropping an item.
                         if (id == Block.TNT) {
-                            SurvivalGrowth.SetView(lvl, bx, by, bz, Block.Air);
+                            SurvivalGrowth.SetView(lvl, author, bx, by, bz, Block.Air);
                             SurvivalTnt.Ignite(lvl, bx, by, bz, SurvivalTnt.ChainFuse(lvl, rng));
                             continue;
                         }
-                        SurvivalGrowth.SetView(lvl, bx, by, bz, Block.Air);
+                        SurvivalGrowth.SetView(lvl, author, bx, by, bz, Block.Air);
                         destroyed.Add(new int[] { bx, by, bz, id });
                     }
 

@@ -112,6 +112,11 @@ namespace MCGalaxy.Network
 
         static ushort View(Level lvl, int x, int y, int z) { return SurvivalGrowth.ViewAt(lvl, x, y, z); }
         static void   Set(Level lvl, int x, int y, int z, ushort v) { SurvivalGrowth.SetView(lvl, x, y, z, v); }
+        // fire's spread/burn writes carry the "(fire)" BlockDB author, so /About
+        // names the culprit and /UndoPlayer (fire) can roll a blaze back
+        static void   SetFire(Level lvl, int x, int y, int z, ushort v) {
+            SurvivalGrowth.SetView(lvl, SurvivalActors.Fire, x, y, z, v);
+        }
         static bool   In(Level lvl, int x, int y, int z) {
             return x >= 0 && y >= 0 && z >= 0 && x < lvl.Width && y < lvl.Height && z < lvl.Length;
         }
@@ -295,11 +300,11 @@ namespace MCGalaxy.Network
             int ability = FireAbility(b);
             if (lp.Rng.Next(bound) >= ability) return;
             if (b == Block.TNT) {
-                Set(lvl, x, y, z, Block.Air);
+                SetFire(lvl, x, y, z, Block.Air);
                 SurvivalTnt.Ignite(lvl, x, y, z, SurvivalTnt.DefaultFuse(lvl));
                 return;
             }
-            Set(lvl, x, y, z, lp.Rng.Next(2) == 0 ? FIRE : (ushort)Block.Air);
+            SetFire(lvl, x, y, z, lp.Rng.Next(2) == 0 ? FIRE : (ushort)Block.Air);
         }
 
         // BlockFire.updateTick, verbatim.
@@ -310,11 +315,11 @@ namespace MCGalaxy.Network
             if (meta < 15) { SetAge(lp, lvl, index, meta + 1); ScheduleFire(lp, index); }
 
             if (!CanNeighbourCatch(lvl, x, y, z)) {
-                if (!NormalCube(lvl, x, y - 1, z) || meta > 3) Set(lvl, x, y, z, Block.Air);
+                if (!NormalCube(lvl, x, y - 1, z) || meta > 3) SetFire(lvl, x, y, z, Block.Air);
                 return;
             }
             if (!CanBlockCatch(lvl, x, y - 1, z) && meta == 15 && lp.Rng.Next(4) == 0) {
-                Set(lvl, x, y, z, Block.Air);
+                SetFire(lvl, x, y, z, Block.Air);
                 return;
             }
             if (meta % 5 != 0 || meta <= 5) return;
@@ -341,7 +346,7 @@ namespace MCGalaxy.Network
                         chance = EncourageChance(lvl, xx, yy + 1, zz, chance);
                         chance = EncourageChance(lvl, xx, yy, zz - 1, chance);
                         chance = EncourageChance(lvl, xx, yy, zz + 1, chance);
-                        if (chance > 0 && lp.Rng.Next(bound) <= chance) Set(lvl, xx, yy, zz, FIRE);
+                        if (chance > 0 && lp.Rng.Next(bound) <= chance) SetFire(lvl, xx, yy, zz, FIRE);
                     }
         }
 
@@ -352,7 +357,7 @@ namespace MCGalaxy.Network
             ushort b = View(lvl, x, y, z);
             if (b == FIRE) return true;
             if (b != Block.Air) return false;
-            Set(lvl, x, y, z, FIRE);
+            SetFire(lvl, x, y, z, FIRE);
             return true;
         }
 
@@ -364,7 +369,7 @@ namespace MCGalaxy.Network
                     || FireSpreadCheck(lvl, x - 1, y, z) || FireSpreadCheck(lvl, x + 1, y, z)
                     || FireSpreadCheck(lvl, x, y, z - 1) || FireSpreadCheck(lvl, x, y, z + 1)
                     || FireSpreadCheck(lvl, x, y - 1, z);
-            if (!lit) Set(lvl, x, y, z, FIRE);
+            if (!lit) SetFire(lvl, x, y, z, FIRE);
             return true;
         }
 

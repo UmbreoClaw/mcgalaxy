@@ -107,10 +107,17 @@ namespace MCGalaxy.Network
         // Every server-authored change is announced to SurvivalPhysics so fire
         // and finite fluids schedule/validate off it (the genuine notify hook).
         internal static void SetView(Level lvl, int x, int y, int z, ushort view) {
+            SetView(lvl, Player.Console, x, y, z, view);
+        }
+
+        /// <summary> author is the BlockDB-visible cause of the change - a
+        /// SurvivalActors entry for destructive causes ("(creeper)", "(tnt)",
+        /// "(fire)"), console for the rest of the simulation. </summary>
+        internal static void SetView(Level lvl, Player author, int x, int y, int z, ushort view) {
             if (x < 0 || y < 0 || z < 0 || x >= lvl.Width || y >= lvl.Height || z >= lvl.Length) return;
             ushort old = ViewAt(lvl, x, y, z);
             if (old == view) return;
-            lvl.UpdateBlock(Player.Console, (ushort)x, (ushort)y, (ushort)z, Block.FromRaw((BlockID)view));
+            lvl.UpdateBlock(author, (ushort)x, (ushort)y, (ushort)z, Block.FromRaw((BlockID)view));
             SurvivalPhysics.Notify(lvl, x, y, z, old, view);
             MarkLightDirty(lvl);
         }

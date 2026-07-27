@@ -653,6 +653,7 @@
     <Compile Include="Network\SurvivalItems.cs" />
     <Compile Include="Network\SurvivalMobs.cs" />
     <Compile Include="Network\SurvivalNet.cs" />
+    <Compile Include="Network\SurvivalActors.cs" />
     <Compile Include="Network\SurvivalPaintings.cs" />
     <Compile Include="Network\SurvivalTrack.cs" />
     <Compile Include="Network\SurvivalPersistence.cs" />
