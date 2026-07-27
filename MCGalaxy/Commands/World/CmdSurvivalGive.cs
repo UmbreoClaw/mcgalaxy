@@ -69,6 +69,21 @@ namespace MCGalaxy.Commands.World
                 p.Message("&WAmount must be 1-576."); return;
             }
 
+            // A creative-mode recipient (referee, or a creative map) plays from a
+            // client-LOCAL palette inventory and ignores the survival inventory
+            // stream, so a survival-side give would be invisible until they left
+            // creative (user-reported as /Give "not working"). Deposit into the
+            // palette over the wire instead (SURV_ITEM_GIVE) - ephemeral, like
+            // everything creative, and the survival inventory stays untouched.
+            bool creative = target.Game.Referee ||
+                            (target.level != null && target.level.Config.SurvivalCreative);
+            if (creative && SurvivalNet.Active(target, target.level)) {
+                SurvivalNet.SendItemGive(target, raw, count);
+                p.Message("Gave {0} &b{1}&Sx &b{2}&S (id {3}) &Sinto their creative palette.",
+                          target.ColoredName, count, name, raw);
+                return;
+            }
+
             int given = SurvivalInventory.Give(target, raw, count);
             if (given < 0) {
                 p.Message("&W{0} &Wis not on an active survival map (or not on a survival client).", target.name);
@@ -76,15 +91,6 @@ namespace MCGalaxy.Commands.World
                 p.Message("&W{0}'s &Winventory is full.", target.name);
             } else {
                 p.Message("Gave {0} &b{1}&Sx &b{2}&S (id {3}).", target.ColoredName, given, name, raw);
-                // A creative-mode client (referee, or a creative map) ignores the
-                // inventory stream to protect its palette, so the given items are
-                // invisible until survival mode returns - say so, or the give
-                // reads as silently doing nothing (user-reported).
-                if (target.Game.Referee) {
-                    p.Message("&S({0} &Sis in referee mode - the items are stashed in their survival inventory, visible once they &T/Ref &Sback out.)", target.ColoredName);
-                } else if (target.level != null && target.level.Config.SurvivalCreative) {
-                    p.Message("&S({0} &Sis on a creative map - the items sit in their hidden survival inventory.)", target.ColoredName);
-                }
             }
         }
 

@@ -100,6 +100,7 @@ namespace MCGalaxy.Network
         public const byte CONT_SLOT    = 0x23;
         public const byte FURN_PROG    = 0x24;
         public const byte CURSOR       = 0x25;
+        public const byte ITEM_GIVE    = 0x26;
         public const byte DROP_SPAWN   = 0x30;
         public const byte DROP_PICKUP  = 0x31;
         public const byte DROP_REMOVE  = 0x32;
@@ -791,6 +792,18 @@ namespace MCGalaxy.Network
         /// Returns whether the hit actually LANDED (reduced health / killed) - false
         /// when absorbed by the invulnerability window or armor, so callers can gate
         /// knockback on it (genuine hurt() knocks back only on a landing hit). </summary>
+        /// <summary> Deposits items into a creative-mode client's LOCAL palette
+        /// inventory (/Give to a referee or creative-map player). The server-side
+        /// survival inventory is deliberately untouched; survival-mode clients
+        /// ignore the message. </summary>
+        public static void SendItemGive(Player p, ushort id, int count) {
+            byte[] msg = new byte[Packet.PluginMessageDataLength];
+            msg[0] = ITEM_GIVE;
+            msg[1] = (byte)(id >> 8);    msg[2] = (byte)id;
+            msg[3] = (byte)(count >> 8); msg[4] = (byte)count;
+            SendMessage(p, msg);
+        }
+
         /// <summary> Out-of-game observers: referees and hidden spectators. They take
         /// no damage, are never acquired as mob targets, and don't collect drops. </summary>
         public static bool IsObserver(Player p) {
