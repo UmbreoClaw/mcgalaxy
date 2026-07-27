@@ -1125,14 +1125,16 @@ namespace MCGalaxy.Network
                     SurvivalInventory.HandleContClose(p);
                     break;
                 case USE_ITEM:
-                    // [id][heldSlot][x:i16][y:i16][z:i16 BE][face] - right-click use.
-                    // v1 scope: opens container GUIs (chest/large chest/furnace/
-                    // workbench); eating/tools land with the item definitions.
+                    // [id][heldSlot][x:i16][y:i16][z:i16 BE][face][declaredId:u16] -
+                    // right-click use. declaredId is the client's held ITEM id,
+                    // trusted only for creative-mode players (their palette is
+                    // client state); zero from older clients.
                     if (data.Length >= 9) {
+                        int declared = data.Length >= 11 ? (data[9] << 8) | data[10] : 0;
                         SurvivalInventory.HandleUseItem(p, data[1],
                             (short)((data[2] << 8) | data[3]),
                             (short)((data[4] << 8) | data[5]),
-                            (short)((data[6] << 8) | data[7]), data[8]);
+                            (short)((data[6] << 8) | data[7]), data[8], declared);
                     }
                     break;
                 case DROP_ITEM:

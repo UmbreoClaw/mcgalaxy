@@ -462,11 +462,28 @@ namespace MCGalaxy.Network
         /// item-on-block use (hoe tilling, seed planting); a targetless intent
         /// (sentinel coords, sent for right-click-to-eat) eats a held food. Flint
         /// &amp; steel / fire lands with the phase-5 fire tick system. </summary>
-        public static void HandleUseItem(Player p, int held, int x, int y, int z, int face) {
+        public static void HandleUseItem(Player p, int held, int x, int y, int z, int face, int declaredId) {
             Level lvl = p.level;
             if (lvl == null || lvl.Config.SurvivalMode != SurvivalMode.Indev) return;
             if (!SurvivalNet.Active(p, lvl) || SurvivalNet.IsDead(p)) return;
             if (CmdSpectate.IsSpectating(p)) return; // observers don't use items
+
+            // Creative mode (a referee, or a creative map) plays from a CLIENT-side
+            // palette, so the slot index resolves against nothing here - the intent's
+            // declared item id stands in, trusted only in creative (items are free
+            // there anyway) and only for the painting, the one item-use creative
+            // supports (a /Give'd painting must hang). Nothing is consumed.
+            bool creativeMode = p.Game.Referee || lvl.Config.SurvivalCreative;
+            if (creativeMode && declaredId == SurvivalPaintings.ITEM_PAINTING &&
+                x >= 0 && y >= 0 && z >= 0 && x < lvl.Width && y < lvl.Height && z < lvl.Length) {
+                double cdx = p.Pos.X / 32.0 - (x + 0.5), cdy = p.Pos.Y / 32.0 - (y + 0.5),
+                       cdz = p.Pos.Z / 32.0 - (z + 0.5);
+                if (cdx * cdx + cdy * cdy + cdz * cdz > 6.0 * 6.0) return;
+                bool phung; int pconsume;
+                SurvivalPaintings.UsePainting(p, lvl, SurvivalPaintings.ITEM_PAINTING,
+                                              x, y, z, face, out phung, out pconsume);
+                return;
+            }
             if (lvl.Config.SurvivalCreative) return; // v1: no container/item-use sync in creative
 
             if (held < 0 || held > 8) held = 0;
@@ -1833,9 +1850,22 @@ namespace MCGalaxy.Network
                 if (meta != 5) view = (ushort)(SurvivalBlocks.TORCH_W1 + meta - 1);
                 return true;
             }
-            // a wall-torch view placed directly still needs some support
+            // A wall-torch view placed directly: the fork client resolved the
+            // CLICKED face locally and put the variant on the wire (the classic
+            // place packet itself has no face field). Honor its mount when that
+            // wall really exists; else fall back to the auto pick - never refuse
+            // outright while any support remains.
             if (raw >= SurvivalBlocks.TORCH_W1 && raw <= SurvivalBlocks.TORCH_W4) {
-                return TorchAutoMeta(lvl, x, y, z) != 0;
+                int m = raw - SurvivalBlocks.TORCH_W1 + 1;
+                if ((m == 1 && NormalCube(lvl, x - 1, y, z)) ||
+                    (m == 2 && NormalCube(lvl, x + 1, y, z)) ||
+                    (m == 3 && NormalCube(lvl, x, y, z - 1)) ||
+                    (m == 4 && NormalCube(lvl, x, y, z + 1))) return true;
+                int auto2 = TorchAutoMeta(lvl, x, y, z);
+                if (auto2 == 0) return false;
+                view = auto2 == 5 ? SurvivalBlocks.TORCH
+                                  : (ushort)(SurvivalBlocks.TORCH_W1 + auto2 - 1);
+                return true;
             }
 
             // BlockChest.canPlaceBlockAt: at most ONE neighbouring chest, and
