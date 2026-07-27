@@ -23,6 +23,15 @@ namespace MCGalaxy.Network {
     public static class HttpUtil {
 
         public static WebClient CreateWebClient() { return new CustomWebClient(); }
+
+        /// <summary> Web client whose requests abort after the given timeout instead
+        /// of hanging on a stalled connection (default is 100s to connect and up to
+        /// 300s on a mid-transfer stall - which reads as "nothing happening"). </summary>
+        public static WebClient CreateWebClient(int timeoutMS) {
+            CustomWebClient client = new CustomWebClient();
+            client.TimeoutMS = timeoutMS;
+            return client;
+        }
         
         public static HttpWebRequest CreateRequest(string uri) {
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(uri);
@@ -66,10 +75,16 @@ namespace MCGalaxy.Network {
         
 
         class CustomWebClient : WebClient {
+            public int TimeoutMS;
+
             protected override WebRequest GetWebRequest(Uri address) {
                 HttpWebRequest req = (HttpWebRequest)base.GetWebRequest(address);
                 req.ServicePoint.BindIPEndPointDelegate = BindIPEndPointCallback;
                 req.UserAgent = Server.SoftwareNameVersioned;
+                if (TimeoutMS > 0) {
+                    req.Timeout          = TimeoutMS;
+                    req.ReadWriteTimeout = TimeoutMS;
+                }
                 return (WebRequest)req;
             }
         }

@@ -74,8 +74,14 @@ namespace MCGalaxy
             return NeedsUpdating(out latest, out current);
         }
 
+        // A stalled transfer aborts after this long instead of hanging silently
+        // (.NET's defaults allow up to 100s to connect and 300s mid-transfer,
+        // which looked like /Update simply doing nothing). The value is a STALL
+        // timeout, not a total budget - a slow but moving download still finishes.
+        const int TIMEOUT_MS = 30 * 1000;
+
         public static bool NeedsUpdating(out string latest, out string current) {
-            using (WebClient client = HttpUtil.CreateWebClient()) {
+            using (WebClient client = HttpUtil.CreateWebClient(TIMEOUT_MS)) {
                 latest  = client.DownloadString(CurrentVersionURL).Trim();
                 current = CurrentBuild;
                 return latest.Length > 0 && latest != current;
@@ -97,8 +103,26 @@ namespace MCGalaxy
 
         // Backwards compatibility
         public static void PerformUpdate() { PerformUpdate(true); }
-        
+
+        // Guards against a second /Update while one is mid-download: both would
+        // write the same .update files (seen live when a hung download made the
+        // first /Update look dead and it was re-run).
+        static volatile bool updating;
+
         public static void PerformUpdate(bool release) {
+            if (updating) {
+                Logger.Log(LogType.Warning, "An update is already in progress - ignoring");
+                return;
+            }
+            updating = true;
+            try {
+                PerformUpdateCore();
+            } finally {
+                updating = false;
+            }
+        }
+
+        static void PerformUpdateCore() {
             try {
                 try {
                     DeleteFiles("Changelog.txt", "MCGalaxy_.update", "MCGalaxy.update", "MCGalaxyCLI.update",
@@ -108,7 +132,7 @@ namespace MCGalaxy
         		
                 // one rolling channel - "release" and "latest" are the same build
                 Logger.Log(LogType.SystemActivity, "Downloading survival-latest update files");
-                WebClient client = HttpUtil.CreateWebClient();
+                WebClient client = HttpUtil.CreateWebClient(TIMEOUT_MS);
                 string newVersion = client.DownloadString(CurrentVersionURL).Trim();
 
                 DownloadFile(client, DLL_URL, "MCGalaxy_.update");
