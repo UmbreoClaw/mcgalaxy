@@ -228,6 +228,7 @@
     <Compile Include="Commands\Information\CmdSearch.cs" />
     <Compile Include="Commands\Information\CmdSeen.cs" />
     <Compile Include="Commands\Information\CmdTime.cs" />
+    <Compile Include="Commands\Information\CmdTrack.cs" />
     <Compile Include="Commands\Information\CmdTop.cs" />
     <Compile Include="Commands\Information\CmdLevels.cs" />
     <Compile Include="Commands\Information\CmdView.cs" />
@@ -653,6 +654,7 @@
     <Compile Include="Network\SurvivalMobs.cs" />
     <Compile Include="Network\SurvivalNet.cs" />
     <Compile Include="Network\SurvivalPaintings.cs" />
+    <Compile Include="Network\SurvivalTrack.cs" />
     <Compile Include="Network\SurvivalPersistence.cs" />
     <Compile Include="Network\SurvivalPhysics.cs" />
     <Compile Include="Network\SurvivalTnt.cs" />

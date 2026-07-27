@@ -777,6 +777,9 @@ namespace MCGalaxy.Network
                     return;
                 }
 
+                // an armed /Track punch picks the target instead of hitting it
+                if (SurvivalTrack.TryConsumePunch(p, null, Types[m.Type].Name, m.Id)) return;
+
                 // A referee punch is moderation, not play: the mob dies outright
                 // with no shear, no loot and no score (same fields KillMob sets,
                 // minus the rewards) - viewers still see the death flop.
@@ -817,9 +820,6 @@ namespace MCGalaxy.Network
         /// mob hit. DamagePlayer runs the victim's armor absorption; the weapon wears
         /// like any landed melee hit. </summary>
         static void HandlePvPAttack(Player p, Level lvl, int targetId) {
-            if (!lvl.Config.SurvivalPvP) return;
-            if (p.Game.Referee) return; // out-of-game observers deal no pvp damage
-
             // reverse the attacker's per-viewer entity id table to find the victim
             Player victim = null;
             Player[] players = PlayerInfo.Online.Items;
@@ -829,7 +829,14 @@ namespace MCGalaxy.Network
                 byte eid;
                 if (p.EntityList.TryGetVisibleID(pl, out eid) && eid == targetId) { victim = pl; break; }
             }
-            if (victim == null || !SurvivalNet.Active(victim, lvl) || SurvivalNet.IsDead(victim)) return;
+            if (victim == null) return;
+            // an armed /Track punch picks the target instead of hitting it,
+            // and works regardless of the map's pvp flag
+            if (SurvivalTrack.TryConsumePunch(p, victim, null, 0)) return;
+
+            if (!lvl.Config.SurvivalPvP) return;
+            if (p.Game.Referee) return; // out-of-game observers deal no pvp damage
+            if (!SurvivalNet.Active(victim, lvl) || SurvivalNet.IsDead(victim)) return;
             if (victim.Game.Referee) return; // referees are out-of-game observers
 
             // reach: same padded eye-to-target envelope as the mob attack path
@@ -1721,6 +1728,9 @@ namespace MCGalaxy.Network
                 lock (lm.Mobs) TickLevel(lvl, lm, watchers, viewers);
             }
 
+            // /Track readouts ride the same 20 Hz cadence (4 Hz internally)
+            SurvivalTrack.Tick();
+
             // prune registries for levels no longer loaded
             lock (registryLock) {
                 foreach (KeyValuePair<Level, LevelMobs> kvp in registry)
@@ -2071,6 +2081,21 @@ namespace MCGalaxy.Network
             LevelMobs lm = GetLevel(lvl, false);
             if (lm == null) return 0;
             lock (lm.Mobs) return CountKind(lm, passive);
+        }
+
+        /// <summary> Looks up a live mob's block position for /Track readouts. </summary>
+        public static bool TryGetMob(Level lvl, int id, out int x, out int y, out int z) {
+            x = 0; y = 0; z = 0;
+            LevelMobs lm = GetLevel(lvl, false);
+            if (lm == null) return false;
+            lock (lm.Mobs) {
+                foreach (SurvMob m in lm.Mobs) {
+                    if (m.Id != id || m.Dead || m.Health <= 0) continue;
+                    x = (int)Math.Floor(m.X); y = (int)Math.Floor(m.Y); z = (int)Math.Floor(m.Z);
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

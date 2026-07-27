@@ -1053,6 +1053,8 @@ namespace MCGalaxy.Network
         /// OnPlayerDisconnectEvent. </summary>
         public static void OnPlayerDisconnect(Player target, string reason) {
             SaveInv(target); // persist the survival inventory (no-op if never touched)
+            // drop the leaver's /Track readouts + alert anyone tracking them
+            SurvivalTrack.OnPlayerDisconnect(target);
             // a SPECTATOR disconnecting mid-session: clear the state + persisted
             // hidden flag (no entity/chat side effects mid-teardown), so they
             // don't rejoin invisible next session
