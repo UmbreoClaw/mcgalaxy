@@ -1673,10 +1673,33 @@ namespace MCGalaxy.Network
 
         // ==================== the tick ====================
 
+        // Rolling tick-rate measurement (EWMA of the tick-to-tick period).
+        // The whole sim is paced by this loop, so any shortfall from 20 TPS
+        // plays walk speed, knockback arcs and fuses in slow motion.
+        static DateTime lastTickStart;
+        static double tickPeriodMs = 50;
+
+        /// <summary> The sim's achieved tick rate (target 20). </summary>
+        public static double CurrentTps { get { return 1000.0 / Math.Max(1, tickPeriodMs); } }
+
         static void Tick(SchedulerTask task) {
+            DateTime start = DateTime.UtcNow;
+            if (lastTickStart != default(DateTime)) {
+                double period = (start - lastTickStart).TotalMilliseconds;
+                tickPeriodMs  = tickPeriodMs * 0.95 + period * 0.05;
+            }
+            lastTickStart = start;
+
             try { TickCore(); } catch (Exception ex) {
                 Logger.LogError("Error in the survival mob tick", ex);
             }
+
+            // The scheduler re-arms Delay AFTER the callback returns, so a fixed
+            // 50ms delay actually gives a (body + 50ms) period - a busy map ran
+            // permanently below 20 TPS, in slow motion. Shrink the re-arm delay
+            // by the body's own cost to hold a true 20 TPS.
+            double elapsed = (DateTime.UtcNow - start).TotalMilliseconds;
+            task.Delay = TimeSpan.FromMilliseconds(Math.Max(1, 50 - elapsed));
         }
 
         static void TickCore() {

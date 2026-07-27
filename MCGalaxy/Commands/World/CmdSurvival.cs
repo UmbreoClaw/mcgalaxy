@@ -197,9 +197,9 @@ namespace MCGalaxy.Commands.World
             p.Message("Survival on {0}&S: mode &b{1}&S, theme &b{2}", lvl.ColoredName, cfg.SurvivalMode, cfg.SurvivalTheme);
             p.Message("  flags: enhanced &b{0}&S, creative &b{1}&S, pvp &b{2}&S, deathDrops &b{3}",
                       cfg.SurvivalEnhanced, cfg.SurvivalCreative, cfg.SurvivalPvP, cfg.SurvivalDeathDrops);
-            p.Message("  hazards: death detection &b{0}&S, fall height &b{1}&S, live mobs &b{2}&S/&b{3}",
+            p.Message("  hazards: death detection &b{0}&S, fall height &b{1}&S, live mobs &b{2}&S/&b{3}&S, sim &b{4:0.0} &STPS",
                       cfg.SurvivalDeath, cfg.FallHeight, SurvivalMobs.CountMobs(lvl),
-                      SurvivalMobs.EffectiveCap(lvl));
+                      SurvivalMobs.EffectiveCap(lvl), SurvivalMobs.CurrentTps);
             if (cfg.SurvivalMode == SurvivalMode.Indev)
                 p.Message("  herds: &b{0}&S/&b{1} &Sanimals, &b{2}&S/&b{3} &Smonsters (genuine Indev caps)",
                           SurvivalMobs.CountMobs(lvl, true), SurvivalMobs.IndevAnimalCap(lvl),
