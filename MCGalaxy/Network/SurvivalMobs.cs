@@ -2067,11 +2067,13 @@ namespace MCGalaxy.Network
             return dx * dx + dy * dy + dz * dz;
         }
 
+        // Derived from the sky-light curve itself rather than hand-picked ticks,
+        // so the label can never drift from what players actually see again.
         internal static string DescribeTime(int time) {
-            if (time < 11000) return "&eday";
-            if (time < 12000) return "&6dusk";
-            if (time < 23000) return "&9night";
-            return "&edawn";
+            int light = SurvivalNet.SkyLight(time);
+            if (light >= 15) return "&eday";
+            if (light <= 4)  return "&9night";
+            return SurvivalNet.SkyLight(time + 300) > light ? "&edawn" : "&6dusk";
         }
 
         public static int CountMobs(Level lvl) {

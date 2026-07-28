@@ -40,17 +40,21 @@ namespace MCGalaxy.Commands.World
                 int t = SurvivalNet.WorldTimeOf(lvl);
                 p.Message("World time: &b{0}&S ({1}&S), sky light &b{2}&S/15",
                           t, SurvivalMobs.DescribeTime(t), SurvivalNet.CurrentSkyLightPublic(lvl));
-                p.Message("Cycle: 0 sunrise, 6000 noon, 12000 sunset, 18000 midnight (20 min/day).");
-                p.Message("Set with &T/SurvTime [day/noon/sunset/night/midnight/sunrise/<ticks>]");
+                p.Message("Cycle: 3600 noon, 9600 sunset, 15600 midnight, 21600 sunrise (20 min/day).");
+                p.Message("Set with &T/SurvTime [day/noon/sunset/night/midnight/dawn/<ticks>]");
                 return;
             }
+            // Indev's celestial angle leads the clock by 0.15 of a day, so these
+            // are NOT the standard Minecraft tick values - each one is the time
+            // that genuinely produces that sky (see SurvivalNet.SkyLight).
             int time;
             switch (message.ToLower()) {
-                case "day": case "sunrise": time = 500;   break;
-                case "noon":                time = 6000;  break;
-                case "sunset": case "dusk": time = 11500; break;
-                case "night":               time = 14000; break;
-                case "midnight":            time = 18000; break;
+                case "dawn": case "sunrise": time = 21600; break; // mid dawn ramp
+                case "day":  case "morning": time = 1000;  break; // full daylight
+                case "noon":                 time = 3600;  break; // brightest
+                case "sunset": case "dusk":  time = 9600;  break; // mid dusk ramp
+                case "night":                time = 13000; break; // fully dark
+                case "midnight":             time = 15600; break; // darkest
                 default:
                     if (!int.TryParse(message, out time)) {
                         p.Message("&WNot a time: {0}", message); return;
@@ -64,7 +68,7 @@ namespace MCGalaxy.Commands.World
 
         public override void Help(Player p) {
             p.Message("&T/SurvTime &H- shows the survival world clock");
-            p.Message("&T/SurvTime [day/noon/sunset/night/midnight/sunrise/<ticks>]");
+            p.Message("&T/SurvTime [day/noon/sunset/night/midnight/dawn/<ticks>]");
             p.Message("&HSets this map's own day/night clock, applied live.");
         }
     }

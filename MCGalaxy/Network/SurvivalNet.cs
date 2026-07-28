@@ -659,13 +659,25 @@ namespace MCGalaxy.Network
             }
         }
 
-        /// <summary> Standard 0..15 sky light for the given world time, with short dawn/dusk ramps. </summary>
-        static byte SkyLight(int time) {
-            const int day = 15, night = 4;
-            if (time < 11000) return day;                                        // daytime
-            if (time < 12000) return (byte)(day   - (day - night) * (time - 11000) / 1000); // dusk
-            if (time < 23000) return night;                                      // night
-            return (byte)(night + (day - night) * (time - 23000) / 1000);        // dawn
+        /// <summary> Genuine Indev sky light (4..15) for a world time - the EXACT
+        /// curve the client renders (World.getSkyBrightness: the celestial angle
+        /// time/24000 - 0.15, then clamp01(cos(angle * 2PI) * 1.5 + 0.5) scaled
+        /// over 4..15). </summary>
+        /// <remarks> This is not cosmetic: the same value gates zombie sunburn, the
+        /// mob spawner's darkness rule and crop growth. The old hand-rolled ramp
+        /// (day until 11000, dusk to 12000, night to 23000) was phase-shifted from
+        /// the client's curve by up to ~3600 ticks, so the server could call a time
+        /// "dawn, sky light 5" while every player still saw full daylight - and mobs
+        /// burned or spawned at times that didn't match the sky (user-reported).
+        /// Assumes the genuine default Environment.SkyBrightness of 15; the client
+        /// treats > 15 as a permanent-noon "paradise" map, which maps don't set. </remarks>
+        internal static byte SkyLight(int time) {
+            time = ((time % DAY_TICKS) + DAY_TICKS) % DAY_TICKS;
+            double f = Math.Cos(((double)time / DAY_TICKS - 0.15) * 2.0 * Math.PI) * 1.5 + 0.5;
+            if (f < 0.0) f = 0.0; else if (f > 1.0) f = 1.0;
+            int light = (int)(f * 11.0 + 4.0);
+            if (light > 15) light = 15; else if (light < 4) light = 4;
+            return (byte)light;
         }
 
 
