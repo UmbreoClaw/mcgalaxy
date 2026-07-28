@@ -47,7 +47,7 @@ namespace MCGalaxy.Commands.Info
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Track <player> &H- shows their live position top right (up to 3 at once)");
+            p.Message("&T/Track <player> &H- live position, top right (max 3)");
             p.Message("&T/Track &H- then punch a mob or player to track it");
             p.Message("&T/Track <name> stop&H, &T/Track stop &H- stop one / all");
         }

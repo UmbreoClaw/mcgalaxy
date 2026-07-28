@@ -52,7 +52,8 @@ namespace MCGalaxy.Commands.Fun {
             p.Message("&T/Referee");
             p.Message("&HTurns referee mode on/off.");
             p.Message("&HReferee mode enables you to use hacks and TP in games");
-            p.Message("&HOn survival maps you observe in creative: invulnerable, ignored by mobs, edits cost and drop nothing");
+            p.Message("&HOn survival maps: a creative, invulnerable observer");
+            p.Message("&Hignored by mobs; edits cost and drop nothing");
             p.Message("&H  Note that leaving referee mode sends you back to spawn");
         }
     }

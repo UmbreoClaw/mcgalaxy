@@ -36,7 +36,7 @@ namespace MCGalaxy.Commands.World
 
         public override void Help(Player p) {
             p.Message("&T/Spawner");
-            p.Message("&HShows natural-spawn statistics and the survival clock state.");
+            p.Message("&HShows natural-spawn stats and the world clock.");
         }
     }
 }

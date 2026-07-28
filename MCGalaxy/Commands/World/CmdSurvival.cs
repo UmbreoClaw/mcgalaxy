@@ -213,9 +213,10 @@ namespace MCGalaxy.Commands.World
             p.Message("&T/Survival [off/classic/indev] &H- sets the survival mode");
             p.Message("&T/Survival theme [normal/hell/paradise/woods/floating]");
             p.Message("&T/Survival [enhanced/creative/pvp/deathdrops] [on/off]");
-            p.Message("&T/Survival visitors [visitor/allow/deny] &H- what stock clients may do");
-            p.Message("&T/Survival mobcap [0-256] &H- standing mob population (0 = auto)");
-            p.Message("&HTools: &T/SurvSpawn /Mobs /Spawner /SurvTime /Inventory /Give /Export");
+            p.Message("&T/Survival visitors [visitor/allow/deny]");
+            p.Message("&T/Survival mobcap [0-256] &H- mob population (0 = auto)");
+            p.Message("&HTools: &T/SurvSpawn /Mobs /Spawner /SurvTime");
+            p.Message("&T       /Inventory /Give /Export /Track /Spectate");
         }
     }
 }

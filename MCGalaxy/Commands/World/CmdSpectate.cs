@@ -221,9 +221,10 @@ namespace MCGalaxy.Commands.World
         }
 
         public override void Help(Player p) {
-            p.Message("&T/Spectate [player] <silent> &H- ride a player's camera and mirror");
-            p.Message("&Htheir inventory, as a hidden, invulnerable observer.");
-            p.Message("&T/Spectate stop &H- stop spectating.");
+            p.Message("&T/Spectate [player] &H- ride their camera, hidden");
+            p.Message("&T/Spectate [player] silent &H- without telling them");
+            p.Message("&T/Spectate stop &H- stop spectating");
+            p.Message("&HYou are invulnerable and mirror their inventory.");
         }
     }
 }

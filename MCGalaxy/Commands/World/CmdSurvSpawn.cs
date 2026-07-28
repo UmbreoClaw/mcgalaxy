@@ -61,7 +61,7 @@ namespace MCGalaxy.Commands.World
 
         public override void Help(Player p) {
             p.Message("&T/SurvSpawn [zombie/skeleton/pig/creeper/spider/sheep]");
-            p.Message("&HSpawns a survival test mob at your feet (or the level spawn).");
+            p.Message("&HSpawns a mob at your feet (or the level spawn).");
         }
     }
 }
