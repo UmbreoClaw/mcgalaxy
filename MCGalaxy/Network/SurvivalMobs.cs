@@ -258,7 +258,7 @@ namespace MCGalaxy.Network
             return result.ToArray();
         }
 
-        static short Fixed(double v)  { return (short)Math.Round(v * 32.0); }
+        static short Fixed(double v)  { return SurvivalNet.FixedPos(v, 32.0); }
         static byte  Angle(float deg) {
             int a = (int)Math.Round(deg * 256.0 / 360.0);
             return (byte)(((a % 256) + 256) % 256);
@@ -702,7 +702,17 @@ namespace MCGalaxy.Network
                               float r, SurvMob owner, string deathMsg, Player blockAuthor) {
             double diam = r * 2.0;
 
-            // players (before any block is removed, so the density rays see intact world)
+            // Damage is COMPUTED here, against the intact world - the density rays
+            // must see the terrain that shielded each victim - but APPLYING it is
+            // deferred until after the crater is carved. A lethal hit scatters the
+            // victim's inventory, and a scatter that lands before the terrain goes
+            // settles its drops on blocks this same blast is about to remove,
+            // leaving the loot hovering above the finished crater floor where it
+            // can never be picked up (the mirror of the two-pass fix already made
+            // to the terrain drops themselves).
+            List<KeyValuePair<Player, int>> hitPlayers = new List<KeyValuePair<Player, int>>();
+            List<BlastHit> hitMobs = new List<BlastHit>();
+
             foreach (Player p in PlayerInfo.Online.Items)
             {
                 if (p.level != lvl || !SurvivalNet.Active(p, lvl) || SurvivalNet.IsDead(p)) continue;
@@ -715,10 +725,9 @@ namespace MCGalaxy.Network
                               px - 0.3, feet, pz - 0.3, px + 0.3, feet + 1.8, pz + 0.3);
                 double f = (1.0 - dist / diam) * dens;
                 int dmg = (int)((f * f + f) / 2.0 * 8.0 * diam + 1.0);
-                if (dmg > 0) SurvivalNet.DamagePlayer(p, dmg, deathMsg);
+                if (dmg > 0) hitPlayers.Add(new KeyValuePair<Player, int>(p, dmg));
             }
 
-            // mobs
             for (int i = lm.Mobs.Count - 1; i >= 0; i--)
             {
                 SurvMob e = lm.Mobs[i];
@@ -733,11 +742,32 @@ namespace MCGalaxy.Network
                 double f = (1.0 - dist / diam) * dens;
                 int dmg = (int)((f * f + f) / 2.0 * 8.0 * diam + 1.0);
                 if (dmg <= 0) continue;
-                HurtMob(lvl, lm, e, null, dmg);
-                if (dist > 0.0001) { e.VX += dx / dist * f; e.VY += dy / dist * f; e.VZ += dz / dist * f; }
+                BlastHit hit = new BlastHit();
+                hit.Mob = e; hit.Dmg = dmg;
+                if (dist > 0.0001) { hit.KX = dx / dist * f; hit.KY = dy / dist * f; hit.KZ = dz / dist * f; }
+                hitMobs.Add(hit);
             }
 
             SurvivalExplosions.DestroyBlocks(lvl, blockAuthor, cx, cy, cz, r, lm.Rng);
+
+            // the crater exists now - deaths (and their scatters) settle on it
+            foreach (KeyValuePair<Player, int> kv in hitPlayers)
+                SurvivalNet.DamagePlayer(kv.Key, kv.Value, deathMsg);
+            foreach (BlastHit hit in hitMobs)
+            {
+                if (hit.Mob.Dead || hit.Mob.Health <= 0) continue; // a chain blast got it first
+                HurtMob(lvl, lm, hit.Mob, null, hit.Dmg);
+                hit.Mob.VX += hit.KX; hit.Mob.VY += hit.KY; hit.Mob.VZ += hit.KZ;
+            }
+        }
+
+        // one buffered explosion hit: damage computed against the pre-blast world,
+        // applied after the crater is carved (see ExplodeAt)
+        sealed class BlastHit
+        {
+            public SurvMob Mob;
+            public int Dmg;
+            public double KX, KY, KZ;
         }
 
         /// <summary> A TNT-style blast at a block cell (SurvivalPhysics fire->TNT).

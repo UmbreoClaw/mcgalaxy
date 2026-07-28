@@ -400,10 +400,16 @@ namespace MCGalaxy.Network
                     for (int dz = z - 2; dz <= z + 2; dz++)
                         if (ViewAt(lvl, dx, dy, dz) == Block.Log) return; // log nearby - keep
 
+            // Clear FIRST: leaves collide as a solid cube, so spawning while the
+            // leaf still stands settles the sapling on top of the block that is
+            // vanishing this instant. The decay gate above fires only when the
+            // cell below is NOT solid, so the true floor is always at least one
+            // block further down - i.e. every decayed sapling was landing out of
+            // pickup reach of where it visibly fell.
+            SetView(lvl, x, y, z, Block.Air);
             if (g.Rng.Next(10) == 0)
                 SurvivalDrops.SpawnScatter(lvl, x + 0.5, y + 0.5, z + 0.5,
                                            (ushort)Block.Sapling, 1, SurvivalDrops.MinedDelay(lvl));
-            SetView(lvl, x, y, z, Block.Air);
         }
 
         // BlockCrops.updateTick: the stay check first, then a farmland-weighted,

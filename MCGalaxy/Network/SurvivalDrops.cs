@@ -73,12 +73,22 @@ namespace MCGalaxy.Network
         // EntityPlayer.dropPlayerItem uses 40 so the tosser can't re-grab at once.
         const int MINED_DELAY = 10;
         const int TOSS_DELAY  = 40;
-        const int MAX_DROPS_PER_LEVEL = 512; // safety cap (client pool is 256; excess just isn't streamed)
+        // Must not exceed the client's fixed drop pool (DROP_MAX in SurvivalTest.c):
+        // every spawn IS streamed, and on overflow the client evicts its oldest
+        // entry - i.e. the settled item a player is walking toward - leaving a
+        // drop the server still collects from apparently bare ground.
+        const int MAX_DROPS_PER_LEVEL = 256;
 
         // pickup reach: Player.tick uses bb.grow(1,0,1) - generous horizontally,
         // limited to roughly the player's own height vertically. Feet-space.
         const double PICKUP_H2   = 1.35 * 1.35; // horizontal radius^2 from the drop centre
-        const double PICKUP_YLO  = -0.5;        // drop may rest just below the feet (on a step)
+        // The low end has to reach a full block below the feet: mining the ground
+        // block ADJACENT to you settles its drop one block down, and a trench you
+        // have not stepped into yet would otherwise be uncollectable. (Before the
+        // mining-path settle fix this was masked by drops resting one block too
+        // high.) Genuine grows the pickup box by 1 horizontally only, so this is a
+        // deliberate, small deviation in the player's favour.
+        const double PICKUP_YLO  = -1.5;
         const double PICKUP_YHI  = 2.0;         // ...up to head height
 
         // wire fixed-point: positions coord*32 (matches mob streaming), velocity
@@ -151,27 +161,89 @@ namespace MCGalaxy.Network
         /// level's survival watchers, and remembers the settled position. </summary>
         static void Spawn(Level lvl, double x, double y, double z,
                           double vx, double vy, double vz, ushort item, int count, int delay) {
+            Spawn(lvl, x, y, z, vx, vy, vz, item, count, delay, false);
+        }
+
+        static void Spawn(Level lvl, double x, double y, double z,
+                          double vx, double vy, double vz, ushort item, int count, int delay,
+                          bool fly) {
             if (count <= 0) return;
             LevelDrops ld = GetLevel(lvl, true);
             byte rot0 = (byte)rng.Next(256);
-            int bx = (int)Math.Floor(x), bz = (int)Math.Floor(z);
-            double settleY = SettleY(lvl, bx, y, bz);
+            // A little pop settles straight down (the client's arc lands within a
+            // fraction of a block of the column it started in), but a THROWN stack
+            // travels metres - so its flight is integrated here and the landing
+            // spot becomes the authoritative one. Without this the server kept a
+            // tossed item at the thrower's own feet while the client drew it
+            // several blocks away: nobody could collect the item they could see,
+            // and the thrower re-absorbed it the instant the toss delay expired.
+            double rx = x, ry = y, rz = z;
+            if (fly) Ballistic(lvl, ref rx, ref ry, ref rz, vx, vy, vz);
+            int bx = (int)Math.Floor(rx), bz = (int)Math.Floor(rz);
+            double settleY = SettleY(lvl, bx, ry, bz);
+            x = rx; z = rz;
 
-            Drop d;
+            // Snapshot the watchers BEFORE taking the lock, then spawn and stream
+            // inside it. Adding to the list outside the send made the drop visible
+            // to the tick thread first, so a same-tick pickup (c0.30 spawns with
+            // delay 0) could send PICKUP before SPAWN: the client discards the
+            // pickup for an unknown id, then creates a drop the server has already
+            // deleted - banked in the inventory AND lying on the ground forever.
+            Player[] watchers = Watchers(lvl);
             lock (ld.Drops) {
                 if (ld.Drops.Count >= MAX_DROPS_PER_LEVEL) return; // pool guard
-                d = new Drop {
+                Drop d = new Drop {
                     Id = ld.NextId, Item = item, Count = (byte)Math.Min(count, 255),
                     X = x, Y = settleY, Z = z, Age = 0, PickupDelay = delay, Rot0 = rot0
                 };
                 ld.NextId++;
                 if (ld.NextId > 65535) ld.NextId = 1; // wrap (u16 wire key)
                 ld.Drops.Add(d);
-            }
 
-            Player[] watchers = Watchers(lvl);
-            foreach (Player p in watchers)
-                SurvivalNet.SendDropSpawn(p, d.Id, item, d.Count, x, y, z, vx, vy, vz, rot0);
+                foreach (Player p in watchers)
+                    SurvivalNet.SendDropSpawn(p, d.Id, item, d.Count, x, y, z, vx, vy, vz, rot0);
+            }
+        }
+
+        // Mirrors the client's per-tick drop physics (SurvivalTest_DropPhysics):
+        // gravity 16 b/s^2, 0.98 air drag, axis-wise stop on a solid cell, ground
+        // friction 0.7. Integrated until it rests or the flight budget runs out -
+        // a toss lands in well under a second, so 60 ticks is a generous ceiling.
+        static void Ballistic(Level lvl, ref double x, ref double y, ref double z,
+                              double vx, double vy, double vz) {
+            const double dt = 1.0 / 20.0, gravity = 16.0, drag = 0.98;
+            for (int tick = 0; tick < 60; tick++)
+            {
+                vy -= gravity * dt;
+                bool grounded = false;
+
+                double nx = x + vx * dt;
+                if (BlockedAt(lvl, nx, y, z)) { vx = 0; } else { x = nx; }
+                double nz = z + vz * dt;
+                if (BlockedAt(lvl, x, y, nz)) { vz = 0; } else { z = nz; }
+                double ny = y + vy * dt;
+                if (BlockedAt(lvl, x, ny, z)) {
+                    if (vy < 0) grounded = true;
+                    vy = 0;
+                } else { y = ny; }
+
+                vx *= drag; vy *= drag; vz *= drag;
+                if (grounded) { vx *= 0.7; vz *= 0.7; }
+                // resting: no meaningful motion left
+                if (grounded && Math.Abs(vx) < 0.05 && Math.Abs(vz) < 0.05) break;
+            }
+            // keep it inside the map (a toss off a ledge must not leave the world)
+            if (x < 0) x = 0; else if (x > lvl.Width  - 0.001) x = lvl.Width  - 0.001;
+            if (z < 0) z = 0; else if (z > lvl.Length - 0.001) z = lvl.Length - 0.001;
+            if (y < 0) y = 0; else if (y > lvl.Height - 1)     y = lvl.Height - 1;
+        }
+
+        static bool BlockedAt(Level lvl, double x, double y, double z) {
+            int bx = (int)Math.Floor(x), by = (int)Math.Floor(y), bz = (int)Math.Floor(z);
+            if (bx < 0 || by < 0 || bz < 0 ||
+                bx >= lvl.Width || by >= lvl.Height || bz >= lvl.Length) return true;
+            return CollideType.IsSolid(lvl.CollideType(
+                       lvl.GetBlock((ushort)bx, (ushort)by, (ushort)bz)));
         }
 
         /// <summary> Mining bridge: a survival player broke a block. Replaces the
@@ -235,7 +307,7 @@ namespace MCGalaxy.Network
             double vx = dx * 0.3 * 20.0 + (rng.NextDouble() - 0.5) * 0.04 * 20.0;
             double vy = dy * 0.3 * 20.0 + 0.1 * 20.0 + (rng.NextDouble() - rng.NextDouble()) * 0.1 * 20.0;
             double vz = dz * 0.3 * 20.0 + (rng.NextDouble() - 0.5) * 0.04 * 20.0;
-            Spawn(lvl, fx, fy, fz, vx, vy, vz, id, count, TOSS_DELAY);
+            Spawn(lvl, fx, fy, fz, vx, vy, vz, id, count, TOSS_DELAY, true);
         }
 
         // Item ctor pop: xd/zd uniform +/-0.1 block/tick, yd fixed 0.2 block/tick.
@@ -283,6 +355,29 @@ namespace MCGalaxy.Network
                     d.Age++;
                     if (d.PickupDelay > 0) d.PickupDelay--;
 
+                    // The settled position is computed once at spawn; the world
+                    // moves on. A crater opened under old loot (or a blast that
+                    // killed its owner, scattering before the terrain went) leaves
+                    // the authoritative point hovering while the client's visual
+                    // sits on the new floor - uncollectable. One block read per
+                    // drop per tick keeps the two together and self-heals drops
+                    // that were already stranded.
+                    int sx = (int)Math.Floor(d.X), sz = (int)Math.Floor(d.Z);
+                    int sy = (int)Math.Floor(d.Y) - 1;
+                    if (sy >= 0 && sy < lvl.Height && d.Y > 0 &&
+                        !CollideType.IsSolid(lvl.CollideType(
+                            lvl.GetBlock((ushort)sx, (ushort)sy, (ushort)sz)))) {
+                        double reY = SettleY(lvl, sx, d.Y, sz);
+                        if (reY != d.Y) {
+                            d.Y = reY;
+                            // re-stream at the corrected spot (the client treats a
+                            // spawn for a live id as an authoritative refresh)
+                            foreach (Player w in watchers)
+                                SurvivalNet.SendDropSpawn(w, d.Id, d.Item, d.Count,
+                                                          d.X, d.Y, d.Z, 0, 0, 0, d.Rot0);
+                        }
+                    }
+
                     if (d.Age >= DESPAWN_TICKS) {
                         Broadcast(watchers, d.Id, isPickup: false, picker: null);
                         ld.Drops.RemoveAt(i);
@@ -290,12 +385,14 @@ namespace MCGalaxy.Network
                     }
                     if (d.PickupDelay > 0) continue; // still in the no-touch window
 
-                    Player picker = FindPicker(watchers, d);
-                    if (picker == null) continue;
-                    // authoritative collect: only if the whole stack fits (room is
+                    // Authoritative collect: only if the whole stack fits (room is
                     // checked before any mutation, so a full inventory leaves the
-                    // drop on the ground for someone else / later)
-                    if (!SurvivalInventory.PickUp(picker, d.Item, d.Count)) continue;
+                    // drop on the ground for someone else / later). Every eligible
+                    // watcher is tried - stopping at the first one let a player who
+                    // merely stood nearby with a full inventory block the item for
+                    // everyone else standing right on it.
+                    Player picker = TryCollect(watchers, d);
+                    if (picker == null) continue;
 
                     Broadcast(watchers, d.Id, isPickup: true, picker: picker);
                     ld.Drops.RemoveAt(i);
@@ -303,27 +400,35 @@ namespace MCGalaxy.Network
             }
         }
 
-        // First watcher (level tick order) within reach of the drop centre. Genuine
-        // has no distance tiebreak - the earliest player in the sweep collects it.
-        static Player FindPicker(Player[] watchers, Drop d) {
+        // Every watcher in reach, in level tick order, until one actually absorbs
+        // the stack. Genuine has no distance tiebreak - the earliest player in the
+        // sweep collects it.
+        static Player TryCollect(Player[] watchers, Drop d) {
             foreach (Player p in watchers)
+            {
+                if (!InReach(p, d)) continue;
+                if (SurvivalInventory.PickUp(p, d.Item, d.Count)) return p;
+            }
+            return null;
+        }
+
+        static bool InReach(Player p, Drop d) {
             {
                 // observers never race players for a pickup: a hidden spectator
                 // stands exactly where the miner is, and a referee walking the
                 // map must not vacuum up loot that isn't theirs
-                if (SurvivalNet.IsObserver(p)) continue;
+                if (SurvivalNet.IsObserver(p)) return false;
                 // a corpse on the death screen stands right on top of its own
                 // scattered inventory - collecting starts after respawning
-                if (SurvivalNet.IsDead(p)) continue;
+                if (SurvivalNet.IsDead(p)) return false;
                 double px = p.Pos.X / 32.0;
                 double py = (p.Pos.Y - Entities.CharacterHeight) / 32.0; // feet
                 double pz = p.Pos.Z / 32.0;
                 double dx = px - d.X, dz = pz - d.Z, dy = d.Y - py;
-                if (dx * dx + dz * dz > PICKUP_H2) continue;
-                if (dy < PICKUP_YLO || dy > PICKUP_YHI) continue;
-                return p;
+                if (dx * dx + dz * dz > PICKUP_H2) return false;
+                if (dy < PICKUP_YLO || dy > PICKUP_YHI) return false;
+                return true;
             }
-            return null;
         }
 
         // Streams the drop's removal to every watcher. A pickup carries the

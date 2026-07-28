@@ -1070,6 +1070,7 @@ namespace MCGalaxy.Network
         /// OnPlayerDisconnectEvent. </summary>
         public static void OnPlayerDisconnect(Player target, string reason) {
             SaveInv(target); // persist the survival inventory (no-op if never touched)
+            ClearPendingMine(target);
             // drop the leaver's /Track readouts + alert anyone tracking them
             SurvivalTrack.OnPlayerDisconnect(target);
             // a SPECTATOR disconnecting mid-session: clear the state + persisted
@@ -1770,40 +1771,96 @@ namespace MCGalaxy.Network
                 BlockID old = lvl.GetBlock(x, y, z);
                 ushort raw  = p.Session.ConvertBlock(Block.Convert(old));
                 if (raw == Block.Air) return;
-                // PlayerControllerSP.sendBlockRemoved runs Item.onBlockDestroyed for
-                // EVERY removal (mined or instant), so the held tool wears exactly
-                // once per block broken - pick/shovel/axe 1, sword 2, others none.
-                // Indev-only (ToolUseWear no-ops off Indev tools / a bare fist).
-                if (indev && !refClean)
-                    DamageHeldTool(p, inv, inv.HeldSlot, SurvivalItems.ToolUseWear(
-                        inv.HeldSlot >= 0 && inv.HeldSlot < 9 ? inv.Slots[inv.HeldSlot].Id : (ushort)0, false));
-                // a mined container discards its tile entity + force-closes viewers
-                if (indev && (IsChestView(raw) || IsFurnaceView(raw)))
-                    ContainerRemoved(lvl, x, y, z);
-                // liquids never yield a pickup (breaking still-water via commands etc.)
-                byte collide = lvl.CollideType(old);
-                if (collide == CollideType.SwimThrough || collide == CollideType.LiquidWater ||
-                    collide == CollideType.LiquidLava) return;
 
-                // mining a TNT block never drops an item (TNTBlock.getDropCount()==0):
-                // the mine removes the block and TNTPhysics.onBreak primes a full-fuse
-                // PrimedTnt entity in its place (both c0.30 and Indev).
-                if (raw == Block.TNT) {
-                    if (!refClean) SurvivalTnt.Ignite(lvl, x, y, z, SurvivalTnt.DefaultFuse(lvl));
-                    return;
-                }
-                if (refClean) return; // moderation removal - the block yields nothing
-
-                // phase 5: mining no longer teleports the yield into the inventory -
-                // it spawns physical drop entities (the genuine Indev drop table on
-                // an Indev map, the block itself on c0.30) that the player then
-                // walks over to collect. SurvivalDrops owns the harvest gating,
-                // grass->dirt / ore->item mapping, seed rolls and the pop/settle.
-                ushort held = indev && inv.HeldSlot >= 0 && inv.HeldSlot < 9
-                            ? inv.Slots[inv.HeldSlot].Id : (ushort)0;
-                SurvivalDrops.SpawnMined(p, lvl, x, y, z, raw, held);
+                // NOTHING a break causes is applied here - it is all recorded and
+                // replayed from OnBlockChanged (below), once the world write has
+                // actually happened AND succeeded. Two reasons, both bugs that were
+                // live:
+                //  * This event fires BEFORE the reach check, the delete-permission
+                //    check and the physics-affect check (Player.Handlers.cs), so a
+                //    break that is ultimately REFUSED still wore the tool, primed
+                //    the TNT, emptied the container and spawned the drop - block
+                //    intact and item gained, repeatable at will.
+                //  * The mined block is still solid in the level array at this
+                //    point, so a drop's settle scan (SurvivalDrops.SettleY) rests
+                //    it on top of the block that is about to vanish. Over open air
+                //    - a blast-orphaned log, an overhang, a ceiling - the server's
+                //    pickup point ends up N+1 blocks above the floor the client's
+                //    visual falls to, and the item can never be collected. The
+                //    identical ordering bug was already fixed on the crater path
+                //    (SurvivalExplosions two-pass clear-then-drop); this is the
+                //    mining half of it.
+                PendingMine pm = new PendingMine();
+                pm.X = x; pm.Y = y; pm.Z = z;
+                pm.Raw = raw; pm.Indev = indev; pm.RefClean = refClean;
+                pm.Collide = lvl.CollideType(old);
+                pm.Held = indev && inv.HeldSlot >= 0 && inv.HeldSlot < 9
+                        ? inv.Slots[inv.HeldSlot].Id : (ushort)0;
+                p.Extras[PENDING_MINE_KEY] = pm;
             }
         }
+
+        // What a pending break will do once the world write is confirmed. The
+        // mined block's identity has to be captured HERE - by the time the change
+        // lands the cell is already air.
+        sealed class PendingMine
+        {
+            public int X, Y, Z;
+            public ushort Raw, Held;
+            public byte Collide;
+            public bool Indev, RefClean;
+        }
+        const string PENDING_MINE_KEY = "survival.pendingMine";
+
+        /// <summary> Registered on OnBlockChangedEvent: applies a break's side
+        /// effects (tool wear, container scatter, TNT priming, the drop itself)
+        /// after the block has actually been removed from the level - so drops
+        /// settle against the real post-break world, and a refused break causes
+        /// nothing at all. </summary>
+        public static void OnBlockChanged(Player p, ushort x, ushort y, ushort z, ChangeResult result) {
+            object o;
+            if (!p.Extras.TryGet(PENDING_MINE_KEY, out o)) return;
+            p.Extras.Remove(PENDING_MINE_KEY);
+
+            PendingMine pm = (PendingMine)o;
+            if (result != ChangeResult.Modified) return; // refused: no wear, no drops, no priming
+            Level lvl = p.level;
+            if (lvl == null || pm.X != x || pm.Y != y || pm.Z != z) return;
+
+            PlayerInv inv = Get(p);
+            // PlayerControllerSP.sendBlockRemoved runs Item.onBlockDestroyed for
+            // EVERY removal (mined or instant), so the held tool wears exactly
+            // once per block broken - pick/shovel/axe 1, sword 2, others none.
+            // Indev-only (ToolUseWear no-ops off Indev tools / a bare fist).
+            if (pm.Indev && !pm.RefClean)
+                DamageHeldTool(p, inv, inv.HeldSlot, SurvivalItems.ToolUseWear(pm.Held, false));
+            // a mined container discards its tile entity + force-closes viewers
+            if (pm.Indev && (IsChestView(pm.Raw) || IsFurnaceView(pm.Raw)))
+                ContainerRemoved(lvl, x, y, z);
+            // liquids never yield a pickup (breaking still-water via commands etc.)
+            if (pm.Collide == CollideType.SwimThrough || pm.Collide == CollideType.LiquidWater ||
+                pm.Collide == CollideType.LiquidLava) return;
+
+            // mining a TNT block never drops an item (TNTBlock.getDropCount()==0):
+            // the mine removes the block and TNTPhysics.onBreak primes a full-fuse
+            // PrimedTnt entity in its place (both c0.30 and Indev).
+            if (pm.Raw == Block.TNT) {
+                if (!pm.RefClean) SurvivalTnt.Ignite(lvl, x, y, z, SurvivalTnt.DefaultFuse(lvl));
+                return;
+            }
+            if (pm.RefClean) return; // moderation removal - the block yields nothing
+
+            // phase 5: mining no longer teleports the yield into the inventory -
+            // it spawns physical drop entities (the genuine Indev drop table on
+            // an Indev map, the block itself on c0.30) that the player then
+            // walks over to collect. SurvivalDrops owns the harvest gating,
+            // grass->dirt / ore->item mapping, seed rolls and the pop/settle.
+            SurvivalDrops.SpawnMined(p, lvl, x, y, z, pm.Raw, pm.Held);
+        }
+
+        /// <summary> A disconnect mid-break must not leave a pending record that a
+        /// later reconnect could replay. </summary>
+        internal static void ClearPendingMine(Player p) { p.Extras.Remove(PENDING_MINE_KEY); }
 
         // ==================== Indev placement shaping ====================
         // Mirrors the client's SP placement handling (IndevTest_BlockChanged +

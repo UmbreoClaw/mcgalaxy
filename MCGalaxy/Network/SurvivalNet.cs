@@ -342,7 +342,19 @@ namespace MCGalaxy.Network
 
         // ==================== dropped items (SURV_DROP_*) ====================
 
-        static short DropPos(double v) { return (short)Math.Round(v * SurvivalDrops.POS_SCALE); }
+        // i16 coord*32 saturates at +/-1023.97 blocks. An unclamped cast WRAPS,
+        // so on a map wider than 1024 an entity mined at x=1500 decodes on the
+        // client as x=-547 - invisible where it actually is, while the server
+        // still collects it normally from the real spot. Saturating instead
+        // parks it at the map edge, which is wrong but not teleported, until
+        // the coordinate fields are widened (a wire change).
+        internal static short FixedPos(double v, double scale) {
+            double s = Math.Round(v * scale);
+            if (s >  32767) s =  32767;
+            if (s < -32768) s = -32768;
+            return (short)s;
+        }
+        static short DropPos(double v) { return FixedPos(v, SurvivalDrops.POS_SCALE); }
         static short DropVel(double v) {
             double s = v * SurvivalDrops.VEL_SCALE;
             if (s >  32767) s =  32767; // clamp into i16 (a runaway toss never overflows)
@@ -400,7 +412,7 @@ namespace MCGalaxy.Network
 
         // ==================== arrows (SURV_ARROW_*) ====================
 
-        static short ArrowPos(double v) { return (short)Math.Round(v * SurvivalArrows.POS_SCALE); }
+        static short ArrowPos(double v) { return FixedPos(v, SurvivalArrows.POS_SCALE); }
         static short ArrowVel(double v) {
             double s = v * SurvivalArrows.VEL_SCALE;
             if (s >  32767) s =  32767;
@@ -466,7 +478,7 @@ namespace MCGalaxy.Network
 
         // ==================== primed TNT (SURV_TNT_*) ====================
 
-        static short TntPos(double v) { return (short)Math.Round(v * 32.0); }          // coord*32
+        static short TntPos(double v) { return FixedPos(v, 32.0); }                     // coord*32
         static short TntVel(double v) {                                                // blocks/tick*1024
             double s = v * 1024.0;
             if (s >  32767) s =  32767;
