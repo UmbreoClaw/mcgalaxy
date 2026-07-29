@@ -97,6 +97,26 @@ namespace MCGalaxy.Network
             Array.Clear(bits, 0, bits.Length);
             int icx = (int)cx, icy = (int)cy, icz = (int)cz;
 
+            // c0.30's Level.explode carves a plain SPHERE - no rays, no block
+            // resistance - testing each block centre against the radius. Indev
+            // replaces it wholesale with the ray/resistance model below. Running
+            // the Indev model on a c0.30 map gave the wrong crater shape and let
+            // blasts chew through material that should have stopped them.
+            if (lvl.Config.SurvivalMode != SurvivalMode.Indev) {
+                int rad = (int)r;
+                for (int by = icy - rad - 1; by <= icy + rad + 1; by++)
+                    for (int bz = icz - rad - 1; bz <= icz + rad + 1; bz++)
+                        for (int bx = icx - rad - 1; bx <= icx + rad + 1; bx++)
+                {
+                    double fx = bx + 0.5 - cx, fy = by + 0.5 - cy, fz = bz + 0.5 - cz;
+                    if (fx * fx + fy * fy + fz * fz >= (double)rad * rad) continue;
+                    int rel = (bx - icx + 16) + (by - icy + 16) * DIM + (bz - icz + 16) * DIM * DIM;
+                    if (rel >= 0 && rel < DIM * DIM * DIM) bits[rel >> 3] |= (byte)(1 << (rel & 7));
+                }
+                DestroyMarked(lvl, author, icx, icy, icz, rng);
+                return;
+            }
+
             for (int i = 0; i < 16; i++)
                 for (int j = 0; j < 16; j++)
                     for (int k = 0; k < 16; k++)
@@ -133,6 +153,12 @@ namespace MCGalaxy.Network
             // drops that never collect). Chest/furnace content scatter defers the
             // same way (the tile-entity registry is position-keyed, untouched by
             // the block clear).
+            DestroyMarked(lvl, author, icx, icy, icz, rng);
+        }
+
+        // Shared second half: clear every marked block, THEN spawn its drops (so
+        // settle scans see the finished crater), in genuine reverse order.
+        static void DestroyMarked(Level lvl, Player author, int icx, int icy, int icz, Random rng) {
             List<int[]> destroyed = new List<int[]>();
             for (int k = DIM - 1; k >= 0; k--)
                 for (int j = DIM - 1; j >= 0; j--)

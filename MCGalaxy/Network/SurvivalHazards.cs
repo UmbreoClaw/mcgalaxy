@@ -197,15 +197,19 @@ namespace MCGalaxy.Network
             return lvl.GetBlock((ushort)x, (ushort)y, (ushort)z);
         }
 
-        static bool IsLiquid(byte collide, bool lava) {
-            if (lava) return collide == CollideType.LiquidLava;
-            return collide == CollideType.LiquidWater || collide == CollideType.SwimThrough;
+        // Classify by BLOCK ID, not collide type: only the custom LAVA_SOURCE
+        // carries CollideType.LiquidLava, while every generator emits plain
+        // Block.Lava/StillLava which DefaultSet collapses to SwimThrough. Testing
+        // collide types therefore read real lava as WATER, so players took no lava
+        // damage and never caught fire in it - they slowly "drowned" instead.
+        static bool IsLiquid(Level lvl, ushort block, bool lava) {
+            return lava ? SurvivalMobs.IsLavaBlock(lvl, block)
+                        : SurvivalMobs.IsWaterBlock(lvl, block);
         }
 
         static bool LiquidAt(Level lvl, double x, double y, double z, bool lava) {
-            byte collide = lvl.CollideType(BlockAt(lvl,
-                (int)Math.Floor(x), (int)Math.Floor(y), (int)Math.Floor(z)));
-            return IsLiquid(collide, lava);
+            return IsLiquid(lvl, BlockAt(lvl,
+                (int)Math.Floor(x), (int)Math.Floor(y), (int)Math.Floor(z)), lava);
         }
 
         // any block the player's bounding box overlaps with the liquid type.
@@ -223,7 +227,7 @@ namespace MCGalaxy.Network
                 for (int bz = minZ; bz <= maxZ; bz++)
                     for (int bx = minX; bx <= maxX; bx++)
             {
-                if (IsLiquid(lvl.CollideType(BlockAt(lvl, bx, by, bz)), lava)) return true;
+                if (IsLiquid(lvl, BlockAt(lvl, bx, by, bz), lava)) return true;
             }
             return false;
         }

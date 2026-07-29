@@ -163,15 +163,33 @@ namespace MCGalaxy.Network
         /// 256 ceiling - the client's fixed puppet pool, the hard wire-compat
         /// limit. The old auto clamp of 40 left big maps feeling empty
         /// (user-reported): a 512x64x512 now autos to 256, small maps unchanged. </summary>
+        /// <summary> Standing mob budget for a level. </summary>
+        /// <remarks> Genuine scales the cap with world VOLUME, which works when the
+        /// spawner is map-wide: those mobs spread over the whole world and you meet
+        /// a handful. Our top-up spawner deliberately places in a 16-48 block ring
+        /// around a player, so a volume-scaled budget made the mob density AROUND
+        /// YOU scale with map size - a 512x128x512 put ~190 monsters' worth of
+        /// budget within 48 blocks of a lone player, while nothing scaled with the
+        /// number of players at all (one player got the same budget as ten).
+        /// The budget is now per-PLAYER, with volume kept only as a ceiling so a
+        /// small map cannot be overfilled. </remarks>
         public static int EffectiveCap(Level lvl) {
             int cap = lvl.Config.SurvivalMobCap;
-            if (cap <= 0) {
-                long volume = (long)lvl.Width * lvl.Height * lvl.Length;
-                int area = Math.Max(1, (int)(volume / 64 / 64 / 64));
-                cap = Math.Max(8, area * 4);
-            }
-            return Math.Min(cap, MAX_MOBS_PER_LEVEL);
+            if (cap > 0) return Math.Min(cap, MAX_MOBS_PER_LEVEL);
+
+            long volume = (long)lvl.Width * lvl.Height * lvl.Length;
+            int area = Math.Max(1, (int)(volume / 64 / 64 / 64));
+            int volumeBudget = Math.Max(8, area * 4);
+
+            int players = 0;
+            foreach (Player p in PlayerInfo.Online.Items) { if (p.level == lvl) players++; }
+            int playerBudget = Math.Max(1, players) * PER_PLAYER_MOBS;
+
+            return Math.Min(Math.Min(playerBudget, volumeBudget), MAX_MOBS_PER_LEVEL);
         }
+
+        /// <summary> Standing mobs budgeted per online player on the level. </summary>
+        public const int PER_PLAYER_MOBS = 32;
 
         // Genuine Indev runs SEPARATE monster and animal spawn passes, each with
         // its own cap (MobSpawner.performSpawning): animals W*L/4000, monsters
@@ -228,7 +246,23 @@ namespace MCGalaxy.Network
             LevelMobs lm = GetLevel(lvl, false);
             if (lm == null) return;
             lock (lm.Mobs) {
-                foreach (SurvMob m in lm.Mobs) SendSpawn(p, m);
+                foreach (SurvMob m in lm.Mobs)
+                {
+                    SendSpawn(p, m);
+                    // SPAWN only carries the cosmetic flags (helmet/armor/fur);
+                    // the ANIMATION state (creeper swell, fire, graze) rides
+                    // MOB_STATE, which StreamMob delta-gates on a single shared
+                    // SentFlags field a joiner never dirties. Without this a
+                    // joining player sees a swelling creeper standing perfectly
+                    // calm right up to the bang - the swell is its only tell.
+                    // Sent directly, so the shared delta state is untouched.
+                    byte[] st = new byte[Packet.PluginMessageDataLength];
+                    st[0] = SurvivalNet.MOB_STATE;
+                    st[1] = (byte)(m.Id >> 8); st[2] = (byte)m.Id;
+                    st[3] = (byte)Math.Max(0, m.Health);
+                    st[4] = StateFlags(m);
+                    SurvivalNet.SendMessage(p, st);
+                }
             }
         }
 
@@ -336,6 +370,19 @@ namespace MCGalaxy.Network
             m.HurtThisTick = false;
         }
 
+        // (int)((rand + rand) * 3 + 4) = 4..9 arrows, from the eye, random yaw and
+        // an upward-biased pitch. Player-owned so they can be recovered.
+        static void SkeletonDeathBurst(Level lvl, SurvMob m, Random rng) {
+            int count = (int)((rng.NextDouble() + rng.NextDouble()) * 3.0 + 4.0);
+            double eye = m.Y + Height(lvl, m) * 0.85 - 0.2;
+            for (int i = 0; i < count; i++)
+            {
+                double yaw   = rng.NextDouble() * 360.0;
+                double pitch = -rng.NextDouble() * 60.0;
+                SurvivalArrows.FireDeathBurst(lvl, m.X, eye, m.Z, yaw, pitch);
+            }
+        }
+
         static void BroadcastDespawn(Level lvl, SurvMob m, byte reason) {
             byte[] msg = new byte[Packet.PluginMessageDataLength];
             msg[0] = SurvivalNet.MOB_DESPAWN;
@@ -399,11 +446,42 @@ namespace MCGalaxy.Network
                 for (int bz = minZ; bz <= maxZ; bz++)
                     for (int bx = minX; bx <= maxX; bx++)
             {
-                byte collide = lvl.CollideType(BlockAt(lvl, bx, by, bz));
-                if (lava  && collide == CollideType.LiquidLava)  return true;
-                if (!lava && (collide == CollideType.LiquidWater || collide == CollideType.SwimThrough)) return true;
+                ushort b = BlockAt(lvl, bx, by, bz);
+                if (lava ? IsLavaBlock(lvl, b) : IsWaterBlock(lvl, b)) return true;
             }
             return false;
+        }
+
+        // Any cell the box overlaps holding a fire block (Indev ignition).
+        static bool InFire(Level lvl, SurvMob m) {
+            float w = Width(lvl, m) / 2, h = Height(lvl, m);
+            int minX = (int)Math.Floor(m.X - w), maxX = (int)Math.Floor(m.X + w - 0.001);
+            int minY = (int)Math.Floor(m.Y),     maxY = (int)Math.Floor(m.Y + h - 0.001);
+            int minZ = (int)Math.Floor(m.Z - w), maxZ = (int)Math.Floor(m.Z + w - 0.001);
+            for (int by = minY; by <= maxY; by++)
+                for (int bz = minZ; bz <= maxZ; bz++)
+                    for (int bx = minX; bx <= maxX; bx++)
+            {
+                if (SurvivalPhysics.IsFire(SurvivalGrowth.ViewAt(lvl, bx, by, bz))) return true;
+            }
+            return false;
+        }
+
+        // Liquid identity by BLOCK ID. CollideType alone is not enough: only the
+        // custom LAVA_SOURCE ever carries CollideType.LiquidLava, while every
+        // generator emits plain Block.Lava/StillLava, which DefaultSet collapses
+        // to SwimThrough. Testing collide types therefore classified real lava as
+        // WATER - so lava neither burned nor damaged mobs (it "drowned" them
+        // instead), and a burning mob was extinguished by jumping into lava.
+        internal static bool IsLavaBlock(Level lvl, ushort b) {
+            if (b == Block.Lava || b == Block.StillLava || b == SurvivalBlocks.LAVA_SOURCE) return true;
+            return lvl.CollideType(b) == CollideType.LiquidLava;
+        }
+        internal static bool IsWaterBlock(Level lvl, ushort b) {
+            if (b == Block.Water || b == Block.StillWater || b == SurvivalBlocks.WATER_SOURCE) return true;
+            if (IsLavaBlock(lvl, b)) return false; // never both
+            byte c = lvl.CollideType(b);
+            return c == CollideType.LiquidWater || c == CollideType.SwimThrough;
         }
 
         // "Brightness" approximation (no server-side light engine): a column open
@@ -700,7 +778,17 @@ namespace MCGalaxy.Network
         /// mob (excluded + credited), null for TNT/environment. </summary>
         static void ExplodeAt(Level lvl, LevelMobs lm, double cx, double cy, double cz,
                               float r, SurvMob owner, string deathMsg, Player blockAuthor) {
+            bool classic = lvl.Config.SurvivalMode != SurvivalMode.Indev;
             double diam = r * 2.0;
+
+            // c0.30's Level.explode is a completely different (and far gentler)
+            // formula from Indev's World.createExplosion: a plain linear taper
+            //     (int)((1 - dist/radius) * 15 + 1)
+            // measured from an eye-ish anchor, with NO density shielding and NO
+            // velocity kick. The server ran the Indev model in BOTH modes, so a
+            // point-blank r=4 blast dealt 65 instead of 16 - instant death, and
+            // still 1 HP out at 8 blocks where c0.30 deals nothing at all.
+            double inv = 1.0 / r;
 
             // Damage is COMPUTED here, against the intact world - the density rays
             // must see the terrain that shielded each victim - but APPLYING it is
@@ -720,11 +808,18 @@ namespace MCGalaxy.Network
                 double px = p.Pos.X / 32.0, pz = p.Pos.Z / 32.0, anchor = feet + 1.62;
                 double dx = px - cx, dy = anchor - cy, dz = pz - cz;
                 double dist = Math.Sqrt(dx * dx + dy * dy + dz * dz);
-                if (dist / diam > 1.0) continue;
-                double dens = SurvivalExplosions.Density(lvl, cx, cy, cz,
-                              px - 0.3, feet, pz - 0.3, px + 0.3, feet + 1.8, pz + 0.3);
-                double f = (1.0 - dist / diam) * dens;
-                int dmg = (int)((f * f + f) / 2.0 * 8.0 * diam + 1.0);
+                int dmg;
+                if (classic) {
+                    double t = dist * inv;
+                    if (t > 1.0) continue;
+                    dmg = (int)((1.0 - t) * 15.0 + 1.0);
+                } else {
+                    if (dist / diam > 1.0) continue;
+                    double dens = SurvivalExplosions.Density(lvl, cx, cy, cz,
+                                  px - 0.3, feet, pz - 0.3, px + 0.3, feet + 1.8, pz + 0.3);
+                    double f = (1.0 - dist / diam) * dens;
+                    dmg = (int)((f * f + f) / 2.0 * 8.0 * diam + 1.0);
+                }
                 if (dmg > 0) hitPlayers.Add(new KeyValuePair<Player, int>(p, dmg));
             }
 
@@ -735,16 +830,24 @@ namespace MCGalaxy.Network
                 double eoff = Types[e.Type].HeightOff;
                 double dx = e.X - cx, dy = (e.Y + eoff) - cy, dz = e.Z - cz;
                 double dist = Math.Sqrt(dx * dx + dy * dy + dz * dz);
-                if (dist / diam > 1.0) continue;
-                double hw = Width(lvl, e) / 2.0, h = Height(lvl, e);
-                double dens = SurvivalExplosions.Density(lvl, cx, cy, cz,
-                              e.X - hw, e.Y, e.Z - hw, e.X + hw, e.Y + h, e.Z + hw);
-                double f = (1.0 - dist / diam) * dens;
-                int dmg = (int)((f * f + f) / 2.0 * 8.0 * diam + 1.0);
+                int dmg; double f = 0;
+                if (classic) {
+                    double t = dist * inv;
+                    if (t > 1.0) continue;
+                    dmg = (int)((1.0 - t) * 15.0 + 1.0);
+                } else {
+                    if (dist / diam > 1.0) continue;
+                    double hw = Width(lvl, e) / 2.0, h = Height(lvl, e);
+                    double dens = SurvivalExplosions.Density(lvl, cx, cy, cz,
+                                  e.X - hw, e.Y, e.Z - hw, e.X + hw, e.Y + h, e.Z + hw);
+                    f = (1.0 - dist / diam) * dens;
+                    dmg = (int)((f * f + f) / 2.0 * 8.0 * diam + 1.0);
+                }
                 if (dmg <= 0) continue;
                 BlastHit hit = new BlastHit();
                 hit.Mob = e; hit.Dmg = dmg;
-                if (dist > 0.0001) { hit.KX = dx / dist * f; hit.KY = dy / dist * f; hit.KZ = dz / dist * f; }
+                // c0.30 applies no explosion velocity kick at all
+                if (!classic && dist > 0.0001) { hit.KX = dx / dist * f; hit.KY = dy / dist * f; hit.KZ = dz / dist * f; }
                 hitMobs.Add(hit);
             }
 
@@ -756,7 +859,7 @@ namespace MCGalaxy.Network
             foreach (BlastHit hit in hitMobs)
             {
                 if (hit.Mob.Dead || hit.Mob.Health <= 0) continue; // a chain blast got it first
-                HurtMob(lvl, lm, hit.Mob, null, hit.Dmg);
+                HurtMob(lvl, lm, hit.Mob, null, hit.Dmg, owner);
                 hit.Mob.VX += hit.KX; hit.Mob.VY += hit.KY; hit.Mob.VZ += hit.KZ;
             }
         }
@@ -996,6 +1099,16 @@ namespace MCGalaxy.Network
 
             MobType info = Types[m.Type];
             if (dSq >= 4.0 || m.AttackDelay > 0) return;
+            // BasicAttackAI.attack clips eye-to-eye before swinging, so a wall
+            // stops the blow. The server had the DDA (SightBlocked) but only
+            // wired it into the Indev path, so on a c0.30 map mobs hit straight
+            // through walls - walling yourself in for the night, the whole point
+            // of c0.30 survival, did nothing. Return WITHOUT arming AttackDelay,
+            // exactly as the client does (a blocked mob does not even swing).
+            if (SightBlocked(lvl, m.X, m.Y + info.HeightOff, m.Z,
+                             target.Pos.X / 32.0,
+                             (target.Pos.Y - Entities.CharacterHeight) / 32.0 + 1.62,
+                             target.Pos.Z / 32.0)) return;
 
             m.AttackDelay  = 10 + rng.Next(20);
             m.NoActionTime = 0;
@@ -1562,7 +1675,13 @@ namespace MCGalaxy.Network
             byte type;
             int kindCap = int.MaxValue, kindCount = 0;
             if (indev) {
-                bool dark = !ColumnLit(lvl, x, y, z);
+                // getCanSpawnHere: monsters need light <= rand(8) (so >= 8 blocks
+                // them outright), animals need light > 8. Using the real light
+                // model means a torch-lit cave stops spawning, which a sky-only
+                // test could never do.
+                int light = LightAtSpawn(lvl, x, y, z);
+                bool dark = light <= rng.Next(8);
+                if (!dark && light <= 8) { lm.Stats.RejNoGround++; return; } // neither pool qualifies
                 byte[] pool = dark ? monsterTypes : animalTypes;
                 type = pool[rng.Next(pool.Length)];
                 // the genuine per-kind cap for the pool the light rule picked
@@ -1570,7 +1689,15 @@ namespace MCGalaxy.Network
                 kindCount = CountKind(lm, !dark);
                 if (kindCount >= kindCap) { lm.Stats.RejCap++; return; }
             } else {
-                type = (byte)rng.Next(SPAWN_TYPES); // c0.30 has no light rule
+                // MobSpawner.spawn: a LIT candidate survives only 1 attempt in 5.
+                // (The old comment here claimed c0.30 had no light rule at all,
+                // which is wrong - the client's own port cites the same method.)
+                // Nothing else held daytime surface spawns back either: undead
+                // sunburn and the accelerated daylight despawn are both Indev-only.
+                if (LightAtSpawn(lvl, x, y, z) > 7 && rng.Next(5) != 0) {
+                    lm.Stats.RejNoGround++; return;
+                }
+                type = (byte)rng.Next(SPAWN_TYPES);
             }
 
             // scatter a small same-type cluster around the point (up to 3 in
@@ -1601,6 +1728,14 @@ namespace MCGalaxy.Network
                 if (collide != CollideType.WalkThrough) return false;
             }
             return true;
+        }
+
+        // Real light level at a spawn candidate: the growth engine already runs a
+        // full sky + block-light flood (torch 14 / lava 15 / furnace 13), so
+        // torches genuinely suppress spawns. The old sky-only ColumnLit could not
+        // see them, which is why a roofed, fully torch-lit base kept spawning.
+        static int LightAtSpawn(Level lvl, int x, int y, int z) {
+            return SurvivalGrowth.LightAt(lvl, x, y, z);
         }
 
         static bool ColumnLit(Level lvl, int x, int y, int z) {
@@ -1811,7 +1946,13 @@ namespace MCGalaxy.Network
                 lm.InitialSpawned = true;
                 if (!indev) InitialSpawnerRun(lvl, lm, (int)(volume / 6400));
             }
-            if (rng.Next(100) < Math.Min(area, 25) && lm.Mobs.Count < lm.Cap) {
+            // Spawn pressure used to be min(area,25)% per tick - pegged at 25% for
+            // any map >= 256x128x256, which saturated the whole cap from empty in
+            // about 13 seconds. It now depends only on how far below cap we are,
+            // so a map fills in gradually and at the same pace whatever its size.
+            int room   = lm.Cap - lm.Mobs.Count;
+            int chance = room <= 0 ? 0 : Math.Min(20, 1 + (room * 20) / Math.Max(1, lm.Cap));
+            if (rng.Next(100) < chance) {
                 lm.Stats.Rolls++;
                 // ring centres come from ANY player, so a classic-only map still
                 // feels alive; hostile targeting stays survival-clients-only
@@ -1905,6 +2046,11 @@ namespace MCGalaxy.Network
                 if (m.DeathTicks > 20) {
                     // c0.30 creepers blow up when their corpse window closes
                     if (Types[m.Type].IsCreeper && !indev) CreeperExplode(lvl, lm, m, 4.0f);
+                    // SkeletonAI.beforeRemove: a dying c0.30 skeleton sprays its
+                    // remaining arrows in every direction, and they are pickupable.
+                    // Without this the MP bow economy is one-directional - a quiver
+                    // can only ever shrink, while singleplayer nets 4-9 per kill.
+                    if (m.Type == TYPE_SKELETON && !indev) SkeletonDeathBurst(lvl, m, lm.Rng);
                     return false;
                 }
                 // corpse: no AI, but gravity still settles the body
@@ -1921,8 +2067,8 @@ namespace MCGalaxy.Network
             {
                 int hx = (int)Math.Floor(m.X), hz = (int)Math.Floor(m.Z);
                 int hy = (int)Math.Floor(m.Y + Height(lvl, m) * 0.85);
-                byte collide = lvl.CollideType(BlockAt(lvl, hx, hy, hz));
-                headUnder = collide == CollideType.LiquidWater || collide == CollideType.SwimThrough;
+                // drowning is WATER only - lava kills by burning, not by suffocation
+                headUnder = IsWaterBlock(lvl, BlockAt(lvl, hx, hy, hz));
             }
             if (headUnder) {
                 m.AirTicks--;
@@ -1939,6 +2085,8 @@ namespace MCGalaxy.Network
                     m.Fire--;
                 }
                 if (inLava) m.Fire = 600;
+                // Entity.move's isBoundingBoxBurning: standing in fire lights you
+                if (m.Fire <= 0 && !inWater && InFire(lvl, m)) m.Fire = 300;
                 // undead burn in daylight (EntityZombie/EntitySkeleton.onLivingUpdate),
                 // with the brightness approximated as sky exposure x day/night
                 if ((m.Type == TYPE_ZOMBIE || m.Type == TYPE_SKELETON) &&

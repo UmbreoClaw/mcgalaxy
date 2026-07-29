@@ -193,6 +193,15 @@ namespace MCGalaxy.Network
             SpawnC030(lvl, eyeX, eyeY, eyeZ, dx, dy, dz, 1.0, 3, 1, null, mobId);
         }
 
+        /// <summary> A dying c0.30 skeleton's parting arrow (SkeletonAI.beforeRemove):
+        /// force 0.4, damage 7, and player-owned so the arrows can be picked up. </summary>
+        public static void FireDeathBurst(Level lvl, double eyeX, double eyeY, double eyeZ,
+                                          double yawDeg, double pitchDeg) {
+            double dx, dy, dz;
+            AimVector(yawDeg, pitchDeg, out dx, out dy, out dz);
+            SpawnC030(lvl, eyeX, eyeY, eyeZ, dx, dy, dz, 0.4, 7, 0, null, 0);
+        }
+
         /// <summary> An Indev skeleton looses an arrow (Mob_IndevShootArrow: the RAW
         /// unnormalized aim vector into setArrowHeading speed 0.6 / spread 12, flat 4
         /// damage, type 0). aim is target-relative (with the lob already applied by the
