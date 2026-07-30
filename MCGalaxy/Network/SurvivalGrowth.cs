@@ -219,13 +219,18 @@ namespace MCGalaxy.Network
         // ==================== block-light flood ====================
         //
         // A BFS from every emitter, attenuating 1 per cell and only spreading
-        // into cells that pass light (open air, sprites, crops). Torch 14,
-        // fire/lava 15, lit furnace 13 - the genuine lamp values. Re-flooded
+        // into cells that pass light (open air, sprites, crops). Re-flooded
         // lazily (>=1s stale) so a placed torch lights crops within a second.
+        //
+        // The values are Block.lightValue, which genuine fills as
+        // (int)(15.0F * setLightValue's argument) - so the torch and the lit
+        // furnace both register setLightValue(14/16) and both land on
+        // (int)13.125 = 13, NOT 14. Fire and lava pass 1.0F and get 15;
+        // mushroomBrown passes 2/16 and gets (int)1.875 = 1.
 
         static int Emission(ushort v) {
-            if (v == SurvivalBlocks.TORCH) return 14;
-            if (v >= SurvivalBlocks.TORCH_W1 && v <= SurvivalBlocks.TORCH_W4) return 14;
+            if (v == SurvivalBlocks.TORCH) return 13;
+            if (v >= SurvivalBlocks.TORCH_W1 && v <= SurvivalBlocks.TORCH_W4) return 13;
             if (v == SurvivalBlocks.FIRE) return 15;
             if (v == SurvivalBlocks.LAVA_SOURCE) return 15;
             if (v == Block.Lava || v == Block.StillLava) return 15;

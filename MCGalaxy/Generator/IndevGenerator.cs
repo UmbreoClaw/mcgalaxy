@@ -722,11 +722,23 @@ namespace MCGalaxy.Generator
             if (b == Block.Leaves) return 1;
             return WROpaque(b) ? 255 : 0;
         }
+        // Block.lightValue = (int)(15.0F * setLightValue's argument), so the
+        // torch's setLightValue(14/16) is (int)13.125 = 13, not 14.
         static int WRLightValue(byte b) {
             if (b == Block.Lava || b == Block.StillLava) return 15;
-            if (b == TORCH)          return 14;
+            if (b == TORCH)          return 13;
             if (b == Block.Mushroom) return 1; // brown mushroom's faint glow
             return 0;
+        }
+
+        // BlockFire's setBurnRate table: a still liquid also wakes when the
+        // block that changed beside it is flammable. Only planks, logs and
+        // leaves of this set are ever generated; wool/bookshelf/TNT are listed
+        // because the genuine predicate is the whole table.
+        static bool WREncouragesFire(byte b) {
+            if (b == Block.Wood || b == Block.Log || b == Block.Leaves) return true;
+            if (b == Block.TNT  || b == Block.Bookshelf)                return true;
+            return b >= Block.Red && b <= Block.White; // clothRed + 0..15
         }
 
         // World.getBlockId - out-of-range coordinates CLAMP to the map edge
@@ -891,6 +903,9 @@ namespace MCGalaxy.Generator
                     return;
                 }
             }
+            // genuine checks the fire table AFTER the lava/water case, so a
+            // shoreline tree waking the sea beside it still counts
+            if (WREncouragesFire(changed)) can = true;
             if (can) WRSetTileNoUpdate(x, y, z, isWater ? Block.Water : Block.Lava);
         }
 
