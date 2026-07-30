@@ -408,6 +408,26 @@ namespace MCGalaxy.Network
             return CollideType.IsSolid(lvl.CollideType(BlockAt(lvl, x, y, z)));
         }
 
+        /// <summary> Height of a block's collision top face, 0..1. The Indev set is
+        /// pushed to clients as CPE BlockDefinitions whose MaxZ IS the height
+        /// (DefaultSet assigns def.MaxZ = Height(b)), so a slab really is half a
+        /// block tall. Without this every partial block was a full cube to a mob,
+        /// which is what made the step-up below pointless. </summary>
+        static double BlockTop(Level lvl, ushort block) {
+            BlockDefinition def = lvl.GetBlockDef(block);
+            if (def == null) return 1.0;
+            double top = def.MaxZ / 16.0;
+            return top <= 0 ? 1.0 : top;
+        }
+
+        // Genuine Entity.footSize. Verified against the real c0.30 client jar:
+        // Entity.<init> sets footSize = 0.0F, and Mob.<init> raises it to 0.5F -
+        // and Zombie/Skeleton/Creeper/Spider/Pig/Sheep (and Player) all descend
+        // from Mob, so every mob steps up half a block. The client has always had
+        // this; the server never did, so MP mobs stalled on slabs that SP mobs
+        // walked straight over.
+        const double STEP_SIZE = 0.5;
+
         static bool BoxFree(Level lvl, SurvMob m, double x, double y, double z) {
             float w = Width(lvl, m) / 2, h = Height(lvl, m);
             int minX = (int)Math.Floor(x - w), maxX = (int)Math.Floor(x + w - 0.001);
@@ -423,7 +443,11 @@ namespace MCGalaxy.Network
                 for (int bz = minZ; bz <= maxZ; bz++)
                     for (int bx = minX; bx <= maxX; bx++)
             {
-                if (IsSolidAt(lvl, bx, by, bz)) return false;
+                ushort b = BlockAt(lvl, bx, by, bz);
+                if (!CollideType.IsSolid(lvl.CollideType(b))) continue;
+                // real vertical overlap against the block's own top face, so a
+                // half-height block only blocks the lower half of its cell
+                if (y < by + BlockTop(lvl, b)) return false;
             }
             return true;
         }
@@ -534,7 +558,38 @@ namespace MCGalaxy.Network
         // then Z, zeroing a clipped axis). c0.30 mobs have no step-up assist
         // (Entity.footSize is only set on Player) - they jump instead.
         static void MoveClipped(Level lvl, SurvMob m) {
-            double dx = m.VX, dy = m.VY, dz = m.VZ;
+            bool wasOnGround = m.OnGround;
+            double ox = m.X, oy = m.Y, oz = m.Z;
+            double dx0 = m.VX, dy0 = m.VY, dz0 = m.VZ;
+
+            bool hitX, hitZ;
+            MoveSweep(lvl, m, dx0, dy0, dz0, out hitX, out hitZ);
+            if (!wasOnGround || (!hitX && !hitZ)) return;
+
+            // Entity.move's step-up, verbatim: on a horizontal clip while grounded,
+            // retry the WHOLE move from the original box with ya = footSize, and
+            // keep whichever attempt travelled further horizontally
+            // (genuine: if (xt*xt + zt*zt >= xa*xa + za*za) restore the first try).
+            double px = m.X, py = m.Y, pz = m.Z;
+            double pvx = m.VX, pvy = m.VY, pvz = m.VZ;
+            bool pGround = m.OnGround;
+
+            m.X = ox; m.Y = oy; m.Z = oz;
+            m.VX = dx0; m.VY = dy0; m.VZ = dz0;
+            bool sHitX, sHitZ;
+            MoveSweep(lvl, m, dx0, STEP_SIZE, dz0, out sHitX, out sHitZ);
+
+            double plain   = (px - ox) * (px - ox) + (pz - oz) * (pz - oz);
+            double stepped = (m.X - ox) * (m.X - ox) + (m.Z - oz) * (m.Z - oz);
+            if (plain >= stepped) {
+                m.X = px; m.Y = py; m.Z = pz;
+                m.VX = pvx; m.VY = pvy; m.VZ = pvz;
+                m.OnGround = pGround;
+            }
+        }
+
+        static void MoveSweep(Level lvl, SurvMob m, double dx, double dy, double dz,
+                              out bool clipX, out bool clipZ) {
             double biggest = Math.Max(Math.Abs(dx), Math.Max(Math.Abs(dy), Math.Abs(dz)));
             int steps = (int)Math.Ceiling(biggest / 0.25);
             if (steps < 1) steps = 1;
@@ -557,6 +612,7 @@ namespace MCGalaxy.Network
                     else { hitZ = true; m.VZ = 0; }
                 }
             }
+            clipX = hitX; clipZ = hitZ;
         }
 
         static void Travel(Level lvl, SurvMob m, bool inWater, bool inLava) {
