@@ -661,7 +661,14 @@ namespace MCGalaxy.Network
             if (!Types[m.Type].Passive) {
                 if (attacker != null)         { m.Target = attacker; m.TargetMob = null; }
                 else if (attackerMob != null) {
-                    m.TargetMob = attackerMob; m.Target = null;
+                    // c0.30 BasicAttackAI.hurt exempts one's own species, so a
+                    // stray skeleton arrow turns a zombie on the skeleton but
+                    // skeletons never fight each other. Indev's
+                    // EntityMob.attackEntityFrom retaliates against anything.
+                    bool indevMode = lvl.Config.SurvivalMode == SurvivalMode.Indev;
+                    if (indevMode || attackerMob.Type != m.Type) {
+                        m.TargetMob = attackerMob; m.Target = null;
+                    }
                 }
             }
             m.NoActionTime = 0;
@@ -1033,9 +1040,18 @@ namespace MCGalaxy.Network
                 m.Target = null; target = null;
             }
 
+            // A mob victim (arrow retaliation / infighting melee). HurtMob keeps
+            // Target and TargetMob mutually exclusive, so while an infight is live
+            // it takes precedence over hunting players - the same precedence the
+            // Indev AI already applied. (The old note here claimed there was no
+            // source of mob-vs-mob aggro; TryArrowHitMob has resolved the shooting
+            // mob and passed it to HurtMob for a long time.)
+            SurvMob tmob = m.TargetMob;
+            if (tmob != null && (tmob.Dead || tmob.Health <= 0)) { m.TargetMob = null; tmob = null; }
+
             // Only players are acquired by proximity (aggroRange = 16); mob-vs-mob
-            // aggro comes from being hurt, which v1 doesn't have a source for yet.
-            if (target == null) {
+            // aggro only ever comes from being hurt, never from proximity.
+            if (target == null && tmob == null) {
                 double bestSq = 256.0;
                 foreach (Player p in watchers)
                 {
@@ -1062,13 +1078,19 @@ namespace MCGalaxy.Network
                 }
             }
 
-            double tx = target.Pos.X / 32.0, ty = (target.Pos.Y - Entities.CharacterHeight) / 32.0,
-                   tz = target.Pos.Z / 32.0;
+            double tx, ty, tz;
+            if (tmob != null) {
+                tx = tmob.X; ty = tmob.Y; tz = tmob.Z;
+            } else {
+                tx = target.Pos.X / 32.0; ty = (target.Pos.Y - Entities.CharacterHeight) / 32.0;
+                tz = target.Pos.Z / 32.0;
+            }
             double ddx = tx - m.X, ddy = ty - m.Y, ddz = tz - m.Z;
             double dSq = ddx * ddx + ddy * ddy + ddz * ddz;
             double dist = Math.Sqrt(dSq);
 
-            if (dSq > 1024.0 && rng.Next(100) == 0) { m.Target = null; return; } // 2x range give-up
+            // 2x range give-up, for either kind of victim
+            if (dSq > 1024.0 && rng.Next(100) == 0) { m.Target = null; m.TargetMob = null; return; }
 
             // face the victim (BasicAttackAI.doAttack); pitch's adjacent is the
             // full 3D distance - the genuine mild under-pitch quirk
@@ -1081,11 +1103,14 @@ namespace MCGalaxy.Network
             m.MoveForward = speed;
             if (rng.Next(100) < 4) m.Jumping = true;
 
-            if (indev) IndevAttack(lvl, lm, m, target, dist, rng);
-            else       ClassicAttack(lvl, lm, m, target, dSq, rng);
+            // (indev is always false here - the Indev AI has its own entry point -
+            // but the null guard keeps the mob-victim path safe if that changes)
+            if (indev) { if (target != null) IndevAttack(lvl, lm, m, target, dist, rng); }
+            else       ClassicAttack(lvl, lm, m, target, tmob, dSq, rng);
         }
 
-        static void ClassicAttack(Level lvl, LevelMobs lm, SurvMob m, Player target, double dSq, Random rng) {
+        static void ClassicAttack(Level lvl, LevelMobs lm, SurvMob m, Player target,
+                                  SurvMob targetMob, double dSq, Random rng) {
             // c0.30 SkeletonAI.tick: a targeted skeleton has a 1/30 per-tick chance to
             // loose an arrow (Mob_ShootArrow), on top of - not instead of - the melee
             // below, at any range. Fired from the eye with the genuine asymmetric
@@ -1099,22 +1124,34 @@ namespace MCGalaxy.Network
 
             MobType info = Types[m.Type];
             if (dSq >= 4.0 || m.AttackDelay > 0) return;
+
+            // victim eye, whichever kind it is
+            double vx, vy, vz;
+            if (targetMob != null) {
+                vx = targetMob.X; vy = targetMob.Y + Types[targetMob.Type].HeightOff; vz = targetMob.Z;
+            } else {
+                vx = target.Pos.X / 32.0;
+                vy = (target.Pos.Y - Entities.CharacterHeight) / 32.0 + 1.62;
+                vz = target.Pos.Z / 32.0;
+            }
             // BasicAttackAI.attack clips eye-to-eye before swinging, so a wall
             // stops the blow. The server had the DDA (SightBlocked) but only
             // wired it into the Indev path, so on a c0.30 map mobs hit straight
             // through walls - walling yourself in for the night, the whole point
             // of c0.30 survival, did nothing. Return WITHOUT arming AttackDelay,
             // exactly as the client does (a blocked mob does not even swing).
-            if (SightBlocked(lvl, m.X, m.Y + info.HeightOff, m.Z,
-                             target.Pos.X / 32.0,
-                             (target.Pos.Y - Entities.CharacterHeight) / 32.0 + 1.62,
-                             target.Pos.Z / 32.0)) return;
+            if (SightBlocked(lvl, m.X, m.Y + info.HeightOff, m.Z, vx, vy, vz)) return;
 
             m.AttackDelay  = 10 + rng.Next(20);
             m.NoActionTime = 0;
             int damage = (int)((rng.NextDouble() + rng.NextDouble()) / 2.0 * info.Damage + 1.0);
-            if (SurvivalNet.DamagePlayer(target, damage, "@p was slain by a " + info.Name))
+            if (targetMob != null) {
+                // pass ourselves as the attacker so the victim aggros back and the
+                // fight becomes mutual (BasicAttackAI.hurt)
+                HurtMob(lvl, lm, targetMob, null, damage, m);
+            } else if (SurvivalNet.DamagePlayer(target, damage, "@p was slain by a " + info.Name)) {
                 SurvivalNet.KnockbackPlayer(target, target.Pos.X / 32.0 - m.X, target.Pos.Z / 32.0 - m.Z);
+            }
 
             // CreeperAI.attack: headbutting hurts the creeper WITH ITS VICTIM AS
             // CAUSE; the self-damage death triggers the c0.30 death-explosion.
@@ -1125,7 +1162,7 @@ namespace MCGalaxy.Network
                     m.LastHealth = m.Health; m.InvincTicks = 20;
                     m.Health -= 6; m.HurtThisTick = true;
                 }
-                if (m.Health <= 0) KillMob(lvl, lm, m, target);
+                if (m.Health <= 0) KillMob(lvl, lm, m, targetMob != null ? null : target);
             }
         }
 
@@ -2124,7 +2161,7 @@ namespace MCGalaxy.Network
             }
 
             // ---- physics ----
-            bool spiderLunge = m.Type == TYPE_SPIDER && m.Target != null;
+            bool spiderLunge = m.Type == TYPE_SPIDER && (m.Target != null || m.TargetMob != null);
             DoJump(m, inWater, inLava, spiderLunge);
             m.MoveStrafe *= 0.98f; m.MoveForward *= 0.98f; m.TurnRate *= 0.9f;
             double oldY = m.Y;
