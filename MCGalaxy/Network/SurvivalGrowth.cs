@@ -187,6 +187,15 @@ namespace MCGalaxy.Network
             return y > Heightmap(lvl, x, z);
         }
 
+        /// <summary> Sky exposure alone, with no block light and no time of day
+        /// mixed in - c0.30's Level.isLit, which the c0.30 mob spawner tests
+        /// directly. Genuine stores the highest light blocker's own y and returns
+        /// "y >= that", so the blocker's cell reads as lit; the heightmap here
+        /// already parks one below an opaque cube for exactly that reason. </summary>
+        internal static bool SkyExposed(Level lvl, int x, int y, int z) {
+            return IsLit(lvl, x, y, z);
+        }
+
         // Genuine getBlockLightValue: the greater of the (eased) sky light where
         // the cell sees the sky, and the flooded block light from lamps.
         static int LightLevel(Level lvl, LevelGrowth g, int x, int y, int z) {

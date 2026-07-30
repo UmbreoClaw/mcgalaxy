@@ -376,9 +376,13 @@ namespace MCGalaxy.Network
 
         // (int)((rand + rand) * 3 + 4) = 4..9 arrows, from the eye, random yaw and
         // an upward-biased pitch. Player-owned so they can be recovered.
+        //
+        // Spawns at genuine "y - 0.2F", and Entity.y is NOT the feet: Entity.move
+        // recomputes it as bb.y0 + heightOffset - ySize, so it is feet + heightOffset.
+        // SurvMob.Y is the feet, hence the HeightOff term.
         static void SkeletonDeathBurst(Level lvl, SurvMob m, Random rng) {
             int count = (int)((rng.NextDouble() + rng.NextDouble()) * 3.0 + 4.0);
-            double eye = m.Y + Height(lvl, m) * 0.85 - 0.2;
+            double eye = m.Y + Types[m.Type].HeightOff - 0.2;
             for (int i = 0; i < count; i++)
             {
                 double yaw   = rng.NextDouble() * 360.0;
@@ -1785,8 +1789,25 @@ namespace MCGalaxy.Network
                 // model means a torch-lit cave stops spawning, which a sky-only
                 // test could never do.
                 int light = LightAtSpawn(lvl, x, y, z);
-                bool dark = light <= rng.Next(8);
-                if (!dark && light <= 8) { lm.Stats.RejNoGround++; return; } // neither pool qualifies
+                bool dark = light <= rng.Next(8); // EntityMob.getCanSpawnHere
+                if (!dark) {
+                    // EntityAnimal.getCanSpawnHere needs light > 8, and
+                    // EntityCreature.getCanSpawnHere additionally demands
+                    // getBlockPathWeight >= 0, which for an animal is
+                    //     grass below ? 10 : lightBrightness - 0.5
+                    // so on anything but grass it also needs brightness >= 0.5 -
+                    // light >= 12 on the genuine lightBrightnessTable curve
+                    // (11 -> 0.437, 12 -> 0.525). Without this animals spawned on
+                    // bare stone, sand and gravel that genuine refuses.
+                    //
+                    // Monsters get the same path-weight gate (0.5 - brightness >= 0,
+                    // i.e. light <= 11), but rand(8) has already capped them at 7,
+                    // so it can never fire - no branch needed above.
+                    if (light <= 8) { lm.Stats.RejNoGround++; return; }
+                    if (light < 12 && BlockAt(lvl, x, y - 1, z) != Block.Grass) {
+                        lm.Stats.RejNoGround++; return;
+                    }
+                }
                 byte[] pool = dark ? monsterTypes : animalTypes;
                 type = pool[rng.Next(pool.Length)];
                 // the genuine per-kind cap for the pool the light rule picked
@@ -1799,7 +1820,12 @@ namespace MCGalaxy.Network
                 // which is wrong - the client's own port cites the same method.)
                 // Nothing else held daytime surface spawns back either: undead
                 // sunburn and the accelerated daylight despawn are both Indev-only.
-                if (LightAtSpawn(lvl, x, y, z) > 7 && rng.Next(5) != 0) {
+                //
+                // "Lit" here is Level.isLit, which is PURE SKY EXPOSURE - the
+                // per-column light-height map, nothing else. c0.30 has no block
+                // light and no day/night cycle, so unlike Indev a torch does not
+                // suppress spawning and the time of day is irrelevant.
+                if (SkyExposed(lvl, x, y, z) && rng.Next(5) != 0) {
                     lm.Stats.RejNoGround++; return;
                 }
                 type = (byte)rng.Next(SPAWN_TYPES);
@@ -1841,6 +1867,13 @@ namespace MCGalaxy.Network
         // see them, which is why a roofed, fully torch-lit base kept spawning.
         static int LightAtSpawn(Level lvl, int x, int y, int z) {
             return SurvivalGrowth.LightAt(lvl, x, y, z);
+        }
+
+        /// <summary> c0.30 Level.isLit: purely whether the cell is open to the sky.
+        /// No block light and no day/night - c0.30 has neither. Shares the growth
+        /// tick's sky heightmap so the two agree on what blocks the sky. </summary>
+        static bool SkyExposed(Level lvl, int x, int y, int z) {
+            return SurvivalGrowth.SkyExposed(lvl, x, y, z);
         }
 
         static bool ColumnLit(Level lvl, int x, int y, int z) {
