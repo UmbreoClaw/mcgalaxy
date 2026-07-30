@@ -114,6 +114,10 @@ namespace MCGalaxy.Network
             public short[] PathX, PathY, PathZ;
             public int PathCount, PathIndex;
             public SurvMob TargetMob;
+            // Entity.ySize: the step-up smoothing offset. Genuine gates the next
+            // step on ySize < 0.05 and decays it *0.4 each move, so a mob that
+            // just stepped cannot step again for ~3 ticks.
+            public double YSize;
 
             // last-streamed snapshot, so MOVE/STATE only go out on change
             public short SentX = short.MinValue, SentY, SentZ;
@@ -564,7 +568,13 @@ namespace MCGalaxy.Network
 
             bool hitX, hitZ;
             MoveSweep(lvl, m, dx0, dy0, dz0, out hitX, out hitZ);
-            if (!wasOnGround || (!hitX && !hitZ)) return;
+            m.YSize *= 0.4; // Entity.move's tail: ySize *= 0.4F
+
+            // Genuine gate (Entity.move): stepHeight > 0
+            //   && (onGround || the downward move was clipped, i.e. we just landed)
+            //   && ySize < 0.05 && the horizontal move was clipped.
+            bool grounded = wasOnGround || m.OnGround;
+            if (!grounded || m.YSize >= 0.05 || (!hitX && !hitZ)) return;
 
             // Entity.move's step-up, verbatim: on a horizontal clip while grounded,
             // retry the WHOLE move from the original box with ya = footSize, and
@@ -585,6 +595,8 @@ namespace MCGalaxy.Network
                 m.X = px; m.Y = py; m.Z = pz;
                 m.VX = pvx; m.VY = pvy; m.VZ = pvz;
                 m.OnGround = pGround;
+            } else {
+                m.YSize += 0.5; // the step landed - hold off the next one
             }
         }
 
