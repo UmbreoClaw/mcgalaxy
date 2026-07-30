@@ -244,6 +244,33 @@ namespace MCGalaxy.Network
             }
         }
 
+        // A level being GENERATED is not in LevelInfo.Loaded, so the prune sweep
+        // at the end of every tick would drop every Level-keyed registry the
+        // generator touches - within 50ms, and repeatedly. That costs more than
+        // the mobs: SurvivalGrowth's light flood is one of those registries, and
+        // the spawner asks it for a light level on every single attempt, so an
+        // unpinned generation would rebuild the whole flood dozens of times.
+        //
+        // A pin adds the level to the set the prune treats as live, for exactly
+        // as long as the generation step holds it, and nothing else. It does NOT
+        // make the level tick - TickCore still iterates LevelInfo.Loaded.
+        static readonly HashSet<Level> pinned = new HashSet<Level>();
+
+        internal static void Pin(Level lvl)   { lock (registryLock) pinned.Add(lvl); }
+        internal static void Unpin(Level lvl) { lock (registryLock) pinned.Remove(lvl); }
+
+        static Level[] PruneKeep(Level[] loaded) {
+            lock (registryLock) {
+                if (pinned.Count == 0) return loaded;
+                List<Level> keep = new List<Level>(loaded);
+                foreach (Level lvl in pinned)
+                {
+                    if (Array.IndexOf(loaded, lvl) < 0) keep.Add(lvl);
+                }
+                return keep.ToArray();
+            }
+        }
+
         /// <summary> Streams every live mob on the level to a player (their per-map
         /// handshake). Called from SurvivalNet.SendHandshake. </summary>
         public static void SendLevelMobs(Player p, Level lvl) {
@@ -1735,29 +1762,121 @@ namespace MCGalaxy.Network
         static readonly byte[] monsterTypes = { TYPE_ZOMBIE, TYPE_SKELETON, TYPE_CREEPER, TYPE_SPIDER };
         static readonly byte[] animalTypes  = { TYPE_PIG, TYPE_SHEEP };
 
-        // The merged-cap era could leave a map with far more animals than the
-        // genuine cap ever allows, and passives never despawn naturally. Cull
-        // one animal per call - the one farthest from every player - until the
-        // herd is back at the genuine cap. No loot: population correction, not
-        // a kill.
-        static void TrimExcessAnimals(Level lvl, LevelMobs lm, Player[] viewers) {
-            if (CountKind(lm, true) <= IndevAnimalCap(lvl)) return;
+        /// <summary> LevelGenerator's "Spawning.." phase: the 1000
+        /// MobSpawner.performSpawning passes that leave a freshly generated Indev
+        /// world already populated, instead of empty until players arrive and the
+        /// top-up spawner fills it. The client's own generator already does this
+        /// (SurvivalTest_IndevInitialSpawn), so without it a map generated in
+        /// singleplayer and the same map on the server disagreed on day one.
+        /// </summary>
+        /// <remarks> Genuine's spawner is written around the player, but its
+        /// distance test has an explicit no-player branch that measures from the
+        /// LEVEL SPAWN POINT instead - which is the branch that runs at generation
+        /// time, since the EntityPlayer does not exist yet. That is why a
+        /// generated world's mobs are never sitting on top of the spawn house.
+        ///
+        /// Two things cannot come from the runtime spawner here. EffectiveCap is
+        /// a per-PLAYER budget and there are no players, so it would resolve to a
+        /// single player's 32 whatever the map size; the genuine per-kind caps are
+        /// used instead, exactly as performSpawning does. And the caller must have
+        /// Pin()ned the level first - it is not in LevelInfo.Loaded, so the prune
+        /// sweep would otherwise drop everything this builds. </remarks>
+        public static void PrePopulate(Level lvl, int attempts) {
+            if (lvl == null || lvl.Config.SurvivalMode != SurvivalMode.Indev) return;
+            LevelMobs lm = GetLevel(lvl, true);
 
-            SurvMob far = null; double farD = -1;
+            lock (lm.Mobs) {
+                // the map arrives already primed, so the first live tick must not
+                // run the c0.30 initial burst on top of it
+                lm.InitialSpawned = true;
+                // per-kind caps do the limiting; TrimExcessMobs walks the result
+                // down to the real budget once somebody actually joins
+                lm.Cap = MAX_MOBS_PER_LEVEL;
+
+                Random rng = lm.Rng;
+                int monsterCap = Math.Min(IndevMonsterCap(lvl), MAX_MOBS_PER_LEVEL);
+                int animalCap  = Math.Min(IndevAnimalCap(lvl),  MAX_MOBS_PER_LEVEL);
+
+                for (int i = 0; i < attempts; i++)
+                {
+                    if (CountKind(lm, false) >= monsterCap &&
+                        CountKind(lm, true)  >= animalCap) break; // both pools full
+                    if (lm.Mobs.Count >= MAX_MOBS_PER_LEVEL) break;
+
+                    int x = rng.Next(lvl.Width);
+                    int z = rng.Next(lvl.Length);
+                    // performSpawning's else branch: >= 32 blocks from the spawn
+                    double sx = lvl.spawnx - (x + 0.5), sz = lvl.spawnz - (z + 0.5);
+                    if (sx * sx + sz * sz < 1024.0) continue;
+                    TrySpawnCluster(lvl, lm, x, z);
+                }
+            }
+        }
+
+        // Population correction, against three ceilings at once:
+        //
+        //   * the genuine per-kind caps - animals W*L/4000, monsters
+        //     volume*20/64^3/2. The spawner enforces these on the way in, but
+        //     nothing enforced them on a map that predates them.
+        //   * lm.Cap, our per-PLAYER budget. PrePopulate fills a new world to
+        //     the genuine caps with nobody online, so the first lone player to
+        //     join can find several times their own budget already standing.
+        //
+        // The genuine BasicAI despawn roll drains monsters on its own, but only
+        // at 1-in-800 once a mob has idled 30s, and passives never despawn at
+        // all - far too slow to walk a seeded world back down. This does it
+        // directly, always taking the mob FARTHEST from the nearest player and
+        // never one inside the same 32 blocks the despawn roll protects, so a
+        // cull is never something anybody could see. No loot: it is a
+        // population correction, not a kill.
+        const int TRIM_MAX_PER_PASS = 8;
+
+        static void TrimExcessMobs(Level lvl, LevelMobs lm, Player[] viewers) {
+            for (int n = 0; n < TRIM_MAX_PER_PASS; n++)
+            {
+                int animals = CountKind(lm, true), monsters = CountKind(lm, false);
+                int overAnimals  = animals  - IndevAnimalCap(lvl);
+                int overMonsters = monsters - IndevMonsterCap(lvl);
+                int overBudget   = animals + monsters - lm.Cap;
+                if (overAnimals <= 0 && overMonsters <= 0 && overBudget <= 0) return;
+
+                // take from whichever kind is furthest over its OWN cap; if only
+                // the shared budget is over, from whichever kind there is more of
+                bool passive = (overAnimals > 0 || overMonsters > 0)
+                    ? overAnimals >= overMonsters
+                    : animals >= monsters;
+
+                // one per pass while barely over, faster the further over we are,
+                // so a generation seed converges in seconds and a live map that
+                // drifts one mob past its cap stays gentle
+                int excess = Math.Max(overBudget, Math.Max(overAnimals, overMonsters));
+                if (n > 0 && n >= excess / 16) return;
+
+                SurvMob far = FarthestFromPlayers(lm, viewers, passive);
+                if (far == null) return; // nothing far enough away to take quietly
+                far.Health = 0; far.Dead = true; far.DeathTicks = 0;
+            }
+        }
+
+        // The live mob of the given kind whose nearest player is furthest away,
+        // ignoring anything within the despawn roll's own 32-block guard.
+        static SurvMob FarthestFromPlayers(LevelMobs lm, Player[] viewers, bool passive) {
+            SurvMob far = null; double farD = 1024.0;
             foreach (SurvMob m in lm.Mobs)
             {
-                if (m.Dead || !Types[m.Type].Passive) continue;
-                double d = 0;
+                if (m.Dead || Types[m.Type].Passive != passive) continue;
+                double nearest = double.MaxValue;
                 foreach (Player p in viewers)
                 {
-                    double dx = p.Pos.X / 32.0 - m.X, dz = p.Pos.Z / 32.0 - m.Z;
-                    double d2 = dx * dx + dz * dz;
-                    if (d == 0 || d2 < d) d = d2;
+                    double dx = p.Pos.X / 32.0 - m.X;
+                    double dy = (p.Pos.Y - Entities.CharacterHeight) / 32.0 - m.Y;
+                    double dz = p.Pos.Z / 32.0 - m.Z;
+                    double d2 = dx * dx + dy * dy + dz * dz;
+                    if (d2 < nearest) nearest = d2;
                 }
-                if (d > farD) { farD = d; far = m; }
+                if (nearest > farD) { farD = nearest; far = m; }
             }
-            if (far == null) return;
-            far.Health = 0; far.Dead = true; far.DeathTicks = 0;
+            return far;
         }
 
         // The old fully-random Y wasted ~97% of attempts underground or in the air
@@ -2037,11 +2156,14 @@ namespace MCGalaxy.Network
             // /Track readouts ride the same 20 Hz cadence (4 Hz internally)
             SurvivalTrack.Tick();
 
-            // prune registries for levels no longer loaded
+            // Prune registries for levels no longer loaded. Levels pinned for
+            // generation count as live here (and ONLY here - they never tick),
+            // so a map still being built keeps the state it is building.
+            Level[] keep = PruneKeep(loaded);
             lock (registryLock) {
                 foreach (KeyValuePair<Level, LevelMobs> kvp in registry)
                 {
-                    if (Array.IndexOf(loaded, kvp.Key) < 0) {
+                    if (Array.IndexOf(keep, kvp.Key) < 0) {
                         if (dead == null) dead = new List<Level>();
                         dead.Add(kvp.Key);
                     }
@@ -2051,13 +2173,13 @@ namespace MCGalaxy.Network
             // the container registry is Level-keyed the same way and must be
             // pruned on unload too, or unloaded Levels (and their block arrays)
             // leak forever as dictionary keys
-            SurvivalInventory.PruneRegistry(loaded);
-            SurvivalDrops.Prune(loaded); // drop registries are Level-keyed the same way
-            SurvivalArrows.Prune(loaded);
-            SurvivalTnt.Prune(loaded);   // primed-TNT registries are Level-keyed too
-            SurvivalGrowth.Prune(loaded); // growth/light caches are Level-keyed too
-            SurvivalPhysics.Prune(loaded); // fire/fluid schedules are Level-keyed too
-            SurvivalPaintings.Prune(loaded); // painting registries are Level-keyed too
+            SurvivalInventory.PruneRegistry(keep);
+            SurvivalDrops.Prune(keep); // drop registries are Level-keyed the same way
+            SurvivalArrows.Prune(keep);
+            SurvivalTnt.Prune(keep);   // primed-TNT registries are Level-keyed too
+            SurvivalGrowth.Prune(keep); // growth/light caches are Level-keyed too
+            SurvivalPhysics.Prune(keep); // fire/fluid schedules are Level-keyed too
+            SurvivalPaintings.Prune(keep); // painting registries are Level-keyed too
             SurvivalInventory.FlushEquip(); // send equipment for entities that became visible this tick
         }
 
@@ -2096,10 +2218,11 @@ namespace MCGalaxy.Network
                 // feels alive; hostile targeting stays survival-clients-only
                 TopUpSpawnerRun(lvl, lm, viewers, 2); // column-scan attempts nearly always land
             }
-            // drain herds that pre-date the per-kind caps back down to the
-            // genuine animal cap: one animal per second, farthest from every
-            // player, so an over-populated live map quietly self-corrects
-            if (indev && lm.Stats.Ticks % 20 == 0) TrimExcessAnimals(lvl, lm, viewers);
+            // walk an over-populated map back down to its caps once a second -
+            // herds that pre-date the per-kind caps, and the generation-time
+            // seed, which fills to the GENUINE caps with nobody online and so
+            // always overshoots the first player's own budget
+            if (indev && lm.Stats.Ticks % 20 == 0) TrimExcessMobs(lvl, lm, viewers);
 
             for (int i = lm.Mobs.Count - 1; i >= 0; i--)
             {

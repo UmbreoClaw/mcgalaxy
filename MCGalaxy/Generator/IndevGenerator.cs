@@ -82,8 +82,9 @@ namespace MCGalaxy.Generator
             gen.player = p;
             gen.Run();
             gen.ApplyLevelSettings();
-            p.Message("Indev world ready: theme &b{0}&S, type &b{1}&S, seed &b{2}&S - spawn house at ({3}, {4}, {5}).",
-                      THEMES[theme], TYPES[type], args.Seed, gen.spawnX, gen.spawnY, gen.spawnZ);
+            int mobs = gen.SpawningPhase();
+            p.Message("Indev world ready: theme &b{0}&S, type &b{1}&S, seed &b{2}&S - spawn house at ({3}, {4}, {5}), &b{6}&S mobs.",
+                      THEMES[theme], TYPES[type], args.Seed, gen.spawnX, gen.spawnY, gen.spawnZ, mobs);
             return true;
         }
 
@@ -1303,6 +1304,54 @@ namespace MCGalaxy.Generator
             wrLight = null; wrHeightMap = null;
             heightmap = null; ffStack = null;
         }
+
+        // ==================== "Spawning.." ====================
+
+        // Genuine: 1000 MobSpawner.performSpawning calls x 4 attempts each. Ours
+        // scans a whole column per attempt instead of walking three jittered
+        // points, so an attempt is worth rather more - but it stops the moment
+        // both per-kind caps are full, which on any normal map is long before it
+        // runs out of attempts.
+        const int SPAWNING_ATTEMPTS = 4000;
+
+        /// <summary> The generator's final phase. Ordering here is the whole
+        /// point, and there are four constraints:
+        ///
+        ///   1. AFTER Run(). Genuine puts "Spawning.." last, after Lighting and
+        ///      every planting pass, so the spawner sees the finished world -
+        ///      trees, flowers, grass and all.
+        ///   2. AFTER ApplyLevelSettings(). The spawner branches on
+        ///      Config.SurvivalMode, measures from lvl.spawnx/y/z, and its
+        ///      standing-room test reads the CPE block definitions that
+        ///      SurvivalBlocks.Sync installs - none of which exist before it.
+        ///   3. INSIDE a Pin(). This Level is not in LevelInfo.Loaded and never
+        ///      will be (MapGen builds it, CmdNewLvl saves it, then disposes it),
+        ///      so the mob tick's prune sweep would drop the registries out from
+        ///      under us within 50ms - repeatedly, including the light flood the
+        ///      spawner queries on every attempt.
+        ///   4. The sidecar is written HERE, not left to the OnLevelSave that
+        ///      CmdNewLvl's Save() fires a moment later. That save would work,
+        ///      but only if the prune has not won the race in between; writing
+        ///      inside the pin makes it certain. The later OnLevelSave then just
+        ///      rewrites the same file.
+        /// </summary>
+        /// <returns> How many mobs the world was seeded with. </returns>
+        internal int SpawningPhase() {
+            Status("Spawning..");
+            SurvivalMobs.Pin(lvl);
+            try {
+                SurvivalMobs.PrePopulate(lvl, SPAWNING_ATTEMPTS);
+                SurvivalPersistence.Save(lvl);
+                return SurvivalMobs.CountMobs(lvl);
+            } catch (Exception ex) {
+                // a world with no starting mobs is still a perfectly good world
+                Logger.LogError("Error pre-populating " + lvl.name, ex);
+                return 0;
+            } finally {
+                SurvivalMobs.Unpin(lvl);
+            }
+        }
+
 
         // theme environments, straight from the client's ApplyPostLoad tail
         void ApplyLevelSettings() {
