@@ -1331,11 +1331,18 @@ namespace MCGalaxy.Generator
             cfg.SurvivalDeath = true; // hazards on (the spawn is grounded by findSpawn)
             SurvivalBlocks.Sync(lvl);
 
-            // spawn inside the house, facing the genuine rotSpawn = 180
+            // Spawn inside the house, facing the doorway - which generateHouse
+            // cuts into the -Z wall (z == z1 - 3).
+            //
+            // Genuine records rotSpawn = 180, but that number does NOT carry
+            // over: Minecraft's look vector is (-sin yaw, cos yaw), so its yaw
+            // 180 points at -Z, while ClassiCube's is (sin yaw, -cos yaw), so
+            // ITS yaw 180 points at +Z. Copying the literal 180 spawned players
+            // staring at the back wall. -Z is yaw 0 here.
             lvl.spawnx = (ushort)spawnX;
             lvl.spawny = (ushort)spawnY;
             lvl.spawnz = (ushort)spawnZ;
-            lvl.rotx   = 128; // yaw 180 degrees
+            lvl.rotx   = 0; // yaw 0 = -Z = the door
             lvl.roty   = 0;
         }
     }
