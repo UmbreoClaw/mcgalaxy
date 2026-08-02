@@ -382,22 +382,56 @@ namespace MCGalaxy.Network
 
         // ==================== handlers (ported from IndevTest.c) ====================
 
-        // BlockGrass.updateTick: covered grass decays to dirt (1-in-4); lit grass
-        // seeds a random nearby lit dirt block.
+        // Material.getCanBlockGrass: TRUE by default - leaves, water, glass and
+        // cloth all smother grass - and false only for MaterialTransparent (air,
+        // fire) and MaterialLogic (plants, circuits: flowers, mushrooms, sapling,
+        // crops, torches, gears).
+        static bool BlocksGrassMat(ushort v) {
+            if (v == Block.Air) return false;
+            switch (v) {
+                case Block.Sapling: case Block.Rose: case Block.Dandelion:
+                case Block.Mushroom: case Block.RedMushroom: case Block.Rope:
+                    return false;
+            }
+            if (v == SurvivalBlocks.FIRE || v == SurvivalBlocks.TORCH || v == SurvivalBlocks.GEARS) return false;
+            if (v >= SurvivalBlocks.CROPS_0  && v <= SurvivalBlocks.CROPS_7)  return false;
+            if (v >= SurvivalBlocks.TORCH_W1 && v <= SurvivalBlocks.TORCH_W4) return false;
+            return true;
+        }
+
+        // getBlockLightValue one above a cell; genuine clamps out-of-range reads,
+        // so above the map top it reads the sky.
+        static int LightAbove(Level lvl, LevelGrowth g, int x, int y, int z) {
+            if (y + 1 >= lvl.Height) return SurvivalNet.CurrentSkyLight(lvl);
+            return LightLevel(lvl, g, x, y + 1, z);
+        }
+
+        // BlockGrass.updateTick, both branches on REAL light levels:
+        //   die-back: light(above) < 4 AND the material above blocks grass, then
+        //     a 1-in-4 roll -> dirt. The old test was "any sky-blocker above",
+        //     which killed grass under a single leaf/water layer that genuine
+        //     keeps (light 14 up there) - and light < 4 can never happen under
+        //     open sky, because the night floor IS 4.
+        //   spread: light(above) >= 9 - so never at night (4 < 9), but a torch
+        //     (13) or lava (15) greens a cave, which a sky test could never do -
+        //     seeding one jittered nearby dirt whose own above-cell has
+        //     light >= 4 and does not block grass.
         static void TickGrass(Level lvl, LevelGrowth g, int x, int y, int z) {
+            int la = LightAbove(lvl, g, x, y, z);
             ushort above = (y + 1 < lvl.Height) ? ViewAt(lvl, x, y + 1, z) : (ushort)Block.Air;
-            if (BlocksSky(above)) {
+            if (la < 4 && BlocksGrassMat(above)) {
                 if (g.Rng.Next(4) == 0) SetView(lvl, x, y, z, Block.Dirt);
                 return;
             }
-            if (!IsLit(lvl, x, y, z)) return;
+            if (la < 9) return;
 
             int tx = x + g.Rng.Next(3) - 1;
             int ty = y + g.Rng.Next(5) - 3;
             int tz = z + g.Rng.Next(3) - 1;
             if (tx < 0 || ty < 0 || tz < 0 || tx >= lvl.Width || ty >= lvl.Height || tz >= lvl.Length) return;
             if (ViewAt(lvl, tx, ty, tz) != Block.Dirt) return;
-            if (!IsLit(lvl, tx, ty, tz)) return;
+            ushort aboveT = (ty + 1 < lvl.Height) ? ViewAt(lvl, tx, ty + 1, tz) : (ushort)Block.Air;
+            if (LightAbove(lvl, g, tx, ty, tz) < 4 || BlocksGrassMat(aboveT)) return;
             SetView(lvl, tx, ty, tz, Block.Grass);
         }
 

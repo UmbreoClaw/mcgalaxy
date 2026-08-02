@@ -151,6 +151,16 @@ namespace MCGalaxy.Network
 
                 if (newV == Block.Water || newV == Block.Lava) ScheduleFluid(lp, Pack(lvl, x, y, z), newV == Block.Water, false);
 
+                // BlockSponge: onBlockAdded absorbs every water-material block in
+                // the 5x5x5 cube; onBlockRemoval notifies that whole cube, whose
+                // still-fluid neighbours then wake and re-flood the dry pocket.
+                // (The canFlow veto alone kept water OUT but never removed what
+                // was already there, and mining a sponge only woke its 6 direct
+                // neighbours - all air inside the absorbed gap - so the pocket
+                // stayed dry forever. The client has always absorbed; SP/MP split.)
+                if (newV == Block.Sponge && oldV != Block.Sponge) SpongeAbsorb(lvl, x, y, z);
+                if (oldV == Block.Sponge && newV != Block.Sponge) SpongeRemoved(lp, lvl, x, y, z);
+
                 // neighbours react: re-check adjacent fires, wake adjacent still fluids
                 NotifyNeighbour(lp, lvl, x - 1, y, z);
                 NotifyNeighbour(lp, lvl, x + 1, y, z);
@@ -161,18 +171,64 @@ namespace MCGalaxy.Network
             }
         }
 
+        // BlockSponge.onBlockAdded: isWater (Material.water: moving, still, and
+        // the water spring - BlockSource registers Material.water) -> air.
+        static void SpongeAbsorb(Level lvl, int x, int y, int z) {
+            for (int sy = y - 2; sy <= y + 2; sy++)
+                for (int sz = z - 2; sz <= z + 2; sz++)
+                    for (int sx = x - 2; sx <= x + 2; sx++)
+                    {
+                        if (!In(lvl, sx, sy, sz)) continue;
+                        ushort b = View(lvl, sx, sy, sz);
+                        if (b == Block.Water || b == Block.StillWater || b == SurvivalBlocks.WATER_SOURCE)
+                            SurvivalGrowth.SetView(lvl, sx, sy, sz, Block.Air);
+                    }
+        }
+
+        // BlockSponge.onBlockRemoval: notifyBlocksOfNeighborChange over the whole
+        // +-2 cube - i.e. the 6 NEIGHBOURS of every cube cell react, which reaches
+        // the still water standing at distance 3 (just past the old canFlow veto).
+        static void SpongeRemoved(LevelPhys lp, Level lvl, int x, int y, int z) {
+            for (int sy = y - 2; sy <= y + 2; sy++)
+                for (int sz = z - 2; sz <= z + 2; sz++)
+                    for (int sx = x - 2; sx <= x + 2; sx++)
+                    {
+                        NotifyNeighbour(lp, lvl, sx - 1, sy, sz);
+                        NotifyNeighbour(lp, lvl, sx + 1, sy, sz);
+                        NotifyNeighbour(lp, lvl, sx, sy - 1, sz);
+                        NotifyNeighbour(lp, lvl, sx, sy + 1, sz);
+                        NotifyNeighbour(lp, lvl, sx, sy, sz - 1);
+                        NotifyNeighbour(lp, lvl, sx, sy, sz + 1);
+                    }
+        }
+
         /// <summary> OnBlockChangedEvent: a player edit finished. Route it to the
         /// physics notify so placed fire/fluid come alive and mining next to a
         /// fluid/fire wakes the neighbours. The event carries no old block, but
         /// only the new block + neighbour reactions matter for scheduling. </summary>
+        // OnBlockChangedEvent does not carry the old block, but sponge removal
+        // needs it (nothing else about the post-write world says one was there).
+        // OnBlockChanging runs synchronously before the write on the same player
+        // thread, so a thread-local snapshot pairs the two exactly.
+        [ThreadStatic] static int preChangeCoord;
+        [ThreadStatic] static ushort preChangeView;
+
+        public static void OnBlockChanging(Player p, ushort x, ushort y, ushort z, ushort block, bool placing, ref bool cancel) {
+            Level lvl = p.level;
+            if (lvl == null || lvl.Config.SurvivalMode != SurvivalMode.Indev || cancel) return;
+            preChangeCoord = (x | (y << 12) | (z << 24)) + 1; // +1 so 0 = "no snapshot"
+            preChangeView  = SurvivalGrowth.ViewAt(lvl, x, y, z);
+        }
+
         public static void OnBlockChanged(Player p, ushort x, ushort y, ushort z, ChangeResult result) {
             Level lvl = p.level;
             if (lvl == null || lvl.Config.SurvivalMode != SurvivalMode.Indev) return;
             if (result == ChangeResult.Unchanged) return;
             ushort now = SurvivalGrowth.ViewAt(lvl, x, y, z);
-            // old block isn't carried by the event; only newV + neighbour
-            // reactions drive scheduling, so Air is a safe stand-in.
-            Notify(lvl, x, y, z, Block.Air, now);
+            ushort oldV = Block.Air;
+            if (preChangeCoord == (x | (y << 12) | (z << 24)) + 1) oldV = preChangeView;
+            preChangeCoord = 0;
+            Notify(lvl, x, y, z, oldV, now);
             // a player edit may change the light (torch placed/mined, roof opened)
             SurvivalGrowth.MarkLightDirty(lvl);
         }
