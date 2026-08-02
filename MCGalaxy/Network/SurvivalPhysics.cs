@@ -150,6 +150,28 @@ namespace MCGalaxy.Network
             // well as the tick thread (Set -> SetView -> Notify); the schedules are
             // plain Queue/List/HashSet, so every mutation serializes on the LevelPhys
             // monitor (re-entrant, so tick-thread nesting is fine).
+            // A fluid flipping between its own still and moving states is genuine
+            // setTileNoUpdate: it notifies NOBODY. BlockStationary's wake sets the
+            // moving id with it (then schedules its own update explicitly), and
+            // the stagnation flood re-stills with it. Running the neighbour
+            // notifies for these flips closed a feedback loop - a woken cell's
+            // conversion woke its neighbours, their re-stilling woke it back, and
+            // whole lakes flickered still<->moving forever (user-reported as
+            // "water physics super fast" + the lighting pulsing with it).
+            bool stateFlip =
+                (oldV == Block.StillWater && newV == Block.Water)      ||
+                (oldV == Block.Water      && newV == Block.StillWater) ||
+                (oldV == Block.StillLava  && newV == Block.Lava)       ||
+                (oldV == Block.Lava       && newV == Block.StillLava);
+            if (stateFlip) {
+                lock (lp) {
+                    // the wake's explicit scheduleBlockUpdate, nothing else
+                    if (newV == Block.Water || newV == Block.Lava)
+                        ScheduleFluid(lp, Pack(lvl, x, y, z), newV == Block.Water, false);
+                }
+                return;
+            }
+
             if (oldV == Block.Sapling && newV != Block.Sapling)
                 SurvivalGrowth.ClearSaplingStage(lvl, x, y, z);
 
