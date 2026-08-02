@@ -1972,3 +1972,110 @@ DEFERRED AUDIT FIXES, all landed:
    SuperUseable=false) and validate their targets - no changes needed.
    Console-tested live: SurvTime read/set on main, offline dump, mobs/spawner
    reports, zero errors.
+
+## Fidelity re-check against the real sources (c0.30 jar + in-20100223 tree)
+
+Both reference sources are now usable locally - the real c0.30_01c client jar
+(Mojang's version manifest, read with `javap -p -c`) and EaglerPorts'
+deobfuscated in-20100223 source - so fidelity claims can be settled from the
+originals instead of recalled. Every pass over them has found something, and
+twice what it found was an error in a fix made earlier in the same session.
+
+ * Mob step-up: an audit claimed the CLIENT was unfaithful for giving mobs
+   StepSize 0.5 and recommended removing it. The jar says `Mob.<init>` sets
+   `footSize = 0.5F` and every mob descends from Mob - the audit had it
+   backwards, and the SERVER was the unfaithful side. Ported Entity.move's
+   step-up instead, and made block collision height-aware (a slab was a full
+   cube to a mob, so a half-block step could never clear anything). Re-reading
+   the Indev source afterwards caught two more approximations in that port: the
+   grounded gate is `onGround || the downward move was clipped this tick`, and
+   `ySize` (the ~3-tick step cooldown) was missing entirely.
+ * Indev spawn light: the predicates were right, the gate under them was not.
+   EntityMob/EntityAnimal.getCanSpawnHere both call super, and
+   EntityCreature's adds `getBlockPathWeight >= 0`; for an animal that is
+   `grass below ? 10 : brightness - 0.5`, and the brightness table crosses 0.5
+   between light 11 (0.437) and 12 (0.525). Animals were spawning on lit
+   stone/sand/gravel genuine refuses. Monsters carry the same gate but rand(8)
+   already caps them at 7, so it can never fire.
+ * c0.30 spawn light: `Level.isLit` is `y >= calcLightDepths' blocker`, pure
+   sky exposure - c0.30 has no block light at all. We were feeding it the
+   torch-aware combined value, so a lit cave suppressed spawns on a version
+   with no such rule. Now shares the growth tick's sky heightmap, which already
+   gets genuine's off-by-one right (the blocker's own cell reads as lit).
+ * Skeleton death burst: count/yaw/pitch/force all matched Skeleton.access$000;
+   the spawn height did not. Genuine is `y - 0.2F`, and Entity.y is not the
+   feet - Entity.move recomputes it as `bb.y0 + heightOffset - ySize`.
+ * Arrow type was flagged as possibly inverted. It is not: the ctor defaults
+   type 0 and sets 1 only when the owner is not a Player, and the burst passes
+   `level.getPlayer()`. Our `0 = player-fired` matches genuine directly.
+
+## World-generator audit (LevelGenerator.java, pass by pass)
+
+The terrain math holds up - the distort/octave stack and its constants,
+Eroding's `((h - e) / 2 << 1) + e`, Soiling's use of the UNclamped var72/var31
+pair while the heightmap gets clamped, Growing's thresholds and level-type
+override order, the cave and ore worms (including the 12/16-vs-0.9 pitch-decay
+asymmetry between them, which is genuine), the flood fill's power-of-two index
+packing and its missing +Y spread, the World-replica notify order, swap,
+tryToFall, findSpawn and growTrees all match, RNG draw order included.
+
+Two constants did not:
+
+ * **Torch light is 13, not 14.** `setLightValue` stores
+   `(int)(15.0F * arg)`, and the torch registers `14.0F/16.0F` ->
+   `(int)13.125` = 13. The lit furnace registers the identical value and was
+   already 13 here, which is what gave it away. Inert in the generator, but
+   SurvivalGrowth's runtime flood uses the same constant, so every torch was
+   suppressing monster spawns out to radius 7 instead of 6.
+ * **Still liquids never woke on a flammable neighbour.**
+   BlockStationary.onNeighborBlockChange wakes to its moving id if a neighbour
+   can flow OR if the block that just changed is in BlockFire's setBurnRate
+   table. The practical case is shoreline trees: growTrees notifies the sea
+   beside a trunk it just placed.
+
+Two differences left alone on purpose: World.setBlock's edge-water rule is dead
+code in genuine (its own bounds test excludes every border column before that
+branch is reachable), and canThisPlantGrowOnThisBlockID also accepts farmland,
+which the generator never produces.
+
+## Generation-time mob population + the spawn-facing fix
+
+ * **Spawn rotation.** generateHouse cuts the doorway into the -Z wall and
+   genuine records rotSpawn = 180 to face it. The number does not carry over:
+   Minecraft's look vector is `(-sin yaw, cos yaw)` so its 180 faces -Z, while
+   ClassiCube's is `(sin yaw, -cos yaw)` so the same 180 faces +Z. Both
+   generators copied the literal constant, so every Indev spawn - singleplayer
+   included - put the player staring at the back wall. -Z is yaw 0 here.
+ * **PrePopulate.** LevelGenerator's "Spawning.." phase, 1000
+   performSpawning passes. The client had always done this, so an SP map and
+   the same map served over the wire disagreed on day one. performSpawning
+   already contains the generation-time case: its distance test measures from
+   the level spawn when there is no player entity, which is why a generated
+   world's mobs are never on the doorstep.
+   Ordering is the whole difficulty. It runs after Run() (genuine puts
+   Spawning last) and after ApplyLevelSettings (the spawner branches on
+   SurvivalMode and reads the block defs Sync installs), inside a
+   Pin()/Unpin() pair, and writes the sidecar itself rather than trusting the
+   OnLevelSave that CmdNewLvl fires a moment later. The pin exists because a
+   level being generated is not in LevelInfo.Loaded, so the 20 TPS prune sweep
+   would drop every registry the generator touches within 50 ms, repeatedly -
+   including SurvivalGrowth's light flood, which the spawner queries on every
+   attempt.
+   EffectiveCap is a per-player budget and there are no players yet, so it
+   would resolve to one player's 32 whatever the map size; the genuine
+   per-kind caps do the limiting instead.
+ * **TrimExcessMobs** (was TrimExcessAnimals) now answers to three ceilings -
+   both per-kind caps and lm.Cap - taking the mob whose nearest player is
+   furthest away, never one inside the 32 blocks the genuine despawn roll
+   protects, at a rate scaled to how far over the map is. A cull is a corpse
+   flop with no loot; the c0.30 creeper-blast and skeleton-burst tails are
+   !indev-gated so they cannot fire from it.
+ * Live-verified on a CLI server: 128x64x128 inland seeded 44 mobs (40
+   monsters + 4 animals, exactly its caps) with the nearest 33.4 blocks from
+   the spawn house; 256x64x256 island seeded 176, again exactly cap; a
+   load/unload round trip brought all 44 back out of the sidecar.
+ * Client-side follow-up: Mob_IndevSpawnPass now takes its avoid point as an
+   argument the way Mob_SpawnerRun already did. The generation-time call was
+   measuring from the player's position, which is still the PREVIOUS world's
+   at that moment (LocalPlayers_MoveToSpawn runs after the post-load hook
+   returns), so the 32-block bubble was cleared around a meaningless point.

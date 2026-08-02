@@ -51,7 +51,18 @@ Generated maps come out **survival-ready** — no follow-up commands needed:
   maps), all stored in the level's env config — survival clients get the
   genuine values via `SURV_WORLDINFO`, stock clients get the CPE env
   approximation.
-- The mob spawner starts populating the map as soon as players are on it.
+- **Mobs already in it.** The generator's final "Spawning.." phase seeds the
+  world to the genuine per-kind caps (monsters `volume*20/64³/2`, animals
+  `width*length/4000`), kept 32 blocks clear of the spawn house, and writes
+  them straight to the survival sidecar — so they are there the moment the
+  first player joins, not minutes later. The message printed at the end of
+  generation reports the count.
+
+  Note that the *standing* population a live map settles at is the
+  per-player budget (32 per online player), which on a big map is well under
+  the genuine cap, so a lone player will see the far-away surplus quietly
+  trimmed away over the first half-minute. `/Survival mobcap <n>` overrides
+  the per-player budget if you would rather keep genuine density.
 
 To make it the server's default map: `/Main <name>`.
 
@@ -84,7 +95,8 @@ subcommands). Names that would collide with existing core commands
 | `/Mobs` | lists the nearest live mobs |
 | `/Spawner` | natural-spawn statistics + clock state |
 | `/SurvTime [day/noon/sunset/night/midnight/<ticks>]` | shows or sets the shared world clock |
-| `/SurvInv [player]` | dumps a player's server-side inventory |
+| `/Inventory [player]` (alias `/SurvInv`) | opens a player's server-side inventory as a GUI; the console (and non-survival clients) get the text dump instead |
+| `/Track [player/mob]` | follows a live entity's position readouts; punching with it armed picks the target |
 | `/Export <name> <level>` | saves a map as Indev's own `.mclevel` format (defaults: current map's name, current map) |
 
 ## 4. Turning an EXISTING map into a survival map
@@ -120,16 +132,17 @@ farmland moisture, wall-torch orientation) survives both directions:
   singleplayer loader (both open them directly).
 - Imports come out survival-ready (mode Indev, hazards on, block set applied
   on load); the theme is recognised from the genuine sky colours.
-- Chest/furnace **contents** are exported (live tile entities) but not yet
-  restored on import — the container registry is session-scoped until
-  persistence lands. Player inventories, mobs and the clock stay
-  server-side state.
+- Chest/furnace **contents** and the map's **live mobs** round-trip both ways:
+  the exporter writes them as genuine `TileEntities`/`Entities` compounds, and
+  the importer turns them back into a survival sidecar that the persistence
+  layer consumes exactly once on first load. `TimeOfDay` restores into the
+  per-map clock. Player inventories stay server-side session state.
 - `/Import` refuses a name that already exists, so round trips need a fresh
   name (e.g. `/Export gt1copy` then `/Import gt1copy`).
 
 ## 6. Client-side notes
 
-- The **fork client** negotiates the `SurvivalTest` CPE extension (v2) and
+- The **fork client** negotiates the `SurvivalTest` CPE extension (v3) and
   re-defines the genuine block models locally on the survival handshake;
   it needs its normal first-run asset download for the Indev terrain tiles.
 - **Stock CPE clients** see the server's BlockDefinitions (sprite torches,

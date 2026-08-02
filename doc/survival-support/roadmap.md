@@ -92,7 +92,7 @@ Server generates Indev/c0.30-s worlds and owns block metadata.
   `McLevelImporter` expands genuine ids + the `Data` metadata nibble through
   the `SurvivalBlocks` bijection into view ids (imported maps come out
   survival-ready, theme recognised); the new `McLevelExporter`
-  (`/Survival export <name> <level>` → `extra/import/`, `/Import`-able)
+  (`/Export <name> <level>` → `extra/import/`, `/Import`-able)
   writes the client's `MCLevel_Save` schema with a `LocalPlayer` stub,
   chest/furnace tile entities (live contents) and the level's LIVE MOBS as
   genuine entity compounds. The importer restores `TimeOfDay` into the per-map
@@ -227,6 +227,18 @@ Server owns inventory, containers, crafting, smelting.
   targetKind 2; the server (`SurvivalTnt.Defuse`, gated on `SurvivalMode.Classic`)
   reach-validates, removes it with `TNT_REMOVE` reason 1 (no blast) and drops one
   TNT block back — genuine `PrimedTnt.hurt`. Live-tested on a c0.30 map.
+- ✅ **Paintings** (`SurvivalPaintings`): `SURV_PAINT_SPAWN 0x39` /
+  `SURV_PAINT_REMOVE 0x3A`, hung/removed through `SURV_ATTACK` targetKind 3,
+  with the genuine once-per-100-ticks wall check dropping any whose support
+  went away. Persist in the sidecar. Genuine treats these as entities, not
+  blocks, so stock Classic clients cannot see them at all — a documented
+  gap rather than a fallback.
+- ✅ **Generation-time mob population** (`SurvivalMobs.PrePopulate`):
+  LevelGenerator's "Spawning.." phase, seeding a new Indev world to the
+  genuine per-kind caps and writing it to the sidecar before the level is
+  ever loaded, matching what the client's generator has always done in
+  singleplayer. `TrimExcessMobs` walks the surplus back down to the
+  per-player budget once players arrive.
 - ✅ **Map persistence** (`SurvivalPersistence` sidecar `extra/survival/<lvl>.sur`):
   mobs + chest/furnace contents saved on unload/save, restored on load; time of
   day + grown terrain persist on their own (level config + `.lvl`). Player
@@ -234,12 +246,58 @@ Server owns inventory, containers, crafting, smelting.
 
 ## ⬜ Backlog (post-phase-5 polish)
 
+Landed:
+
 - ✅ Player-inventory persistence (`extra/survival/players/<name>.inv`): main +
   hotbar + worn armor saved on disconnect (shutdown kicks everyone, covering
   restarts), lazily restored on the session's first inventory touch. The craft
   grid + cursor stay session-only. Live-verified across a reconnect.
 - ✅ Flint & steel → fire (server `USE_ITEM`) — see Phase 5.
 - ✅ MP primed-TNT melee defuse (c0.30) — see Phase 5.
+- ✅ Numbered release builds + a working `/update` tripwire (`Updater.cs`).
+- ✅ `/Referee` made useful in survival; `/Track` added.
+
+### 🔜 Next up
+
+Nothing is blocking; these are ordered by how much they are worth, not by
+dependency.
+
+1. **Known small bugs.**
+   - The client's `SurvivalTest_TrySpawnMobs` returns early on
+     `area <= 0`, a gate that belongs to the c0.30 roll below it. Indev caps
+     per-kind and does not use `area`, so any singleplayer map under 64³ never
+     spawns mobs at all — the server has no such gate, so it is also an SP/MP
+     split. One-line fix (move the Indev branch above the gate).
+   - Torch clicked-face mounting still auto-picks its wall, because the
+     classic place packet carries no face byte (Phase 1 note).
+2. **Fidelity re-checks against the real sources.** The c0.30 jar and the
+   deobfuscated in-20100223 tree are both usable now, and every pass over them
+   so far has found something (the animal path-weight gate, `Level.isLit`
+   being pure sky exposure, the skeleton burst's spawn height, torch
+   `lightValue` being 13 rather than 14). Explosions, fluids and the growth
+   tick have not had that treatment yet.
+3. **Replay / world history.** The survival protocol is already a replay
+   format — every entity frame is a self-contained 64-byte delta through one
+   choke point (`SurvivalNet.SendMessage`), and there is no distance culling,
+   so a recording covers the whole map rather than one viewer's bubble.
+   Cheapest useful version is a bounded in-memory ring buffer per level dumped
+   on demand, not a full archive. Free camera comes for free; per-player HUD
+   state (health/inventory/containers) needs those single-recipient frames
+   tagged with their recipient.
+4. **Bridging survival and creative** so the server is survival-first without
+   being hostile to creative players. Idea-stage only.
+5. **The NAS (Not-Awesome-Script) bridge.** Sketched and verified to compile
+   against this fork; notes are parked outside the repo. Not started.
+6. **macOS GUI.** `MCGalaxyGUI` fails on the Carbon driver; the CLI is fine.
+   A console fallback is the cheap fix. Explicitly deferred.
+
+Deferred by design (each is a protocol or scope change, not polish):
+
+- Partial drop pickup (a stack that only partly fits).
+- Widening entity coordinates from i16 to i32 — a wire break needing a
+  coordinated CPE ext version bump on both sides.
+- `SURV_BLOCKMETA 0x40`, only if metadata ever appears that the view-id space
+  cannot flatten.
 
 ---
 
@@ -253,11 +311,14 @@ Server owns inventory, containers, crafting, smelting.
 | 0x04 | TIME | S→C | ✅ 2 |
 | 0x10–0x13 | MOB_* | S→C | ✅ 3 |
 | 0x20–0x25 | INV_/CONT_/FURN_/CURSOR | S→C | ✅ 4 |
+| 0x26 | ITEM_GIVE | S→C | ✅ 4 |
 | 0x30–0x32 | DROP_* | S→C | ✅ 5 |
 | 0x33–0x36 | ARROW_* | S→C | ✅ 5 |
 | 0x37–0x38 | TNT_SPAWN / TNT_REMOVE | S→C | ✅ 5 |
+| 0x39–0x3A | PAINT_SPAWN / PAINT_REMOVE | S→C | ✅ 5 |
 | 0x40 | BLOCKMETA | S→C | 1 (reserved) |
 | 0x50 | PLAYER_EQUIP | S→C | ✅ 4 |
+| 0x51 | PLAYER_HURT | S→C | ✅ 3 |
 | 0x80 | ATTACK | C→S | ✅ 3 |
 | 0x81 | USE_ITEM | C→S | 🔶 4 (opens ✅, eat/tools with items) |
 | 0x82–0x85 | SLOT/RESULT/CONT/HELD | C→S | ✅ 4 |
