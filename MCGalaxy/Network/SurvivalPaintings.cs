@@ -259,6 +259,31 @@ namespace MCGalaxy.Network
                                        SurvivalDrops.MinedDelay(lvl));
         }
 
+        /// <summary> createExplosion's entity phase over the level's paintings:
+        /// EntityPainting.attackEntityFrom dies on ANY hit regardless of amount,
+        /// so every painting within the blast's 2r range pops off as an item.
+        /// Runs before the crater is carved, like the rest of the entity phase
+        /// (a popped painting's item drop settles on pre-blast ground, exactly
+        /// as genuine's does). </summary>
+        public static void BlastPop(Level lvl, double cx, double cy, double cz, double diam) {
+            LevelPaintings lp = GetLevel(lvl, false);
+            if (lp == null) return;
+
+            List<Painting> hit = null;
+            lock (lp.Items) {
+                for (int i = lp.Items.Count - 1; i >= 0; i--)
+                {
+                    Painting pt = lp.Items[i];
+                    double dx = pt.X - cx, dy = pt.Y - cy, dz = pt.Z - cz;
+                    if (Math.Sqrt(dx * dx + dy * dy + dz * dz) / diam > 1.0) continue;
+                    lp.Items.RemoveAt(i);
+                    if (hit == null) hit = new List<Painting>();
+                    hit.Add(pt);
+                }
+            }
+            if (hit != null) foreach (Painting pt in hit) PopOff(lvl, pt);
+        }
+
 
         // ==================== tick (the genuine once-at-100 wall check) ====================
 

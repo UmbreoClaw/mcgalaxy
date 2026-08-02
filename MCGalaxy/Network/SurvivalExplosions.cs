@@ -110,6 +110,11 @@ namespace MCGalaxy.Network
                 {
                     double fx = bx + 0.5 - cx, fy = by + 0.5 - cy, fz = bz + 0.5 - cz;
                     if (fx * fx + fy * fy + fz * fz >= (double)rad * rad) continue;
+                    // Tile.explodable (ap): genuine only destroys a tile whose
+                    // flag is set, and blast-proof rock/metal survives. Without
+                    // this every c0.30 crater chewed through stone shells the
+                    // client's own sim (SurvivalTest_ExplosionImmune) kept.
+                    if (In(lvl, bx, by, bz) && ClassicBlastProof(View(lvl, bx, by, bz))) continue;
                     int rel = (bx - icx + 16) + (by - icy + 16) * DIM + (bz - icz + 16) * DIM * DIM;
                     if (rel >= 0 && rel < DIM * DIM * DIM) bits[rel >> 3] |= (byte)(1 << (rel & 7));
                 }
@@ -190,8 +195,72 @@ namespace MCGalaxy.Network
             }
         }
 
-        // dropBlockAsItemWithChance(..., 0.3F) through the Indev idDropped table.
+        // c0.30 Tile.explodable == false: the 13 hard rock/metal ids whose ap
+        // flag the tile/a static initializer clears - stone, cobble, bedrock,
+        // the three ores, gold/iron blocks, both slabs, brick, mossy cobble,
+        // obsidian. Everything else (liquids included) blows away.
+        static bool ClassicBlastProof(ushort b) {
+            switch (b) {
+                case Block.Stone: case Block.Cobblestone: case Block.Bedrock:
+                case Block.GoldOre: case Block.IronOre: case Block.CoalOre:
+                case Block.Gold: case Block.Iron:
+                case Block.DoubleSlab: case Block.Slab: case Block.Brick:
+                case Block.MossyRocks: case Block.Obsidian:
+                    return true;
+            }
+            return false;
+        }
+
         static void ExplodeDrops(Level lvl, int x, int y, int z, ushort old, Random rng) {
+            if (lvl.Config.SurvivalMode != SurvivalMode.Indev) {
+                ClassicExplodeDrops(lvl, x, y, z, old, rng);
+                return;
+            }
+            IndevExplodeDrops(lvl, x, y, z, old, rng);
+        }
+
+        // c0.30 tile.dropItems(level, x, y, z, 0.3F): count = getDropCount(),
+        // then a 0.3 roll PER ITEM, each spawning getDrop(). Mirrors the
+        // client's SurvivalTest_GetBlockDrop table exactly (which was itself
+        // verified against the jar): log -> 3-5 planks, leaves -> the 1/10
+        // sapling roll on top of the 0.3, grass -> dirt, liquids/bookshelf ->
+        // nothing. Stone/obsidian/ore/slab drops are listed for completeness
+        // but unreachable - those ids are blast-proof above. There is no flint
+        // in c0.30, so gravel just drops gravel.
+        static void ClassicExplodeDrops(Level lvl, int x, int y, int z, ushort old, Random rng) {
+            ushort drop = old;
+            int count = 1;
+            switch (old) {
+                case Block.Grass: drop = Block.Dirt; break;
+                case Block.Leaves:
+                    drop = Block.Sapling;
+                    count = rng.Next(10) == 0 ? 1 : 0; break;
+                case Block.Log:
+                    drop = Block.Wood;
+                    count = 3 + rng.Next(3); break;
+                case Block.Stone: case Block.Obsidian:
+                    drop = Block.Cobblestone; break;
+                case Block.CoalOre:  drop = Block.Slab; count = 1 + rng.Next(3); break;
+                case Block.GoldOre:  drop = Block.Gold; count = 1 + rng.Next(3); break;
+                case Block.IronOre:  drop = Block.Iron; count = 1 + rng.Next(3); break;
+                case Block.DoubleSlab: drop = Block.Slab; break;
+                case Block.Bookshelf:
+                case Block.Water: case Block.StillWater:
+                case Block.Lava:  case Block.StillLava:
+                    return;
+            }
+            int spawned = 0;
+            for (int i = 0; i < count; i++)
+            {
+                if (rng.NextDouble() > 0.3) continue;
+                spawned++;
+            }
+            if (spawned > 0)
+                SurvivalDrops.SpawnScatter(lvl, x + 0.5, y + 0.5, z + 0.5, drop, spawned, SurvivalDrops.MinedDelay(lvl));
+        }
+
+        // dropBlockAsItemWithChance(..., 0.3F) through the Indev idDropped table.
+        static void IndevExplodeDrops(Level lvl, int x, int y, int z, ushort old, Random rng) {
             if (rng.NextDouble() > 0.3) return;
             ushort drop = old;
             switch (old) {

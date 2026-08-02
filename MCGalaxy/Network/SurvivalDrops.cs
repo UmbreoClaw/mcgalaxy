@@ -55,6 +55,7 @@ namespace MCGalaxy.Network
             public int    Age;           // ticks alive - despawns at DESPAWN_TICKS
             public int    PickupDelay;   // ticks before ANY player may collect it
             public byte   Rot0;          // random spin phase (cosmetic, for re-streams)
+            public int    Health = 5;    // EntityItem.health - blasts chip it, 0 = gone
         }
 
         class LevelDrops
@@ -428,6 +429,44 @@ namespace MCGalaxy.Network
                 if (dx * dx + dz * dz > PICKUP_H2) return false;
                 if (dy < PICKUP_YLO || dy > PICKUP_YHI) return false;
                 return true;
+            }
+        }
+
+        /// <summary> createExplosion's entity phase over the level's item drops:
+        /// EntityItem.attackEntityFrom just subtracts from health (5) and dies at
+        /// 0, so a blast vaporizes nearby loose items - which is why chained TNT
+        /// eats the previous blast's loot. Called BEFORE the crater is carved,
+        /// like genuine (the density rays must see the intact world). </summary>
+        /// <remarks> Deviation: genuine also kicks a SURVIVING drop with dir * f
+        /// velocity. Server drops are a settled position + a client-side cosmetic
+        /// arc - there is no velocity to kick - so an edge-of-blast survivor stays
+        /// put. Only drops right at the rim survive at all (health 5 vs a damage
+        /// floor that rises fast with proximity), so the visible behavior - blasts
+        /// destroy loose items - is intact. </remarks>
+        public static void BlastDamage(Level lvl, double cx, double cy, double cz, double diam) {
+            LevelDrops ld = GetLevel(lvl, false);
+            if (ld == null) return;
+            Player[] watchers = Watchers(lvl);
+
+            lock (ld.Drops) {
+                for (int i = ld.Drops.Count - 1; i >= 0; i--)
+                {
+                    Drop d = ld.Drops[i];
+                    // EntityItem posY is the box centre: feet + 0.125 (setSize 0.25)
+                    double dx = d.X - cx, dy = (d.Y + 0.125) - cy, dz = d.Z - cz;
+                    double dist = Math.Sqrt(dx * dx + dy * dy + dz * dz);
+                    if (dist / diam > 1.0) continue;
+
+                    double dens = SurvivalExplosions.Density(lvl, cx, cy, cz,
+                                  d.X - 0.125, d.Y, d.Z - 0.125,
+                                  d.X + 0.125, d.Y + 0.25, d.Z + 0.125);
+                    double f = (1.0 - dist / diam) * dens;
+                    d.Health -= (int)((f * f + f) / 2.0 * 8.0 * diam + 1.0);
+                    if (d.Health > 0) continue;
+
+                    ld.Drops.RemoveAt(i);
+                    Broadcast(watchers, d.Id, false, null);
+                }
             }
         }
 

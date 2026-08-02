@@ -959,6 +959,35 @@ namespace MCGalaxy.Network
             p.Send(Packet.VelocityControl(kx, KNOCK_UNIT, kz, 0, 1, 0));
         }
 
+        // The client turns a wire value h back into a velocity with
+        // PhysicsComp_CalcJumpVelocity(h) - "the jump speed that peaks at height
+        // h" - stepping 0.001 at a time until CalcMaxHeight passes h. So the
+        // EXACT way to deliver a velocity v is to send CalcMaxHeight(v): the
+        // client's search recovers v to within a thousandth. These two are that
+        // client pair (EntityComponents.c YPosAt/CalcMaxHeight) ported verbatim.
+        static double WireYPosAt(int t, double u) {
+            double a = Math.Pow(2.0, -0.02914633510256746 * t); // ~0.98^t
+            return a * (-49.0 * u - 196.0) - 4.0 * t + 50.0 * u + 196.0;
+        }
+        static double WireHeightFor(double u) {
+            if (u <= 0) return 0;
+            double t = 34.30961849 * Math.Log(0.247483075 * u + 0.9899323, 2.0);
+            if (t < 0) t = 0;
+            return Math.Max(WireYPosAt((int)t, u), WireYPosAt((int)t + 1, u));
+        }
+
+        /// <summary> Adds an exact velocity impulse (blocks/tick per axis, the
+        /// genuine motionX/Y/Z units) to a player - createExplosion's dir * f
+        /// launch. Unlike KnockbackPlayer there is no cap: genuine explosion
+        /// kicks stack uncapped, which is the whole TNT-jump. </summary>
+        public static void LaunchPlayer(Player p, double vx, double vy, double vz) {
+            if (p.Session == null || !p.Session.Supports(CpeExt.VelocityControl, 1)) return;
+            float kx = (float)(Math.Sign(vx) * WireHeightFor(Math.Abs(vx)));
+            float ky = (float)(Math.Sign(vy) * WireHeightFor(Math.Abs(vy)));
+            float kz = (float)(Math.Sign(vz) * WireHeightFor(Math.Abs(vz)));
+            p.Send(Packet.VelocityControl(kx, ky, kz, 0, 0, 0)); // ADD on all axes
+        }
+
         /// <summary> Score credit for a player-credited mob kill (c0.30 mode only). </summary>
         internal static void AddScore(Player p, int points) {
             p.Extras[SCORE_KEY] = p.Extras.GetInt(SCORE_KEY, 0) + points;

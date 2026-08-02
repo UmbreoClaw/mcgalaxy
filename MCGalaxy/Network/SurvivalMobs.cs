@@ -904,7 +904,7 @@ namespace MCGalaxy.Network
             // leaving the loot hovering above the finished crater floor where it
             // can never be picked up (the mirror of the two-pass fix already made
             // to the terrain drops themselves).
-            List<KeyValuePair<Player, int>> hitPlayers = new List<KeyValuePair<Player, int>>();
+            List<PlayerBlastHit> hitPlayers = new List<PlayerBlastHit>();
             List<BlastHit> hitMobs = new List<BlastHit>();
 
             foreach (Player p in PlayerInfo.Online.Items)
@@ -915,18 +915,29 @@ namespace MCGalaxy.Network
                 double dx = px - cx, dy = anchor - cy, dz = pz - cz;
                 double dist = Math.Sqrt(dx * dx + dy * dy + dz * dz);
                 int dmg;
+                PlayerBlastHit ph = new PlayerBlastHit();
                 if (classic) {
                     double t = dist * inv;
                     if (t > 1.0) continue;
                     dmg = (int)((1.0 - t) * 15.0 + 1.0);
+                    // no explosion velocity in c0.30 - but a creeper-ATTRIBUTED
+                    // blast damages through Mob.hurt, which shoves the victim
+                    // away from its attacker like any other hit
+                    if (owner != null) { ph.Shove = true; ph.KX = dx; ph.KZ = dz; }
                 } else {
                     if (dist / diam > 1.0) continue;
                     double dens = SurvivalExplosions.Density(lvl, cx, cy, cz,
                                   px - 0.3, feet, pz - 0.3, px + 0.3, feet + 1.8, pz + 0.3);
                     double f = (1.0 - dist / diam) * dens;
                     dmg = (int)((f * f + f) / 2.0 * 8.0 * diam + 1.0);
+                    // motion += dir * f, uncapped - the genuine TNT launch
+                    if (dist > 0.0001) {
+                        ph.KX = dx / dist * f; ph.KY = dy / dist * f; ph.KZ = dz / dist * f;
+                    }
                 }
-                if (dmg > 0) hitPlayers.Add(new KeyValuePair<Player, int>(p, dmg));
+                if (dmg <= 0) continue;
+                ph.P = p; ph.Dmg = dmg;
+                hitPlayers.Add(ph);
             }
 
             for (int i = lm.Mobs.Count - 1; i >= 0; i--)
@@ -957,17 +968,41 @@ namespace MCGalaxy.Network
                 hitMobs.Add(hit);
             }
 
+            // Item drops and paintings are entities too (getEntities has no type
+            // filter): EntityItem loses health (dies at 0 - chained TNT eats the
+            // previous blast's loot) and EntityPainting pops on ANY hit. Genuine
+            // runs the whole entity phase before destruction, and both of these
+            // resolve immediately (nothing of theirs settles on the crater), so
+            // they go here rather than in the deferred block below. Indev only -
+            // c0.30's item entities were not audited and it has no paintings.
+            if (!classic) {
+                SurvivalDrops.BlastDamage(lvl, cx, cy, cz, diam);
+                SurvivalPaintings.BlastPop(lvl, cx, cy, cz, diam);
+            }
+
             SurvivalExplosions.DestroyBlocks(lvl, blockAuthor, cx, cy, cz, r, lm.Rng);
 
             // the crater exists now - deaths (and their scatters) settle on it
-            foreach (KeyValuePair<Player, int> kv in hitPlayers)
-                SurvivalNet.DamagePlayer(kv.Key, kv.Value, deathMsg);
+            foreach (PlayerBlastHit ph in hitPlayers)
+            {
+                SurvivalNet.DamagePlayer(ph.P, ph.Dmg, deathMsg);
+                if (ph.Shove) SurvivalNet.KnockbackPlayer(ph.P, ph.KX, ph.KZ);
+                else if (ph.KX != 0 || ph.KY != 0 || ph.KZ != 0)
+                    SurvivalNet.LaunchPlayer(ph.P, ph.KX, ph.KY, ph.KZ);
+            }
             foreach (BlastHit hit in hitMobs)
             {
                 if (hit.Mob.Dead || hit.Mob.Health <= 0) continue; // a chain blast got it first
                 HurtMob(lvl, lm, hit.Mob, null, hit.Dmg, owner);
                 hit.Mob.VX += hit.KX; hit.Mob.VY += hit.KY; hit.Mob.VZ += hit.KZ;
             }
+        }
+
+        sealed class PlayerBlastHit
+        {
+            public Player P; public int Dmg;
+            public double KX, KY, KZ;
+            public bool Shove; // c0.30 creeper blast: Mob.hurt's shove, not a launch
         }
 
         // one buffered explosion hit: damage computed against the pre-blast world,
