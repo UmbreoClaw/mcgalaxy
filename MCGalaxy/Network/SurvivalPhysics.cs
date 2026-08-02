@@ -142,8 +142,16 @@ namespace MCGalaxy.Network
         /// <summary> Announced for every server-authored block change on the level
         /// (SurvivalGrowth.SetView). Purely schedules work - never sets a block
         /// inline - so cascades spread across ticks instead of recursing. </summary>
+        // Genuine setBlock-class writes notify nobody; the sponge absorb is one
+        // (BlockSponge.onBlockAdded uses setBlock, not setBlockWithNotify). The
+        // flag spans the absorb's writes so removing a pond's worth of water
+        // does not wake the ocean around it - which redistributed the whole
+        // surface through donor pulls (user-reported patchy stepped water).
+        [ThreadStatic] static bool quietWrites;
+
         internal static void Notify(Level lvl, int x, int y, int z, ushort oldV, ushort newV) {
             if (lvl.Config.SurvivalMode != SurvivalMode.Indev) return;
+            if (quietWrites) return;
             LevelPhys lp = Get(lvl, true);
 
             // Notify is reachable from PLAYER receive threads (OnBlockChanged) as
@@ -212,6 +220,13 @@ namespace MCGalaxy.Network
         // BlockSponge.onBlockAdded: isWater (Material.water: moving, still, and
         // the water spring - BlockSource registers Material.water) -> air.
         static void SpongeAbsorb(Level lvl, int x, int y, int z) {
+            quietWrites = true;
+            try {
+                SpongeAbsorbCore(lvl, x, y, z);
+            } finally { quietWrites = false; }
+        }
+
+        static void SpongeAbsorbCore(Level lvl, int x, int y, int z) {
             for (int sy = y - 2; sy <= y + 2; sy++)
                 for (int sz = z - 2; sz <= z + 2; sz++)
                     for (int sx = x - 2; sx <= x + 2; sx++)
