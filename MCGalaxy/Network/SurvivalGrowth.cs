@@ -58,6 +58,11 @@ namespace MCGalaxy.Network
             public int    LightVolume;
             public int    FloodCountdown; // ticks until the next lazy re-flood (0 => flood now)
             public bool   LightDirty = true; // a block changed since the last flood (start dirty)
+
+            // sapling growth stage (genuine metadata 0-15), keyed by cell index;
+            // entries clear when the cell stops being a sapling (SetView) so a
+            // replanted sapling never inherits a dead one's progress
+            public readonly Dictionary<int, byte> SaplingStage = new Dictionary<int, byte>();
         }
 
         static readonly Dictionary<Level, LevelGrowth> registry = new Dictionary<Level, LevelGrowth>();
@@ -196,10 +201,34 @@ namespace MCGalaxy.Network
             return IsLit(lvl, x, y, z);
         }
 
-        // Genuine getBlockLightValue: the greater of the (eased) sky light where
-        // the cell sees the sky, and the flooded block light from lamps.
+        // Per-cell sky-light opacity (Block.lightOpacity): water 3, leaves 1,
+        // opaque cubes 255, everything the sky-scan passes 0.
+        static int SkyOpacity(ushort v) {
+            if (v == Block.Water || v == Block.StillWater ||
+                v == SurvivalBlocks.WATER_SOURCE) return 3;
+            if (v == Block.Leaves) return 1;
+            return BlocksSky(v) ? 255 : 0;
+        }
+
+        // The sky contribution to a cell: the eased day/night level attenuated
+        // down the column by each cell's own opacity, the cell itself included -
+        // one leaf layer reads 14 by day, one water layer 12, matching genuine's
+        // flood. The old binary IsLit-or-nothing made grass under a single leaf
+        // read pitch black (and die), and grass under shallow water unspreadable.
+        static int SkyLightAt(Level lvl, int x, int y, int z) {
+            int sky = SurvivalNet.CurrentSkyLight(lvl);
+            for (int by = lvl.Height - 1; by >= y; by--)
+            {
+                sky -= SkyOpacity(ViewAt(lvl, x, by, z));
+                if (sky <= 0) return 0;
+            }
+            return sky;
+        }
+
+        // Genuine getBlockLightValue: the greater of the attenuated sky light
+        // and the flooded block light from lamps.
         static int LightLevel(Level lvl, LevelGrowth g, int x, int y, int z) {
-            int sky = IsLit(lvl, x, y, z) ? SurvivalNet.CurrentSkyLight(lvl) : 0;
+            int sky  = SkyLightAt(lvl, x, y, z);
             int lamp = BlockLightAt(g, lvl, x, y, z);
             return sky > lamp ? sky : lamp;
         }
@@ -373,6 +402,12 @@ namespace MCGalaxy.Network
                 if (IsCrops(v))              { TickCrops(lvl, g, x, y, z, v); continue; }
                 if (IsFarmland(v))           { TickFarmland(lvl, g, x, y, z, v); continue; }
                 if (v == Block.Sapling)      { TickSapling(lvl, g, x, y, z); continue; }
+                // BlockFlower/BlockMushroom setTickOnLoad(true): every random tick
+                // re-runs canBlockStay - dark flowers pop, sun-lit mushrooms pop,
+                // plants whose soil was mined pop. These cases were simply missing
+                // from the dispatch (the client has always run them in SP).
+                if (v == Block.Rose || v == Block.Dandelion) { FlowerStayCheck(lvl, g, x, y, z, v); continue; }
+                if (v == Block.Mushroom || v == Block.RedMushroom) { MushroomStayCheck(lvl, g, x, y, z, v); continue; }
                 if (SurvivalPhysics.IsFire(v))        { SurvivalPhysics.RandomTickFire(lvl, x, y, z); continue; }
                 if (SurvivalPhysics.IsMovingFluid(v)) { SurvivalPhysics.RandomTickFluid(lvl, x, y, z, v); continue; }
                 if (SurvivalPhysics.IsSource(v))      { SurvivalPhysics.RandomTickSource(lvl, x, y, z, v); continue; }
@@ -553,14 +588,61 @@ namespace MCGalaxy.Network
         // 16 before a tree is attempted. The server has no per-cell metadata, so
         // the 16-step counter is collapsed into a single 1-in-16 roll after the
         // 1-in-5 gate - the same mean time-to-grow, no stored stage needed.
+        // opaqueCubeLookup stand-in over the view set: a sky-blocking full cube
+        // that is not leaves or a liquid. (Farmland slips through as "opaque" -
+        // genuine's 15/16 farmland is not - but a mushroom on farmland is not a
+        // state the game can normally reach.)
+        static bool OpaqueCube(ushort v) {
+            if (!BlocksSky(v)) return false;
+            switch (v) {
+                case Block.Leaves:
+                case Block.Water: case Block.StillWater:
+                case Block.Lava:  case Block.StillLava:
+                    return false;
+            }
+            if (v == SurvivalBlocks.WATER_SOURCE || v == SurvivalBlocks.LAVA_SOURCE) return false;
+            return true;
+        }
+
+        // BlockMushroom.canBlockStay: light <= 13 AND an opaque cube below -
+        // full daylight (14-15) pops a mushroom, and so does losing its soil.
+        static void MushroomStayCheck(Level lvl, LevelGrowth g, int x, int y, int z, ushort block) {
+            ushort below = y > 0 ? ViewAt(lvl, x, y - 1, z) : (ushort)Block.Air;
+            if (LightLevel(lvl, g, x, y, z) <= 13 && OpaqueCube(below)) return;
+            SurvivalDrops.SpawnScatter(lvl, x + 0.5, y + 0.5, z + 0.5, block, 1, SurvivalDrops.MinedDelay(lvl));
+            SetView(lvl, x, y, z, Block.Air);
+        }
+
+        // BlockSapling.updateTick: light(above) >= 9 && rand(5) == 0 advances the
+        // metadata stage; only at stage 15 does a tree attempt happen, and a
+        // failed attempt restores the sapling with the stage UNTOUCHED
+        // (setTileNoUpdate never writes metadata), so it retries on the very
+        // next successful roll (~50 s) instead of restarting the climb. The old
+        // memoryless 1/80 let a just-planted sapling grow instantly (genuine:
+        // impossible before 16 ticks) and made a failed attempt cost ~800 s.
         static void TickSapling(Level lvl, LevelGrowth g, int x, int y, int z) {
             if (FlowerStayCheck(lvl, g, x, y, z, Block.Sapling)) return;
             if (y + 1 >= lvl.Height || LightLevel(lvl, g, x, y + 1, z) < 9) return;
-            if (g.Rng.Next(5)  != 0) return;
-            if (g.Rng.Next(16) != 0) return;
+            if (g.Rng.Next(5) != 0) return;
 
-            SetView(lvl, x, y, z, Block.Air);
-            if (!GrowTree(lvl, g, x, y, z)) SetView(lvl, x, y, z, Block.Sapling);
+            int idx = (y * lvl.Length + z) * lvl.Width + x;
+            byte stage;
+            g.SaplingStage.TryGetValue(idx, out stage);
+            if (stage < 15) { g.SaplingStage[idx] = (byte)(stage + 1); return; }
+
+            SetView(lvl, x, y, z, Block.Air); // clears the stage entry via Notify
+            if (!GrowTree(lvl, g, x, y, z)) {
+                SetView(lvl, x, y, z, Block.Sapling);
+                g.SaplingStage[idx] = 15; // genuine setTileNoUpdate keeps metadata: fast retry
+            }
+        }
+
+        /// <summary> A cell stopped being a sapling (any write path, player edits
+        /// included via SurvivalPhysics.Notify) - drop its growth stage so a
+        /// replanted sapling never inherits a dead one's progress. </summary>
+        internal static void ClearSaplingStage(Level lvl, int x, int y, int z) {
+            LevelGrowth g = GetLevel(lvl, false);
+            if (g != null) g.SaplingStage.Remove((y * lvl.Length + z) * lvl.Width + x);
         }
 
         // BlockFlower.canBlockStay: light >= 8, or light >= 4 with open sky, on

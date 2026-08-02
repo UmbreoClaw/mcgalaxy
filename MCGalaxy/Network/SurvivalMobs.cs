@@ -94,6 +94,8 @@ namespace MCGalaxy.Network
             public double VX, VY, VZ;   // per-tick displacement (Java velocity convention)
             public float Yaw, Pitch;    // degrees
             public bool OnGround;
+            public double WalkDist;     // Entity.distanceWalkedModified (dist * 0.6)
+            public int    NextStep = 1; // Entity.nextStepDistance
 
             public int Health = 20, LastHealth, InvincTicks, AttackDelay, DeathTicks;
             public int NoActionTime, AirTicks = 300;
@@ -2424,7 +2426,30 @@ namespace MCGalaxy.Network
             DoJump(m, inWater, inLava, spiderLunge);
             m.MoveStrafe *= 0.98f; m.MoveForward *= 0.98f; m.TurnRate *= 0.9f;
             double oldY = m.Y;
+            double preX = m.X, preZ = m.Z;
             Travel(lvl, m, inWater, inLava);
+
+            // Entity.move's walking trigger for mobs (see SurvivalHazards for the
+            // player half): every ~1.67 blocks walked, onEntityWalking on the
+            // block at feet - 0.2 - i.e. a pig wandering a farm tramples the
+            // farmland (1-in-4 -> dirt) just like in singleplayer.
+            if (indev) {
+                double wdx = m.X - preX, wdz = m.Z - preZ;
+                m.WalkDist += Math.Sqrt(wdx * wdx + wdz * wdz) * 0.6;
+                if (m.WalkDist > m.NextStep) {
+                    m.NextStep = (int)m.WalkDist + 1;
+                    int tbx = (int)Math.Floor(m.X), tbz = (int)Math.Floor(m.Z);
+                    int tby = (int)Math.Floor(m.Y - 0.2);
+                    if (tbx >= 0 && tby >= 0 && tbz >= 0 &&
+                        tbx < lvl.Width && tby < lvl.Height && tbz < lvl.Length) {
+                        ushort under = SurvivalGrowth.ViewAt(lvl, tbx, tby, tbz);
+                        if ((under == SurvivalBlocks.FARMLAND || under == SurvivalBlocks.FARMLAND_WET) &&
+                            rng.Next(4) == 0) {
+                            SurvivalGrowth.SetView(lvl, tbx, tby, tbz, Block.Dirt);
+                        }
+                    }
+                }
+            }
 
             // entity collision (Entity.push / applyEntityCollision): shove the mob
             // away from any overlapping player (the "pushback from players" - walk

@@ -55,7 +55,12 @@ namespace MCGalaxy.Network
         // ==================== per-level state ====================
 
         struct FireEntry { public int Index; public int Time; }
-        struct FluidEntry { public int Index; public int Delay; public bool Water; public bool Activate; }
+        struct FluidEntry {
+            public int Index; public int Delay; public bool Water; public bool Activate;
+            // 0 = normal; 1 = petrify a still fluid (the CHANGED neighbour was the
+            // opposite liquid); 2 = BlockSource.onBlockAdded's immediate fill
+            public byte Special;
+        }
 
         sealed class LevelPhys
         {
@@ -145,11 +150,22 @@ namespace MCGalaxy.Network
             // well as the tick thread (Set -> SetView -> Notify); the schedules are
             // plain Queue/List/HashSet, so every mutation serializes on the LevelPhys
             // monitor (re-entrant, so tick-thread nesting is fine).
+            if (oldV == Block.Sapling && newV != Block.Sapling)
+                SurvivalGrowth.ClearSaplingStage(lvl, x, y, z);
+
             lock (lp) {
                 if (newV == FIRE) { SetAge(lp, lvl, Pack(lvl, x, y, z), 0); ScheduleFire(lp, Pack(lvl, x, y, z)); }
                 else if (oldV == FIRE) SetAge(lp, lvl, Pack(lvl, x, y, z), 0);
 
                 if (newV == Block.Water || newV == Block.Lava) ScheduleFluid(lp, Pack(lvl, x, y, z), newV == Block.Water, false);
+
+                // BlockSource.onBlockAdded floods the 4 horizontal AIR neighbours
+                // with the moving fluid immediately - the client's spring erupts
+                // the instant it is placed, and the server's used to sit dry for
+                // ~10 s until the random pass found it. Enqueue-only discipline:
+                // a zero-delay source entry runs the fill on the next tick.
+                if (newV == WATER_SRC || newV == LAVA_SRC)
+                    ScheduleSourceFill(lp, Pack(lvl, x, y, z));
 
                 // BlockSponge: onBlockAdded absorbs every water-material block in
                 // the 5x5x5 cube; onBlockRemoval notifies that whole cube, whose
@@ -162,12 +178,12 @@ namespace MCGalaxy.Network
                 if (oldV == Block.Sponge && newV != Block.Sponge) SpongeRemoved(lp, lvl, x, y, z);
 
                 // neighbours react: re-check adjacent fires, wake adjacent still fluids
-                NotifyNeighbour(lp, lvl, x - 1, y, z);
-                NotifyNeighbour(lp, lvl, x + 1, y, z);
-                NotifyNeighbour(lp, lvl, x, y - 1, z);
-                NotifyNeighbour(lp, lvl, x, y + 1, z);
-                NotifyNeighbour(lp, lvl, x, y, z - 1);
-                NotifyNeighbour(lp, lvl, x, y, z + 1);
+                NotifyNeighbour(lp, lvl, x - 1, y, z, newV);
+                NotifyNeighbour(lp, lvl, x + 1, y, z, newV);
+                NotifyNeighbour(lp, lvl, x, y - 1, z, newV);
+                NotifyNeighbour(lp, lvl, x, y + 1, z, newV);
+                NotifyNeighbour(lp, lvl, x, y, z - 1, newV);
+                NotifyNeighbour(lp, lvl, x, y, z + 1, newV);
             }
         }
 
@@ -193,12 +209,12 @@ namespace MCGalaxy.Network
                 for (int sz = z - 2; sz <= z + 2; sz++)
                     for (int sx = x - 2; sx <= x + 2; sx++)
                     {
-                        NotifyNeighbour(lp, lvl, sx - 1, sy, sz);
-                        NotifyNeighbour(lp, lvl, sx + 1, sy, sz);
-                        NotifyNeighbour(lp, lvl, sx, sy - 1, sz);
-                        NotifyNeighbour(lp, lvl, sx, sy + 1, sz);
-                        NotifyNeighbour(lp, lvl, sx, sy, sz - 1);
-                        NotifyNeighbour(lp, lvl, sx, sy, sz + 1);
+                        NotifyNeighbour(lp, lvl, sx - 1, sy, sz, Block.Air);
+                        NotifyNeighbour(lp, lvl, sx + 1, sy, sz, Block.Air);
+                        NotifyNeighbour(lp, lvl, sx, sy - 1, sz, Block.Air);
+                        NotifyNeighbour(lp, lvl, sx, sy + 1, sz, Block.Air);
+                        NotifyNeighbour(lp, lvl, sx, sy, sz - 1, Block.Air);
+                        NotifyNeighbour(lp, lvl, sx, sy, sz + 1, Block.Air);
                     }
         }
 
@@ -233,12 +249,36 @@ namespace MCGalaxy.Network
             SurvivalGrowth.MarkLightDirty(lvl);
         }
 
-        static void NotifyNeighbour(LevelPhys lp, Level lvl, int x, int y, int z) {
+        // BlockStationary.onNeighborBlockChange: petrify ONLY when the block
+        // that just CHANGED is the opposite liquid; any other change wakes.
+        // (The old code scanned the current neighbours and petrified on any
+        // pre-existing contact - so mining a stone beside map-generated water
+        // that touched lava turned the WATER to stone, when genuine wakes the
+        // water and its flow update turns the LAVA to stone.)
+        static void NotifyNeighbour(LevelPhys lp, Level lvl, int x, int y, int z, ushort changedV) {
             if (!In(lvl, x, y, z)) return;
             ushort b = View(lvl, x, y, z);
-            if (b == FIRE) ScheduleFire(lp, Pack(lvl, x, y, z));
-            else if (b == Block.StillWater) ScheduleFluid(lp, Pack(lvl, x, y, z), true, true);
-            else if (b == Block.StillLava)  ScheduleFluid(lp, Pack(lvl, x, y, z), false, true);
+            if (b == FIRE) { ScheduleFire(lp, Pack(lvl, x, y, z)); return; }
+            if (b != Block.StillWater && b != Block.StillLava) return;
+
+            bool water = b == Block.StillWater;
+            if (water ? IsLavaMat(changedV) : IsWaterMat(changedV)) {
+                SchedulePetrify(lp, Pack(lvl, x, y, z));
+            } else {
+                ScheduleFluid(lp, Pack(lvl, x, y, z), water, true);
+            }
+        }
+
+        // Front-inserted so it runs before any same-tick wake for the cell -
+        // genuine's petrify happens INSTEAD of the wake, never after it.
+        static void SchedulePetrify(LevelPhys lp, int index) {
+            if (lp.Fluid.Count >= FLUID_SCHED_MAX) return;
+            lp.Fluid.Insert(0, new FluidEntry { Index = index, Special = 1 });
+        }
+
+        static void ScheduleSourceFill(LevelPhys lp, int index) {
+            if (lp.Fluid.Count >= FLUID_SCHED_MAX) return;
+            lp.Fluid.Add(new FluidEntry { Index = index, Special = 2 });
         }
 
 
@@ -464,11 +504,16 @@ namespace MCGalaxy.Network
                 // swap-remove BEFORE running (the update may reschedule this cell)
                 lp.Fluid[i] = lp.Fluid[lp.Fluid.Count - 1];
                 lp.Fluid.RemoveAt(lp.Fluid.Count - 1);
-                lp.FluidPending.Remove(e.Index);
+                if (e.Special == 0) lp.FluidPending.Remove(e.Index);
 
                 int x, y, z; Unpack(lvl, e.Index, out x, out y, out z);
                 ushort b = View(lvl, x, y, z);
-                if (e.Activate) {
+                if (e.Special == 1) {
+                    // still still-fluid? the opposite-liquid contact petrifies it
+                    if (b == Block.StillWater || b == Block.StillLava) Set(lvl, x, y, z, Block.Stone);
+                } else if (e.Special == 2) {
+                    if (b == WATER_SRC || b == LAVA_SRC) RandomTickSource(lvl, x, y, z, b);
+                } else if (e.Activate) {
                     if (b == Block.StillWater || b == Block.StillLava) ActivateStill(lp, lvl, e.Index, b);
                 } else if (b == Block.Water || b == Block.Lava) {
                     FluidUpdate(lp, lvl, e.Index, b);
@@ -750,17 +795,13 @@ namespace MCGalaxy.Network
         static readonly int[] NX = { -1, 1, 0, 0, 0, 0 };
         static readonly int[] NY = { 0, 0, -1, 1, 0, 0 };
         static readonly int[] NZ = { 0, 0, 0, 0, -1, 1 };
+        // Wake only: the petrify half of onNeighborBlockChange rides the CHANGED
+        // block id through NotifyNeighbour/SchedulePetrify. A woken fluid meeting
+        // pre-existing lava resolves through its own flow update (WaterContact:
+        // the LAVA turns to stone), exactly as genuine does.
         static void ActivateStill(LevelPhys lp, Level lvl, int index, ushort block) {
             int x, y, z; Unpack(lvl, index, out x, out y, out z);
             bool water = block == Block.StillWater;
-
-            for (int n = 0; n < 6; n++)
-            {
-                int nx = x + NX[n], ny = y + NY[n], nz = z + NZ[n];
-                if (!In(lvl, nx, ny, nz)) continue;
-                ushort nb = View(lvl, nx, ny, nz);
-                if (water ? IsLavaMat(nb) : IsWaterMat(nb)) { Set(lvl, x, y, z, Block.Stone); return; }
-            }
 
             bool wake = CanFlowInto(lvl, water, x, y - 1, z) ||
                         CanFlowInto(lvl, water, x - 1, y, z) || CanFlowInto(lvl, water, x + 1, y, z) ||

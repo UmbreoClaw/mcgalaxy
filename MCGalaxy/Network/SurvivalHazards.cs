@@ -67,6 +67,8 @@ namespace MCGalaxy.Network
             public double FallPeakY;
             public int    AirTicks = MAX_AIR;
             public int    FireTicks;
+            public double WalkDist;      // Entity.distanceWalkedModified (dist * 0.6)
+            public int    NextStep = 1;  // Entity.nextStepDistance
         }
 
         const string KEY = "survival.hazards";
@@ -169,8 +171,35 @@ namespace MCGalaxy.Network
                 }
             }
 
+            // Entity.move's walking trigger: distanceWalkedModified accumulates
+            // horizontal distance * 0.6 and fires the block-under's
+            // onEntityWalking each time it crosses nextStepDistance (so roughly
+            // every 1.67 blocks walked). The only onEntityWalking in Indev is
+            // farmland's trample: 1-in-4 -> dirt. Airborne strides self-gate:
+            // the cell at feet - 0.2 is air mid-jump, and air has no handler.
+            // Client SP has always trampled; MP farmland was indestructible.
+            if (indev && st.HasLast) {
+                double wx = x - st.LastX, wz = z - st.LastZ;
+                st.WalkDist += Math.Sqrt(wx * wx + wz * wz) * 0.6;
+                if (st.WalkDist > st.NextStep) {
+                    st.NextStep = (int)st.WalkDist + 1;
+                    int bx = (int)Math.Floor(x), bz = (int)Math.Floor(z);
+                    int by = (int)Math.Floor(y - 0.2);
+                    if (bx >= 0 && by >= 0 && bz >= 0 &&
+                        bx < lvl.Width && by < lvl.Height && bz < lvl.Length) {
+                        ushort under = SurvivalGrowth.ViewAt(lvl, bx, by, bz);
+                        if ((under == SurvivalBlocks.FARMLAND || under == SurvivalBlocks.FARMLAND_WET) &&
+                            trampleRng.Next(4) == 0) {
+                            SurvivalGrowth.SetView(lvl, bx, by, bz, Block.Dirt);
+                        }
+                    }
+                }
+            }
+
             st.LastX = x; st.LastY = y; st.LastZ = z; st.HasLast = true;
         }
+
+        static readonly Random trampleRng = new Random();
 
         static void ResetMotion(HazardState st, double x, double y, double z) {
             st.Falling = false;
