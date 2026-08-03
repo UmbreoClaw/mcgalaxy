@@ -85,7 +85,7 @@ namespace MCGalaxy.Network
         static readonly object registryLock = new object();
 
         const int FIRE_QUEUE_MAX = 8192;
-        const int FLUID_SCHED_MAX = 8192;
+        const int FLUID_SCHED_MAX = 1 << 18; // genuine tickList is unbounded; this is a runaway backstop only
 
         static LevelPhys Get(Level lvl, bool create) {
             lock (registryLock) {
@@ -561,11 +561,23 @@ namespace MCGalaxy.Network
             if (In(lvl, x, y, z + 1) && View(lvl, x, y, z + 1) == Block.Air) Set(lvl, x, y, z + 1, fluid);
         }
 
+        // Genuine World.tick drains AT MOST 200 scheduled entries per tick and
+        // carries the rest - an unbounded list with bounded work. Ours had it
+        // inverted (bounded 8192 list, unbounded work): a blast waking a lake
+        // overflowed the cap and the dropped cells froze as moving-water statues
+        // until a random tick poked them ~10s later ("our water is slower" -
+        // user-reported). The per-tick budget also keeps a lake-sized queue from
+        // spiking the 20 TPS tick.
+        const int FLUID_RUNS_PER_TICK = 200;
+
         static void TickFluids(LevelPhys lp, Level lvl) {
+            int ran = 0;
             for (int i = 0; i < lp.Fluid.Count; )
             {
                 FluidEntry e = lp.Fluid[i];
                 if (e.Delay > 0) { e.Delay--; lp.Fluid[i] = e; i++; continue; }
+                if (ran >= FLUID_RUNS_PER_TICK) { i++; continue; } // due, carries to next tick
+                ran++;
                 // swap-remove BEFORE running (the update may reschedule this cell)
                 lp.Fluid[i] = lp.Fluid[lp.Fluid.Count - 1];
                 lp.Fluid.RemoveAt(lp.Fluid.Count - 1);
