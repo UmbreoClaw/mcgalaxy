@@ -1191,9 +1191,16 @@ namespace MCGalaxy.Network
                     }
                     break;
                 case DROP_ITEM:
-                    // [id][slot][wholeStack] - Q-toss: take the item off the
-                    // server-owned inventory and fling it out as a drop entity.
-                    if (data.Length >= 3) SurvivalDrops.Toss(p, data[1], data[2] != 0);
+                    // [id][slot][wholeStack][declaredId u16 BE] - Q-toss: take the
+                    // item off the server-owned inventory and fling it out as a
+                    // drop entity. declaredId is only trusted on CREATIVE maps,
+                    // where no server inventory exists (old clients send zeros
+                    // there, which is refused - the 64-byte frame keeps this
+                    // compatible both ways).
+                    if (data.Length >= 5)
+                        SurvivalDrops.Toss(p, data[1], data[2] != 0, (ushort)((data[3] << 8) | data[4]));
+                    else if (data.Length >= 3)
+                        SurvivalDrops.Toss(p, data[1], data[2] != 0, 0);
                     break;
                 case FIRE_ARROW:
                     // [id][yaw:u16 ×100 (0..36000)][pitch:i16 ×100][kind(0 tab/1 bow)]

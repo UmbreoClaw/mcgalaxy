@@ -280,14 +280,26 @@ namespace MCGalaxy.Network
         /// The server takes the item off the server-owned inventory, then flings a
         /// drop out in front along the player's look vector with a 40-tick
         /// self-pickup delay (genuine EntityPlayer.dropPlayerItem). </summary>
-        public static void Toss(Player p, int slot, bool whole) {
+        public static void Toss(Player p, int slot, bool whole, ushort declaredId) {
             Level lvl = p.level;
             if (lvl == null || !SurvivalNet.Active(p, lvl)) return;
             if (Commands.World.CmdSpectate.IsSpectating(p)) return; // observers don't toss
-            if (lvl.Config.SurvivalCreative) return; // creative keeps the local palette
 
             ushort id; byte count;
-            if (!SurvivalInventory.TakeForToss(p, slot, whole, out id, out count)) return;
+            if (lvl.Config.SurvivalCreative) {
+                // Creative has no server inventory to take from - the client
+                // DECLARES what it holds (the USE_ITEM/painting pattern), the
+                // palette is infinite so nothing is consumed, and the toss
+                // becomes an ordinary server-owned drop every viewer sees.
+                // (The old local-only creative drop froze midair on MP: the
+                // client only ticks net drops there - user-reported.)
+                if (declaredId == 0) return;
+                if (declaredId < 256 ? declaredId > SurvivalBlocks.TORCH_W4
+                                     : !SurvivalItems.KnownItem(declaredId)) return;
+                id = declaredId; count = 1;
+            } else if (!SurvivalInventory.TakeForToss(p, slot, whole, out id, out count)) {
+                return;
+            }
 
             // dropPlayerItem spawns at eye height - 0.3. p.Pos.Y already carries the
             // character-height offset (feet + 51/32), i.e. ~eye level, so eye-0.3

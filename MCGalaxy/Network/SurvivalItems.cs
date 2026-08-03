@@ -135,6 +135,12 @@ namespace MCGalaxy.Network
 
         /// <summary> Per-id max stack, matching the client: blocks 99, items 64,
         /// tools/food/armor 1. </summary>
+        /// <summary> Whether an item id (256+) exists in the Indev item table -
+        /// the validation for client-declared ids (creative tosses). </summary>
+        public static bool KnownItem(ushort id) {
+            return Find(id).HasValue;
+        }
+
         public static int MaxStack(ushort id) {
             if (id < 256) return 99;
             ItemDef? d = Find(id);
