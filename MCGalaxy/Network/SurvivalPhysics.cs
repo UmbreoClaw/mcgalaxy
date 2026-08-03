@@ -33,11 +33,11 @@ namespace MCGalaxy.Network
     /// <remarks>
     /// Genuine Minecraft drives fire and fluids off World's scheduled-update list;
     /// the client mirrors that with inline recursion through its block-change hook.
-    /// The server uses the scheduled model directly (Notify only ENQUEUES work,
-    /// never sets blocks inline) so a lake waking or a fire field collapsing can
-    /// never blow the stack - it just spreads the work across ticks, which is what
-    /// genuine does anyway. TNT caught by fire is consumed but not detonated:
-    /// block-destroying explosions aren't ported yet (same limit as CreeperExplode).
+    /// The server uses the scheduled model for fluids (Notify ENQUEUES their work)
+    /// so a lake waking can never blow the stack - it just spreads the work across
+    /// ticks, which is what genuine does anyway. Fire's support validation is the
+    /// genuine synchronous exception (see Notify). TNT caught by fire is primed as
+    /// a full-fuse entity (FireTryCatch -> SurvivalTnt.Ignite).
     /// </remarks>
     internal static class SurvivalPhysics
     {
@@ -166,8 +166,10 @@ namespace MCGalaxy.Network
         // ==================== the notify hook (enqueue only) ====================
 
         /// <summary> Announced for every server-authored block change on the level
-        /// (SurvivalGrowth.SetView). Purely schedules work - never sets a block
-        /// inline - so cascades spread across ticks instead of recursing. </summary>
+        /// (SurvivalGrowth.SetView). Schedules work rather than setting blocks
+        /// inline, with one genuine exception: BlockFire's onBlockAdded /
+        /// onNeighborBlockChange support checks remove an unsupported fire
+        /// synchronously (bounded recursion - fire chains are short). </summary>
         // Genuine setBlock-class writes notify nobody; the sponge absorb is one
         // (BlockSponge.onBlockAdded uses setBlock, not setBlockWithNotify). The
         // flag spans the absorb's writes so removing a pond's worth of water
@@ -210,7 +212,18 @@ namespace MCGalaxy.Network
                 SurvivalGrowth.ClearSaplingStage(lvl, x, y, z);
 
             lock (lp) {
-                if (newV == FIRE) { SetAge(lp, lvl, Pack(lvl, x, y, z), 0); ScheduleFire(lp, Pack(lvl, x, y, z)); }
+                // BlockFire.onBlockAdded runs synchronously: a fire with no normal
+                // cube below and no flammable neighbour is removed at once, else it
+                // schedules its first update. (This used to enqueue unconditionally,
+                // so an unsupported fire lingered ~1s server-side before the check.)
+                if (newV == FIRE) {
+                    if (!NormalCube(lvl, x, y - 1, z) && !CanNeighbourCatch(lvl, x, y, z)) {
+                        SetFire(lvl, x, y, z, Block.Air);
+                    } else {
+                        SetAge(lp, lvl, Pack(lvl, x, y, z), 0);
+                        ScheduleFire(lp, Pack(lvl, x, y, z));
+                    }
+                }
                 else if (oldV == FIRE) SetAge(lp, lvl, Pack(lvl, x, y, z), 0);
 
                 if (newV == Block.Water || newV == Block.Lava) ScheduleFluid(lp, Pack(lvl, x, y, z), newV == Block.Water, false);
@@ -321,7 +334,16 @@ namespace MCGalaxy.Network
         static void NotifyNeighbour(LevelPhys lp, Level lvl, int x, int y, int z, ushort changedV) {
             if (!In(lvl, x, y, z)) return;
             ushort b = View(lvl, x, y, z);
-            if (b == FIRE) { ScheduleFire(lp, Pack(lvl, x, y, z)); return; }
+            if (b == FIRE) {
+                // BlockFire.onNeighborBlockChange, synchronous and schedule-free:
+                // an unsupported fire is removed immediately; a supported one just
+                // keeps its own update chain. (This used to enqueue an extra 1s
+                // entry instead, so a fire outlived its mined support and burned
+                // through extra updateTicks genuine never runs.)
+                if (!NormalCube(lvl, x, y - 1, z) && !CanNeighbourCatch(lvl, x, y, z))
+                    SetFire(lvl, x, y, z, Block.Air);
+                return;
+            }
             if (b != Block.StillWater && b != Block.StillLava) return;
 
             bool water = b == Block.StillWater;
@@ -389,6 +411,41 @@ namespace MCGalaxy.Network
         static void SetAge(LevelPhys lp, Level lvl, int index, int age) {
             EnsureFireAges(lp, lvl);
             if (index >= 0 && index < lp.FireVol) lp.FireAge[index] = (byte)(age & 15);
+        }
+
+        /// <summary> Sidecar: one "fire x y z age" line per mid-burn fire cell.
+        /// Genuine keeps fire age in the level's data nibble array, which is part
+        /// of the saved level - a reloaded fire resumes its 16-stage burn where it
+        /// stopped instead of restarting the full ~16s from age 0. </summary>
+        internal static void SaveFireAges(Level lvl, System.IO.TextWriter w) {
+            LevelPhys lp = Get(lvl, false);
+            if (lp == null) return;
+            lock (lp) {
+                if (lp.FireAge == null || lp.FireVol != lvl.Width * lvl.Height * lvl.Length) return;
+                for (int i = 0; i < lp.FireVol; i++)
+                {
+                    if (lp.FireAge[i] == 0) continue;
+                    int x, y, z; Unpack(lvl, i, out x, out y, out z);
+                    if (View(lvl, x, y, z) != FIRE) continue; // stale age, id persists on its own
+                    w.WriteLine("fire " + x + " " + y + " " + z + " " + lp.FireAge[i]);
+                }
+            }
+        }
+
+        internal static void RestoreFireAge(Level lvl, string[] p) {
+            if (p.Length < 5) return;
+            int x, y, z, age;
+            if (!int.TryParse(p[1], out x) || !int.TryParse(p[2], out y) ||
+                !int.TryParse(p[3], out z) || !int.TryParse(p[4], out age)) return;
+            if (!In(lvl, x, y, z)) return;
+            LevelPhys lp = Get(lvl, true);
+            lock (lp) {
+                if (View(lvl, x, y, z) != FIRE) return;
+                SetAge(lp, lvl, Pack(lvl, x, y, z), age);
+                // EnsureLoaded re-schedules every FIRE cell on the level's first
+                // tick, so the restored fire wakes on its own - only the age was
+                // memory-only.
+            }
         }
 
         static void ScheduleFire(LevelPhys lp, int index) {

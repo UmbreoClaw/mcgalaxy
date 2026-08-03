@@ -23,10 +23,11 @@ namespace MCGalaxy.Network
 {
     /// <summary> Persists a survival map's live simulation state across unload/reload
     /// in a per-level sidecar (extra/survival/&lt;level&gt;.sur): its mobs (type,
-    /// position, health, state) and its chest/furnace tile-entity contents. Time of
-    /// day rides Level.Config.SurvivalTime and grown terrain rides the .lvl block
-    /// array, so both persist on their own - this file covers the two things that
-    /// only live in memory. Written on level save + unload, read on level load. </summary>
+    /// position, health, state), its chest/furnace tile-entity contents, its
+    /// paintings and its mid-burn fire ages. Time of day rides
+    /// Level.Config.SurvivalTime and grown terrain rides the .lvl block array, so
+    /// both persist on their own - this file covers what only lives in memory.
+    /// Written on level save + unload, read on level load. </summary>
     internal static class SurvivalPersistence
     {
         static string Path(Level lvl) {
@@ -50,6 +51,7 @@ namespace MCGalaxy.Network
                     SurvivalMobs.SaveMobs(lvl, w);
                     SurvivalInventory.SaveContainers(lvl, w);
                     SurvivalPaintings.SavePaintings(lvl, w);
+                    SurvivalPhysics.SaveFireAges(lvl, w);
                 }
                 // atomic replace where possible so a crash can't lose both copies
                 if (File.Exists(path)) File.Replace(tmp, path, null);
@@ -75,6 +77,7 @@ namespace MCGalaxy.Network
                     if (parts[0] == "mob")        SurvivalMobs.RestoreMob(lvl, parts);
                     else if (parts[0] == "cont")  SurvivalInventory.RestoreContainer(lvl, parts);
                     else if (parts[0] == "paint") SurvivalPaintings.RestorePainting(lvl, parts);
+                    else if (parts[0] == "fire")  SurvivalPhysics.RestoreFireAge(lvl, parts);
                 }
                 File.Delete(path); // consumed - each sidecar restores exactly once
             } catch (Exception ex) {
