@@ -592,8 +592,10 @@ namespace MCGalaxy.Network
 
         // ItemFlintAndSteel.onItemUse (IndevFire_UseFlintSteel): step one cell out
         // of the clicked face and, if that interior cell is air, set fire there -
-        // the fire physics then spreads it and catches adjacent TNT. The item wears
-        // 1 durability whether or not fire was actually placed (shatters past 64).
+        // the fire physics then spreads it and catches adjacent TNT. The interior
+        // bounds check wraps the WHOLE use: a boundary target returns false with
+        // no wear, while an occupied interior target still wears 1 durability
+        // (damageItem sits inside the interior branch, after the air check).
         static bool UseFlintSteel(Player p, Level lvl, PlayerInv inv, int held, ushort heldId, int x, int y, int z, int face) {
             if (!SurvivalItems.IsFlintSteel(heldId)) return false;
             switch (face) {          // Constants.h FACE_*: XMIN0 XMAX1 ZMIN2 ZMAX3 YMIN4 YMAX5
@@ -605,9 +607,10 @@ namespace MCGalaxy.Network
                 case 5: y++; break;
             }
             // interior cells only (genuine >0 and <dim-1 on every axis)
-            if (x > 0 && y > 0 && z > 0 &&
-                x < lvl.Width - 1 && y < lvl.Height - 1 && z < lvl.Length - 1 &&
-                RawAt(lvl, x, y, z) == Block.Air) {
+            if (!(x > 0 && y > 0 && z > 0 &&
+                  x < lvl.Width - 1 && y < lvl.Height - 1 && z < lvl.Length - 1)) return false;
+
+            if (RawAt(lvl, x, y, z) == Block.Air) {
                 lvl.UpdateBlock(Player.Console, (ushort)x, (ushort)y, (ushort)z, Block.FromRaw(SurvivalBlocks.FIRE));
                 // Console-authored changes don't raise OnBlockChangedEvent, so
                 // schedule the new fire explicitly - else it only comes alive on
