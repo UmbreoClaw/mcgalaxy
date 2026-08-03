@@ -116,10 +116,34 @@ namespace MCGalaxy.Network
         // ==================== block helpers ====================
 
         static ushort View(Level lvl, int x, int y, int z) { return SurvivalGrowth.ViewAt(lvl, x, y, z); }
-        static void   Set(Level lvl, int x, int y, int z, ushort v) { SurvivalGrowth.SetView(lvl, x, y, z, v); }
+
+        // Genuine setBlock/setBlockWithNotify refuse the OUTER SHELL (x/y/z 0 and
+        // dim-1): every runtime write there silently fails, which is what makes
+        // the map-edge ocean ring an INFINITE source - border cells can never be
+        // emptied by donor pulls, petrified, evaporated, or spread into. Ours
+        // accepted shell writes, so sponge refloods (and any drainage near the
+        // edge) DRAINED the edge ring and the ocean surface never converged
+        // (user-reported stepped patches). setTileNoUpdate is full-range in
+        // genuine, and a fluid's still<->moving state flip is exactly that class,
+        // so those keep the whole map.
+        static bool Interior(Level lvl, int x, int y, int z) {
+            return x > 0 && y > 0 && z > 0 &&
+                   x < lvl.Width - 1 && y < lvl.Height - 1 && z < lvl.Length - 1;
+        }
+        static bool StateFlipWrite(ushort oldV, ushort newV) {
+            return (oldV == Block.StillWater && newV == Block.Water)      ||
+                   (oldV == Block.Water      && newV == Block.StillWater) ||
+                   (oldV == Block.StillLava  && newV == Block.Lava)       ||
+                   (oldV == Block.Lava       && newV == Block.StillLava);
+        }
+        static void   Set(Level lvl, int x, int y, int z, ushort v) {
+            if (!Interior(lvl, x, y, z) && !StateFlipWrite(SurvivalGrowth.ViewAt(lvl, x, y, z), v)) return;
+            SurvivalGrowth.SetView(lvl, x, y, z, v);
+        }
         // fire's spread/burn writes carry the "(fire)" BlockDB author, so /About
         // names the culprit and /UndoPlayer (fire) can roll a blaze back
         static void   SetFire(Level lvl, int x, int y, int z, ushort v) {
+            if (!Interior(lvl, x, y, z)) return;
             SurvivalGrowth.SetView(lvl, SurvivalActors.Fire, x, y, z, v);
         }
         static bool   In(Level lvl, int x, int y, int z) {
@@ -231,7 +255,7 @@ namespace MCGalaxy.Network
                 for (int sz = z - 2; sz <= z + 2; sz++)
                     for (int sx = x - 2; sx <= x + 2; sx++)
                     {
-                        if (!In(lvl, sx, sy, sz)) continue;
+                        if (!Interior(lvl, sx, sy, sz)) continue; // genuine setBlock: shell unwritable
                         ushort b = View(lvl, sx, sy, sz);
                         if (b == Block.Water || b == Block.StillWater || b == SurvivalBlocks.WATER_SOURCE)
                             SurvivalGrowth.SetView(lvl, sx, sy, sz, Block.Air);
