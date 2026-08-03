@@ -255,7 +255,6 @@ namespace MCGalaxy.Network
         public static bool SpawnMined(Player p, Level lvl, ushort x, ushort y, ushort z,
                                       ushort view, ushort held) {
             bool indev = lvl.Config.SurvivalMode == SurvivalMode.Indev;
-            double cx = x + 0.5, cy = y + 0.5, cz = z + 0.5;
 
             if (indev) {
                 List<KeyValuePair<ushort, int>> drops = new List<KeyValuePair<ushort, int>>();
@@ -263,15 +262,14 @@ namespace MCGalaxy.Network
                 if (drops.Count == 0) return false;
                 foreach (KeyValuePair<ushort, int> kv in drops)
                 {
-                    // one drop entity per item (genuine BlockUtils.dropItems), each
-                    // with its own little pop so a multi-item break scatters
-                    for (int n = 0; n < kv.Value; n++)
-                        Spawn(lvl, cx, cy, cz, PopX(), PopY(), PopZ(), kv.Key, 1, MINED_DELAY);
+                    // one drop entity per item, each at its own genuine in-cell
+                    // scatter position + pop, so a multi-item break scatters
+                    SpawnBlockDrops(lvl, x, y, z, kv.Key, kv.Value, MINED_DELAY);
                 }
                 return true;
             } else {
                 if (view > Block.CLASSIC_MAX_BLOCK) return false;
-                Spawn(lvl, cx, cy, cz, PopX(), PopY(), PopZ(), view, 1, 0);
+                SpawnBlockDrops(lvl, x, y, z, view, 1, 0);
                 return true;
             }
         }
@@ -335,12 +333,31 @@ namespace MCGalaxy.Network
         }
 
         /// <summary> Spawns `count` separate single-item drops at (x,y,z), each with
-        /// its own random pop - a mob-death scatter, a wool shear, an explosion
-        /// scatter (genuine BlockUtils.dropItems: one EntityItem per item). </summary>
+        /// its own random pop - a mob-death scatter or a wool shear (drops anchored
+        /// to an ENTITY position; block-cell drops go through SpawnBlockDrops). </summary>
         public static void SpawnScatter(Level lvl, double x, double y, double z,
                                         ushort item, int count, int delay) {
             for (int i = 0; i < count; i++)
                 Spawn(lvl, x, y, z, PopX(), PopY(), PopZ(), item, 1, delay);
+        }
+
+        /// <summary> Drops anchored to a block CELL - mined blocks, popped plants,
+        /// decayed-leaf saplings, explosion debris. Genuine positions every item at
+        /// corner + rand*0.7 + 0.15 on all three axes (Indev
+        /// Block.dropBlockAsItemWithChance; c0.30 Tile dropItems uses the identical
+        /// f=0.7 formula), scattered inside the cell rather than at its center. </summary>
+        public static void SpawnBlockDrops(Level lvl, int x, int y, int z,
+                                           ushort item, int count, int delay) {
+            for (int i = 0; i < count; i++)
+            {
+                double sx, sy, sz;
+                lock (rng) {
+                    sx = x + rng.NextDouble() * 0.7 + 0.15;
+                    sy = y + rng.NextDouble() * 0.7 + 0.15;
+                    sz = z + rng.NextDouble() * 0.7 + 0.15;
+                }
+                Spawn(lvl, sx, sy, sz, PopX(), PopY(), PopZ(), item, 1, delay);
+            }
         }
 
         /// <summary> Spawns ONE drop carrying a whole stack at (x,y,z) with a random

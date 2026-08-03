@@ -491,8 +491,8 @@ namespace MCGalaxy.Network
             // pickup reach of where it visibly fell.
             SetView(lvl, x, y, z, Block.Air);
             if (g.Rng.Next(10) == 0)
-                SurvivalDrops.SpawnScatter(lvl, x + 0.5, y + 0.5, z + 0.5,
-                                           (ushort)Block.Sapling, 1, SurvivalDrops.MinedDelay(lvl));
+                SurvivalDrops.SpawnBlockDrops(lvl, x, y, z,
+                                              (ushort)Block.Sapling, 1, SurvivalDrops.MinedDelay(lvl));
         }
 
         // BlockCrops.updateTick: the stay check first, then a farmland-weighted,
@@ -540,8 +540,8 @@ namespace MCGalaxy.Network
         // stages drop nothing (seeds only come from mining).
         static void PopCrop(Level lvl, LevelGrowth g, int x, int y, int z, ushort crop) {
             if (crop == SurvivalBlocks.CROPS_7)
-                SurvivalDrops.SpawnScatter(lvl, x + 0.5, y + 0.5, z + 0.5,
-                                           (ushort)(256 + 40), 1, SurvivalDrops.MinedDelay(lvl)); // Item.wheat
+                SurvivalDrops.SpawnBlockDrops(lvl, x, y, z,
+                                              (ushort)(256 + 40), 1, SurvivalDrops.MinedDelay(lvl)); // Item.wheat
             SetView(lvl, x, y, z, Block.Air);
         }
 
@@ -578,7 +578,12 @@ namespace MCGalaxy.Network
                     {
                         if (wx < 0 || wy < 0 || wz < 0 || wx >= lvl.Width || wy >= lvl.Height || wz >= lvl.Length) continue;
                         ushort b = ViewAt(lvl, wx, wy, wz);
-                        if (b == Block.Water || b == Block.StillWater) return true;
+                        // getBlockMaterial == Material.water: the spring blocks
+                        // count too - BlockSource's ctor registers Material.water
+                        // for BOTH the water spring and (genuine quirk) the lava
+                        // spring, so either hydrates a farm.
+                        if (b == Block.Water || b == Block.StillWater ||
+                            b == SurvivalBlocks.WATER_SOURCE || b == SurvivalBlocks.LAVA_SOURCE) return true;
                     }
             return false;
         }
@@ -589,9 +594,8 @@ namespace MCGalaxy.Network
         // the 16-step counter is collapsed into a single 1-in-16 roll after the
         // 1-in-5 gate - the same mean time-to-grow, no stored stage needed.
         // opaqueCubeLookup stand-in over the view set: a sky-blocking full cube
-        // that is not leaves or a liquid. (Farmland slips through as "opaque" -
-        // genuine's 15/16 farmland is not - but a mushroom on farmland is not a
-        // state the game can normally reach.)
+        // that is not leaves, a liquid, or farmland (BlockFarmland.isOpaqueCube
+        // returns false - the 15/16-height top).
         internal static bool OpaqueCube(ushort v) {
             if (!BlocksSky(v)) return false;
             switch (v) {
@@ -601,6 +605,7 @@ namespace MCGalaxy.Network
                     return false;
             }
             if (v == SurvivalBlocks.WATER_SOURCE || v == SurvivalBlocks.LAVA_SOURCE) return false;
+            if (v == SurvivalBlocks.FARMLAND || v == SurvivalBlocks.FARMLAND_WET)   return false;
             return true;
         }
 
@@ -609,7 +614,7 @@ namespace MCGalaxy.Network
         static void MushroomStayCheck(Level lvl, LevelGrowth g, int x, int y, int z, ushort block) {
             ushort below = y > 0 ? ViewAt(lvl, x, y - 1, z) : (ushort)Block.Air;
             if (LightLevel(lvl, g, x, y, z) <= 13 && OpaqueCube(below)) return;
-            SurvivalDrops.SpawnScatter(lvl, x + 0.5, y + 0.5, z + 0.5, block, 1, SurvivalDrops.MinedDelay(lvl));
+            SurvivalDrops.SpawnBlockDrops(lvl, x, y, z, block, 1, SurvivalDrops.MinedDelay(lvl));
             SetView(lvl, x, y, z, Block.Air);
         }
 
@@ -653,7 +658,7 @@ namespace MCGalaxy.Network
             ushort below = y > 0 ? ViewAt(lvl, x, y - 1, z) : (ushort)Block.Air;
             if ((light >= 8 || (light >= 4 && IsLit(lvl, x, y, z))) && PlantSoilOk(below)) return false;
 
-            SurvivalDrops.SpawnScatter(lvl, x + 0.5, y + 0.5, z + 0.5, block, 1, SurvivalDrops.MinedDelay(lvl));
+            SurvivalDrops.SpawnBlockDrops(lvl, x, y, z, block, 1, SurvivalDrops.MinedDelay(lvl));
             SetView(lvl, x, y, z, Block.Air);
             return true;
         }
@@ -696,24 +701,19 @@ namespace MCGalaxy.Network
                         int dza = zz - z; if (dza < 0) dza = -dza;
                         if (dxa == radius && dza == radius && (g.Rng.Next(2) == 0 || dy == 0)) continue;
                         if (xx < 0 || yy < 0 || zz < 0 || xx >= lvl.Width || yy >= lvl.Height || zz >= lvl.Length) continue;
-                        if (!IsFullOpaque(ViewAt(lvl, xx, yy, zz))) SetView(lvl, xx, yy, zz, Block.Leaves);
+                        // genuine !opaqueCubeLookup[id]: the canopy replaces ANY
+                        // non-opaque-cube cell - water and farmland included -
+                        // never carving through solid stone/wood already there
+                        if (!OpaqueCube(ViewAt(lvl, xx, yy, zz))) SetView(lvl, xx, yy, zz, Block.Leaves);
                     }
                 }
             }
 
             for (int yy = 0; yy < trunkH; yy++)
             {
-                if (!IsFullOpaque(ViewAt(lvl, x, y + yy, z))) SetView(lvl, x, y + yy, z, Block.Log);
+                if (!OpaqueCube(ViewAt(lvl, x, y + yy, z))) SetView(lvl, x, y + yy, z, Block.Log);
             }
             return true;
-        }
-
-        // The tree canopy only overwrites non-full-opaque cells (air/leaves/
-        // sprites), never carving through solid stone/wood already there.
-        static bool IsFullOpaque(ushort v) {
-            if (v == Block.Air) return false;
-            if (v == Block.Leaves) return false; // leaves block sky but are not full-opaque
-            return BlocksSky(v);
         }
     }
 }

@@ -256,7 +256,7 @@ namespace MCGalaxy.Network
                 spawned++;
             }
             if (spawned > 0)
-                SurvivalDrops.SpawnScatter(lvl, x + 0.5, y + 0.5, z + 0.5, drop, spawned, SurvivalDrops.MinedDelay(lvl));
+                SurvivalDrops.SpawnBlockDrops(lvl, x, y, z, drop, spawned, SurvivalDrops.MinedDelay(lvl));
         }
 
         // dropBlockAsItemWithChance(..., 0.3F) through the Indev idDropped table.
@@ -290,7 +290,7 @@ namespace MCGalaxy.Network
                     if (old == SurvivalBlocks.FURNACE_LIT || (old >= SurvivalBlocks.FURNL_V0 && old <= SurvivalBlocks.FURNL_V0 + 3)) { drop = SurvivalBlocks.FURNACE_LIT; break; }
                     break; // classic solids (dirt/sand/wood/cloth/log/ore/...) drop themselves
             }
-            SurvivalDrops.SpawnScatter(lvl, x + 0.5, y + 0.5, z + 0.5, drop, 1, SurvivalDrops.MinedDelay(lvl));
+            SurvivalDrops.SpawnBlockDrops(lvl, x, y, z, drop, 1, SurvivalDrops.MinedDelay(lvl));
         }
 
 
