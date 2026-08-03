@@ -592,7 +592,7 @@ namespace MCGalaxy.Network
         // that is not leaves or a liquid. (Farmland slips through as "opaque" -
         // genuine's 15/16 farmland is not - but a mushroom on farmland is not a
         // state the game can normally reach.)
-        static bool OpaqueCube(ushort v) {
+        internal static bool OpaqueCube(ushort v) {
             if (!BlocksSky(v)) return false;
             switch (v) {
                 case Block.Leaves:

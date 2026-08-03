@@ -154,10 +154,12 @@ namespace MCGalaxy.Network
             x = idx % lvl.Width; z = (idx / lvl.Width) % lvl.Length; y = idx / (lvl.Width * lvl.Length);
         }
 
-        // isBlockNormalCube proxy: a solid full cube (fire support / smoke test).
+        // isBlockNormalCube == isOpaqueCube: glass, slabs and leaves are NOT
+        // normal cubes, so fire cannot rest on them (the collide-solid test
+        // wrongly accepted them as support).
         static bool NormalCube(Level lvl, int x, int y, int z) {
             if (!In(lvl, x, y, z)) return false;
-            return CollideType.IsSolid(lvl.CollideType(lvl.GetBlock((ushort)x, (ushort)y, (ushort)z)));
+            return SurvivalGrowth.OpaqueCube(View(lvl, x, y, z));
         }
 
 
@@ -457,7 +459,9 @@ namespace MCGalaxy.Network
             int ability = FireAbility(b);
             if (lp.Rng.Next(bound) >= ability) return;
             if (b == Block.TNT) {
-                SetFire(lvl, x, y, z, Block.Air);
+                // genuine rolls the SAME 50/50 fire-or-air for a caught TNT
+                // before priming it - half the time the cell keeps burning
+                SetFire(lvl, x, y, z, lp.Rng.Next(2) == 0 ? FIRE : (ushort)Block.Air);
                 SurvivalTnt.Ignite(lvl, x, y, z, SurvivalTnt.DefaultFuse(lvl));
                 return;
             }
