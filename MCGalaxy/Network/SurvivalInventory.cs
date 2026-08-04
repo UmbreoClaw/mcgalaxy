@@ -1865,9 +1865,14 @@ namespace MCGalaxy.Network
 
             // mining a TNT block never drops an item (TNTBlock.getDropCount()==0):
             // the mine removes the block and TNTPhysics.onBreak primes a full-fuse
-            // PrimedTnt entity in its place (both c0.30 and Indev).
+            // PrimedTnt entity in its place (both c0.30 and Indev). This includes
+            // referees/creative: punching TNT is THE way to prime it (genuine has
+            // no flint-on-TNT priming - flint lights the adjacent cell and the
+            // fire burns in), and SP creative primes on punch, so a "clean"
+            // moderation removal here left creative MP with no way to set TNT
+            // off at all (user-reported). Mining a PRIMED entity still defuses.
             if (pm.Raw == Block.TNT) {
-                if (!pm.RefClean) SurvivalTnt.Ignite(lvl, x, y, z, SurvivalTnt.DefaultFuse(lvl));
+                SurvivalTnt.Ignite(lvl, x, y, z, SurvivalTnt.DefaultFuse(lvl));
                 return;
             }
             if (pm.RefClean) return; // moderation removal - the block yields nothing
