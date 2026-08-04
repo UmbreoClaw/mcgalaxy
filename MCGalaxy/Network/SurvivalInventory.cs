@@ -470,21 +470,37 @@ namespace MCGalaxy.Network
 
             // Creative mode (a referee, or a creative map) plays from a CLIENT-side
             // palette, so the slot index resolves against nothing here - the intent's
-            // declared item id stands in, trusted only in creative (items are free
-            // there anyway) and only for the painting, the one item-use creative
-            // supports (a /Give'd painting must hang). Nothing is consumed.
+            // declared item id stands in (trusted only in creative, where items are
+            // free anyway). The world-affecting builder uses dispatch with NOTHING
+            // consumed and no tool wear: painting, flint & steel, hoe, seeds.
+            // Containers and food stay survival-only (v1). Referees on survival maps
+            // MUST take this path too - falling through used to resolve the held id
+            // against their real (persisted) survival inventory, so palette clicks
+            // did nothing or wore items they never held.
             bool creativeMode = p.Game.Referee || lvl.Config.SurvivalCreative;
-            if (creativeMode && declaredId == SurvivalPaintings.ITEM_PAINTING &&
-                x >= 0 && y >= 0 && z >= 0 && x < lvl.Width && y < lvl.Height && z < lvl.Length) {
+            if (creativeMode) {
+                ushort cid = (ushort)declaredId;
+                if (cid == 0) return;
+                if (cid < 256 ? cid > SurvivalBlocks.TORCH_W4
+                              : !SurvivalItems.KnownItem(cid)) return;
+                if (x < 0 || y < 0 || z < 0 ||
+                    x >= lvl.Width || y >= lvl.Height || z >= lvl.Length) return;
                 double cdx = p.Pos.X / 32.0 - (x + 0.5), cdy = p.Pos.Y / 32.0 - (y + 0.5),
                        cdz = p.Pos.Z / 32.0 - (z + 0.5);
                 if (cdx * cdx + cdy * cdy + cdz * cdz > 6.0 * 6.0) return;
-                bool phung; int pconsume;
-                SurvivalPaintings.UsePainting(p, lvl, SurvivalPaintings.ITEM_PAINTING,
-                                              x, y, z, face, out phung, out pconsume);
+
+                if (cid == SurvivalPaintings.ITEM_PAINTING) {
+                    bool phung; int pconsume;
+                    SurvivalPaintings.UsePainting(p, lvl, SurvivalPaintings.ITEM_PAINTING,
+                                                  x, y, z, face, out phung, out pconsume);
+                    return;
+                }
+                PlayerInv cinv = Get(p);
+                if (UseFlintSteel(p, lvl, cinv, 0, cid, x, y, z, face, true)) return;
+                if (UseHoe(p, lvl, cinv, 0, cid, x, y, z, true)) return;
+                UseSeeds(p, lvl, cinv, 0, cid, x, y, z, true);
                 return;
             }
-            if (lvl.Config.SurvivalCreative) return; // v1: no container/item-use sync in creative
 
             if (held < 0 || held > 8) held = 0;
             PlayerInv inv = Get(p);
@@ -556,9 +572,9 @@ namespace MCGalaxy.Network
 
                 // Item.onItemUse: hoe tilling, seed planting, flint&steel ignition,
                 // hanging paintings on the clicked wall face
-                if (UseHoe(p, lvl, inv, held, heldId, x, y, z)) return;
-                if (UseSeeds(p, lvl, inv, held, heldId, x, y, z)) return;
-                if (UseFlintSteel(p, lvl, inv, held, heldId, x, y, z, face)) return;
+                if (UseHoe(p, lvl, inv, held, heldId, x, y, z, false)) return;
+                if (UseSeeds(p, lvl, inv, held, heldId, x, y, z, false)) return;
+                if (UseFlintSteel(p, lvl, inv, held, heldId, x, y, z, face, false)) return;
                 bool paintPlaced; int paintConsume;
                 if (SurvivalPaintings.UsePainting(p, lvl, heldId, x, y, z, face,
                                                   out paintPlaced, out paintConsume)) {
@@ -574,7 +590,9 @@ namespace MCGalaxy.Network
         // ItemHoe.onItemUse: grass (with no solid block above) or dirt becomes
         // farmland; the hoe wears 1 durability, and tilling grass has a 1/8 chance
         // to pop a seed (v1: straight to inventory - the drop entity is phase 5).
-        static bool UseHoe(Player p, Level lvl, PlayerInv inv, int held, ushort heldId, int x, int y, int z) {
+        // creative: the palette is infinite - the world effect happens, but no
+        // wear, no seed pop, and the (real, persisted) inventory is untouched.
+        static bool UseHoe(Player p, Level lvl, PlayerInv inv, int held, ushort heldId, int x, int y, int z, bool creative) {
             if (!SurvivalItems.IsHoe(heldId)) return false;
             ushort target = RawAt(lvl, x, y, z);
             bool solidAbove = y + 1 < lvl.Height &&
@@ -582,6 +600,7 @@ namespace MCGalaxy.Network
             if ((target != Block.Grass || solidAbove) && target != Block.Dirt) return false;
 
             lvl.UpdateBlock(Player.Console, (ushort)x, (ushort)y, (ushort)z, Block.FromRaw(SurvivalBlocks.FARMLAND));
+            if (creative) return true;
             DamageHeldTool(p, inv, held, 1);
             if (target == Block.Grass) {
                 int roll; lock (dropRng) roll = dropRng.Next(8);
@@ -596,7 +615,7 @@ namespace MCGalaxy.Network
         // bounds check wraps the WHOLE use: a boundary target returns false with
         // no wear, while an occupied interior target still wears 1 durability
         // (damageItem sits inside the interior branch, after the air check).
-        static bool UseFlintSteel(Player p, Level lvl, PlayerInv inv, int held, ushort heldId, int x, int y, int z, int face) {
+        static bool UseFlintSteel(Player p, Level lvl, PlayerInv inv, int held, ushort heldId, int x, int y, int z, int face, bool creative) {
             if (!SurvivalItems.IsFlintSteel(heldId)) return false;
             switch (face) {          // Constants.h FACE_*: XMIN0 XMAX1 ZMIN2 ZMAX3 YMIN4 YMAX5
                 case 0: x--; break;
@@ -617,13 +636,13 @@ namespace MCGalaxy.Network
                 // a lucky random tick instead of the genuine 10-tick cadence.
                 SurvivalPhysics.Notify(lvl, x, y, z, Block.Air, SurvivalBlocks.FIRE);
             }
-            DamageHeldTool(p, inv, held, 1);
+            if (!creative) DamageHeldTool(p, inv, held, 1);
             return true;
         }
 
         // ItemSeeds.onItemUse: seeds planted on farmland (with air above) become a
         // stage-0 crop in the cell above; one seed is consumed.
-        static bool UseSeeds(Player p, Level lvl, PlayerInv inv, int held, ushort heldId, int x, int y, int z) {
+        static bool UseSeeds(Player p, Level lvl, PlayerInv inv, int held, ushort heldId, int x, int y, int z, bool creative) {
             if (heldId != SurvivalItems.SEEDS) return false;
             ushort target = RawAt(lvl, x, y, z);
             bool farmland = target == SurvivalBlocks.FARMLAND || target == SurvivalBlocks.FARMLAND_WET;
@@ -632,8 +651,7 @@ namespace MCGalaxy.Network
 
             lvl.UpdateBlock(Player.Console, (ushort)x, (ushort)(y + 1), (ushort)z,
                             Block.FromRaw(SurvivalBlocks.CROPS_0));
-            ConsumeHeld(inv, held, 1);
-            SendSlot(p, inv, held);
+            if (!creative) { ConsumeHeld(inv, held, 1); SendSlot(p, inv, held); }
             return true;
         }
 
@@ -1340,9 +1358,10 @@ namespace MCGalaxy.Network
         /// authoritative slots + cursor, echoing the changed slot and the cursor. </summary>
         public static void HandleSlotClick(Player p, int idx, int button) {
             if (!SurvivalNet.Active(p, p.level) || SurvivalNet.IsDead(p)) return;
-            // creative maps: the inventory is client-local (the palette) - a stray
-            // intent must not mutate the server's (unused) slots
-            if (p.level != null && p.level.Config.SurvivalCreative) return;
+            // creative (a creative map, or a refereeing player): the inventory is
+            // client-local (the palette) - a stray intent must not mutate the
+            // server's real, persisted slots
+            if (p.Game.Referee || (p.level != null && p.level.Config.SurvivalCreative)) return;
             if (idx < 0 || idx >= TOTAL_SLOTS) return;
 
             // container range: resolve through the player's OPEN container view
@@ -1458,7 +1477,7 @@ namespace MCGalaxy.Network
         public static void HandleResultClick(Player p) {
             if (!SurvivalNet.Active(p, p.level) || SurvivalNet.IsDead(p)) return;
             if (p.level == null || p.level.Config.SurvivalMode != SurvivalMode.Indev) return;
-            if (p.level.Config.SurvivalCreative) return;
+            if (p.Game.Referee || p.level.Config.SurvivalCreative) return; // client-local palette
             PlayerInv inv = Get(p);
 
             OpenRef open = GetOpen(p);
@@ -1496,7 +1515,7 @@ namespace MCGalaxy.Network
         public static void HandleContClose(Player p) {
             if (!SurvivalNet.Active(p, p.level)) return;
             p.Extras.Remove(OPEN_KEY); // the container view is closed either way
-            if (p.level != null && p.level.Config.SurvivalCreative) return; // client-local palette
+            if (p.Game.Referee || (p.level != null && p.level.Config.SurvivalCreative)) return; // client-local palette
             PlayerInv inv = Get(p);
 
             while (inv.Cursor.Count > 0 && AddOne(p, inv, inv.Cursor.Id, inv.Cursor.Damage)) inv.Cursor.Count--;

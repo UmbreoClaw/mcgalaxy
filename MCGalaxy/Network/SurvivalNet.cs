@@ -363,15 +363,20 @@ namespace MCGalaxy.Network
         }
 
         /// <summary> SURV_DROP_SPAWN: [dropId:u16][itemId:u16][count][pos:3xi16 coord*32]
-        /// [vel:3xi16 coord/sec*512][rot0]. The client spawns the visual drop and runs
-        /// its own arc from pos+vel; the server keeps the authoritative resting spot. </summary>
+        /// [vel:3xi16 coord/sec*512][rot0][rest:3xi16 coord*32]. The client spawns the
+        /// visual drop and runs its own arc from pos+vel, then eases onto REST - the
+        /// authoritative resting spot the server integrated at spawn time. Without it
+        /// the two independent flight sims drifted a little and every rejoin visibly
+        /// snapped drops (user-reported); a zero rest (old servers) disables easing. </summary>
         public static void SendDropSpawn(Player p, int dropId, ushort item, byte count,
                                          double x, double y, double z,
-                                         double vx, double vy, double vz, byte rot0) {
+                                         double vx, double vy, double vz, byte rot0,
+                                         double rx, double ry, double rz) {
             if (!Active(p, p.level)) return;
             byte[] msg = new byte[Packet.PluginMessageDataLength];
             short px = DropPos(x),  py = DropPos(y),  pz = DropPos(z);
             short sx = DropVel(vx), sy = DropVel(vy), sz = DropVel(vz);
+            short qx = DropPos(rx), qy = DropPos(ry), qz = DropPos(rz);
             msg[0]  = DROP_SPAWN;
             msg[1]  = (byte)(dropId >> 8); msg[2]  = (byte)dropId;
             msg[3]  = (byte)(item >> 8);   msg[4]  = (byte)item;
@@ -383,6 +388,9 @@ namespace MCGalaxy.Network
             msg[14] = (byte)(sy >> 8); msg[15] = (byte)sy;
             msg[16] = (byte)(sz >> 8); msg[17] = (byte)sz;
             msg[18] = rot0;
+            msg[19] = (byte)(qx >> 8); msg[20] = (byte)qx;
+            msg[21] = (byte)(qy >> 8); msg[22] = (byte)qy;
+            msg[23] = (byte)(qz >> 8); msg[24] = (byte)qz;
             SendMessage(p, msg);
         }
 

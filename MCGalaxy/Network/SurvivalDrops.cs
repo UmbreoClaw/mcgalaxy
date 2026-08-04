@@ -135,7 +135,7 @@ namespace MCGalaxy.Network
             if (ld == null) return;
             lock (ld.Drops) {
                 foreach (Drop d in ld.Drops)
-                    SurvivalNet.SendDropSpawn(p, d.Id, d.Item, d.Count, d.X, d.Y, d.Z, 0, 0, 0, d.Rot0);
+                    SurvivalNet.SendDropSpawn(p, d.Id, d.Item, d.Count, d.X, d.Y, d.Z, 0, 0, 0, d.Rot0, d.X, d.Y, d.Z);
             }
         }
 
@@ -202,7 +202,8 @@ namespace MCGalaxy.Network
                 ld.Drops.Add(d);
 
                 foreach (Player p in watchers)
-                    SurvivalNet.SendDropSpawn(p, d.Id, item, d.Count, x, y, z, vx, vy, vz, rot0);
+                    SurvivalNet.SendDropSpawn(p, d.Id, item, d.Count, x, y, z, vx, vy, vz, rot0,
+                                              d.X, d.Y, d.Z); // + the settled rest
             }
         }
 
@@ -284,7 +285,12 @@ namespace MCGalaxy.Network
             if (Commands.World.CmdSpectate.IsSpectating(p)) return; // observers don't toss
 
             ushort id; byte count;
-            if (lvl.Config.SurvivalCreative) {
+            // Referees observe from Indev creative (per-player, regardless of the
+            // map's own mode) - their Q-drop is a palette drop too. Reading the
+            // slot index against their real, persisted survival inventory made a
+            // refereeing Q toss THAT item instead (user-reported: "it drops your
+            // survival inventory").
+            if (p.Game.Referee || lvl.Config.SurvivalCreative) {
                 // Creative has no server inventory to take from - the client
                 // DECLARES what it holds (the USE_ITEM/painting pattern), the
                 // palette is infinite so nothing is consumed, and the toss
@@ -404,7 +410,8 @@ namespace MCGalaxy.Network
                             // spawn for a live id as an authoritative refresh)
                             foreach (Player w in watchers)
                                 SurvivalNet.SendDropSpawn(w, d.Id, d.Item, d.Count,
-                                                          d.X, d.Y, d.Z, 0, 0, 0, d.Rot0);
+                                                          d.X, d.Y, d.Z, 0, 0, 0, d.Rot0,
+                                                          d.X, d.Y, d.Z);
                         }
                     }
 
