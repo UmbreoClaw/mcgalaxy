@@ -182,7 +182,12 @@ namespace MCGalaxy.Network
             if (fly) Ballistic(lvl, ref rx, ref ry, ref rz, vx, vy, vz);
             int bx = (int)Math.Floor(rx), bz = (int)Math.Floor(rz);
             double settleY = SettleY(lvl, bx, ry, bz);
-            x = rx; z = rz;
+            // The STREAMED spawn stays the true origin (the thrower/block) so the
+            // client draws the arc out of the player; only the drop's logical
+            // rest is the ballistic landing. Overwriting the spawn with the
+            // landing column made a toss MATERIALIZE at the aim point and fall
+            // straight down there (user-reported: "it drops at the crosshair,
+            // not arcing out of the player").
 
             // Snapshot the watchers BEFORE taking the lock, then spawn and stream
             // inside it. Adding to the list outside the send made the drop visible
@@ -195,7 +200,7 @@ namespace MCGalaxy.Network
                 if (ld.Drops.Count >= MAX_DROPS_PER_LEVEL) return; // pool guard
                 Drop d = new Drop {
                     Id = ld.NextId, Item = item, Count = (byte)Math.Min(count, 255),
-                    X = x, Y = settleY, Z = z, Age = 0, PickupDelay = delay, Rot0 = rot0
+                    X = rx, Y = settleY, Z = rz, Age = 0, PickupDelay = delay, Rot0 = rot0
                 };
                 ld.NextId++;
                 if (ld.NextId > 65535) ld.NextId = 1; // wrap (u16 wire key)
@@ -242,8 +247,14 @@ namespace MCGalaxy.Network
 
         static bool BlockedAt(Level lvl, double x, double y, double z) {
             int bx = (int)Math.Floor(x), by = (int)Math.Floor(y), bz = (int)Math.Floor(z);
+            // above the map is OPEN SKY, like the client's collision treats it.
+            // Counting it as solid zeroed a toss's horizontal velocity whenever
+            // the arc grazed the ceiling (a flying thrower near the top), so the
+            // authoritative rest sat straight below the player while the client
+            // arc sailed out - and the settle easing then dragged the drop back.
+            if (by >= lvl.Height) return false;
             if (bx < 0 || by < 0 || bz < 0 ||
-                bx >= lvl.Width || by >= lvl.Height || bz >= lvl.Length) return true;
+                bx >= lvl.Width || bz >= lvl.Length) return true;
             return CollideType.IsSolid(lvl.CollideType(
                        lvl.GetBlock((ushort)bx, (ushort)by, (ushort)bz)));
         }
