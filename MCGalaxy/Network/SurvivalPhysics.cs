@@ -31,13 +31,16 @@ namespace MCGalaxy.Network
     /// Indev maps only; every change flows through SurvivalGrowth.SetView so it is
     /// broadcast and re-announced back here via Notify (the genuine notify hook). </summary>
     /// <remarks>
-    /// Genuine Minecraft drives fire and fluids off World's scheduled-update list;
-    /// the client mirrors that with inline recursion through its block-change hook.
-    /// The server uses the scheduled model for fluids (Notify ENQUEUES their work)
-    /// so a lake waking can never blow the stack - it just spreads the work across
-    /// ticks, which is what genuine does anyway. Fire's support validation is the
-    /// genuine synchronous exception (see Notify). TNT caught by fire is primed as
-    /// a full-fuse entity (FireTryCatch -> SurvivalTnt.Ignite).
+    /// The scheduler is genuine World.tick: ONE shared FIFO tick list for fire and
+    /// fluids, no dedup, entries recording the scheduled block id (stale entries
+    /// drop at run time), at most 200 pops per tick shared between count-downs and
+    /// runs. The notify hook mirrors genuine onBlockAdded/onNeighborBlockChange
+    /// synchronously: fire support checks, still-fluid petrify/wake
+    /// (BlockStationary), and spring floods (BlockSource) all run inline; only the
+    /// fluid updateTicks themselves ride the tick list. There is no load-time
+    /// scan - fire/moving fluid on a loaded map revive via the random tickOnLoad
+    /// pass. TNT caught by fire is primed as a full-fuse entity
+    /// (FireTryCatch -> SurvivalTnt.Ignite).
     /// </remarks>
     internal static class SurvivalPhysics
     {
@@ -49,27 +52,28 @@ namespace MCGalaxy.Network
         internal static bool IsMovingFluid(ushort v) { return v == Block.Water || v == Block.Lava; }
         internal static bool IsSource(ushort v)      { return v == WATER_SRC || v == LAVA_SRC; }
 
-        static bool IsWaterMat(ushort b) { return b == Block.Water || b == Block.StillWater || b == WATER_SRC; }
-        static bool IsLavaMat(ushort b)  { return b == Block.Lava  || b == Block.StillLava  || b == LAVA_SRC; }
+        // Genuine material table: BlockSource's ctor registers Material.water for
+        // BOTH springs - the LAVA spring (53) is water-material (BlockSource.java:11,
+        // a genuine quirk) - so every material-based gate (petrify, the equalize
+        // path's "below is my material", sponge absorb) treats it as water.
+        static bool IsWaterMat(ushort b) { return b == Block.Water || b == Block.StillWater || b == WATER_SRC || b == LAVA_SRC; }
+        static bool IsLavaMat(ushort b)  { return b == Block.Lava  || b == Block.StillLava; }
 
         // ==================== per-level state ====================
 
-        struct FireEntry { public int Index; public int Time; }
-        struct FluidEntry {
-            public int Index; public int Delay; public bool Water; public bool Activate;
-            // 0 = normal; 1 = petrify a still fluid (the CHANGED neighbour was the
-            // opposite liquid); 2 = BlockSource.onBlockAdded's immediate fill
-            public byte Special;
-        }
+        // NextTickListEntry: genuine World.tickList holds (coords, blockID, time)
+        // for fire AND fluids in ONE list - the id recorded at schedule time makes
+        // stale entries (the cell changed since) silent no-ops at run time.
+        struct TickEntry { public int Index; public ushort BlockId; public int Time; }
 
         sealed class LevelPhys
         {
             public byte[] FireAge;                       // one nibble (0-15) per cell
             public int    FireVol;
-            public readonly Queue<FireEntry> FireQueue = new Queue<FireEntry>();
 
-            public readonly List<FluidEntry> Fluid = new List<FluidEntry>();
-            public readonly HashSet<int> FluidPending = new HashSet<int>(); // dedup by index
+            // genuine World.tickList: one shared FIFO, no dedup, drained <=200
+            // pops per tick (decrements and runs share the same budget)
+            public readonly Queue<TickEntry> TickList = new Queue<TickEntry>();
 
             public readonly Random Rng = new Random();
             public readonly int[] LiquidOrder = { 0, 1, 2, 3 };
@@ -77,15 +81,12 @@ namespace MCGalaxy.Network
             // flood-fill scratch (genuine x + (z<<10) layer packing), lazily sized
             public ushort[] Stamps; public int StampsLen; public ushort Counter;
             public int[] StackA, StackB; public int StackCap;
-
-            public bool Loaded; // setTickOnLoad scan done
         }
 
         static readonly Dictionary<Level, LevelPhys> registry = new Dictionary<Level, LevelPhys>();
         static readonly object registryLock = new object();
 
-        const int FIRE_QUEUE_MAX = 8192;
-        const int FLUID_SCHED_MAX = 1 << 18; // genuine tickList is unbounded; this is a runaway backstop only
+        const int TICK_SCHED_MAX = 1 << 18; // genuine tickList is unbounded; this is a runaway backstop only
 
         static LevelPhys Get(Level lvl, bool create) {
             lock (registryLock) {
@@ -163,13 +164,17 @@ namespace MCGalaxy.Network
         }
 
 
-        // ==================== the notify hook (enqueue only) ====================
+        // ==================== the notify hook ====================
 
         /// <summary> Announced for every server-authored block change on the level
-        /// (SurvivalGrowth.SetView). Schedules work rather than setting blocks
-        /// inline, with one genuine exception: BlockFire's onBlockAdded /
-        /// onNeighborBlockChange support checks remove an unsupported fire
-        /// synchronously (bounded recursion - fire chains are short). </summary>
+        /// (SurvivalGrowth.SetView). Runs the genuine onBlockAdded /
+        /// onNeighborBlockChange reactions SYNCHRONOUSLY, exactly like genuine's
+        /// notify recursion: fire support checks, still-fluid petrify/wake
+        /// (BlockStationary), spring floods (BlockSource) and sponge handling all
+        /// happen inline; only the fluid/fire updateTicks themselves are enqueued
+        /// onto the shared tick list. Recursion is bounded: wake flips early-return
+        /// here, petrified stone triggers no further petrify, fire chains are
+        /// short. </summary>
         // Genuine setBlock-class writes notify nobody; the sponge absorb is one
         // (BlockSponge.onBlockAdded uses setBlock, not setBlockWithNotify). The
         // flag spans the absorb's writes so removing a pond's worth of water
@@ -178,35 +183,33 @@ namespace MCGalaxy.Network
         [ThreadStatic] static bool quietWrites;
 
         internal static void Notify(Level lvl, int x, int y, int z, ushort oldV, ushort newV) {
+            Notify(lvl, x, y, z, oldV, newV, false);
+        }
+
+        // fullWrite: genuine distinguishes write CLASS, not id pairs - a PLAYER
+        // replacing still water with moving water is setBlockWithNotify (its
+        // onBlockAdded schedules, its neighbours are notified) even though the
+        // same id pair from the wake/settle paths is setTileNoUpdate. Player
+        // edits pass true; every internal Set keeps the flip semantics.
+        static void Notify(Level lvl, int x, int y, int z, ushort oldV, ushort newV, bool fullWrite) {
             if (lvl.Config.SurvivalMode != SurvivalMode.Indev) return;
             if (quietWrites) return;
             LevelPhys lp = Get(lvl, true);
 
             // Notify is reachable from PLAYER receive threads (OnBlockChanged) as
             // well as the tick thread (Set -> SetView -> Notify); the schedules are
-            // plain Queue/List/HashSet, so every mutation serializes on the LevelPhys
-            // monitor (re-entrant, so tick-thread nesting is fine).
+            // a plain Queue, so every mutation serializes on the LevelPhys monitor
+            // (re-entrant, so tick-thread nesting is fine).
             // A fluid flipping between its own still and moving states is genuine
-            // setTileNoUpdate: it notifies NOBODY. BlockStationary's wake sets the
-            // moving id with it (then schedules its own update explicitly), and
-            // the stagnation flood re-stills with it. Running the neighbour
+            // setTileNoUpdate: it notifies NOBODY, runs no onBlockAdded, resets no
+            // metadata. BlockStationary's wake pairs the flip with its OWN explicit
+            // scheduleBlockUpdate (NotifyNeighbour), and the settle flip schedules
+            // nothing - so this branch is a pure no-op. Running the neighbour
             // notifies for these flips closed a feedback loop - a woken cell's
             // conversion woke its neighbours, their re-stilling woke it back, and
             // whole lakes flickered still<->moving forever (user-reported as
             // "water physics super fast" + the lighting pulsing with it).
-            bool stateFlip =
-                (oldV == Block.StillWater && newV == Block.Water)      ||
-                (oldV == Block.Water      && newV == Block.StillWater) ||
-                (oldV == Block.StillLava  && newV == Block.Lava)       ||
-                (oldV == Block.Lava       && newV == Block.StillLava);
-            if (stateFlip) {
-                lock (lp) {
-                    // the wake's explicit scheduleBlockUpdate, nothing else
-                    if (newV == Block.Water || newV == Block.Lava)
-                        ScheduleFluid(lp, Pack(lvl, x, y, z), newV == Block.Water, false);
-                }
-                return;
-            }
+            if (!fullWrite && StateFlipWrite(oldV, newV)) return;
 
             if (oldV == Block.Sapling && newV != Block.Sapling)
                 SurvivalGrowth.ClearSaplingStage(lvl, x, y, z);
@@ -221,20 +224,20 @@ namespace MCGalaxy.Network
                         SetFire(lvl, x, y, z, Block.Air);
                     } else {
                         SetAge(lp, lvl, Pack(lvl, x, y, z), 0);
-                        ScheduleFire(lp, Pack(lvl, x, y, z));
+                        ScheduleUpdate(lp, Pack(lvl, x, y, z), FIRE);
                     }
                 }
                 else if (oldV == FIRE) SetAge(lp, lvl, Pack(lvl, x, y, z), 0);
 
-                if (newV == Block.Water || newV == Block.Lava) ScheduleFluid(lp, Pack(lvl, x, y, z), newV == Block.Water, false);
+                // BlockFlowing.onBlockAdded: a placed moving fluid schedules its
+                // first update at its tickRate
+                if (newV == Block.Water || newV == Block.Lava) ScheduleUpdate(lp, Pack(lvl, x, y, z), newV);
 
-                // BlockSource.onBlockAdded floods the 4 horizontal AIR neighbours
-                // with the moving fluid immediately - the client's spring erupts
-                // the instant it is placed, and the server's used to sit dry for
-                // ~10 s until the random pass found it. Enqueue-only discipline:
-                // a zero-delay source entry runs the fill on the next tick.
+                // BlockSource.onBlockAdded runs synchronously inside setBlock:
+                // the 4 horizontal AIR neighbours flood with the moving fluid the
+                // instant the spring is placed
                 if (newV == WATER_SRC || newV == LAVA_SRC)
-                    ScheduleSourceFill(lp, Pack(lvl, x, y, z));
+                    RandomTickSource(lvl, x, y, z, newV);
 
                 // BlockSponge: onBlockAdded absorbs every water-material block in
                 // the 5x5x5 cube; onBlockRemoval notifies that whole cube, whose
@@ -272,7 +275,9 @@ namespace MCGalaxy.Network
                     {
                         if (!Interior(lvl, sx, sy, sz)) continue; // genuine setBlock: shell unwritable
                         ushort b = View(lvl, sx, sy, sz);
-                        if (b == Block.Water || b == Block.StillWater || b == SurvivalBlocks.WATER_SOURCE)
+                        // World.isWater is material-based, so the LAVA spring
+                        // (Material.water, genuine quirk) is absorbed too
+                        if (IsWaterMat(b))
                             SurvivalGrowth.SetView(lvl, sx, sy, sz, Block.Air);
                     }
         }
@@ -285,12 +290,18 @@ namespace MCGalaxy.Network
                 for (int sz = z - 2; sz <= z + 2; sz++)
                     for (int sx = x - 2; sx <= x + 2; sx++)
                     {
-                        NotifyNeighbour(lp, lvl, sx - 1, sy, sz, Block.Air);
-                        NotifyNeighbour(lp, lvl, sx + 1, sy, sz, Block.Air);
-                        NotifyNeighbour(lp, lvl, sx, sy - 1, sz, Block.Air);
-                        NotifyNeighbour(lp, lvl, sx, sy + 1, sz, Block.Air);
-                        NotifyNeighbour(lp, lvl, sx, sy, sz - 1, Block.Air);
-                        NotifyNeighbour(lp, lvl, sx, sy, sz + 1, Block.Air);
+                        // genuine passes each cube cell's CURRENT id as the
+                        // changed id (getBlockId in onBlockRemoval) - a lava
+                        // cell in the cube petrifies adjacent still water, a
+                        // flammable cell force-wakes it; only absorbed cells
+                        // announce air
+                        ushort cellV = In(lvl, sx, sy, sz) ? View(lvl, sx, sy, sz) : Block.Air;
+                        NotifyNeighbour(lp, lvl, sx - 1, sy, sz, cellV);
+                        NotifyNeighbour(lp, lvl, sx + 1, sy, sz, cellV);
+                        NotifyNeighbour(lp, lvl, sx, sy - 1, sz, cellV);
+                        NotifyNeighbour(lp, lvl, sx, sy + 1, sz, cellV);
+                        NotifyNeighbour(lp, lvl, sx, sy, sz - 1, cellV);
+                        NotifyNeighbour(lp, lvl, sx, sy, sz + 1, cellV);
                     }
         }
 
@@ -320,17 +331,18 @@ namespace MCGalaxy.Network
             ushort oldV = Block.Air;
             if (preChangeCoord == (x | (y << 12) | (z << 24)) + 1) oldV = preChangeView;
             preChangeCoord = 0;
-            Notify(lvl, x, y, z, oldV, now);
+            Notify(lvl, x, y, z, oldV, now, true); // player edit = setBlockWithNotify class
             // a player edit may change the light (torch placed/mined, roof opened)
             SurvivalGrowth.MarkLightDirty(lvl);
         }
 
-        // BlockStationary.onNeighborBlockChange: petrify ONLY when the block
-        // that just CHANGED is the opposite liquid; any other change wakes.
-        // (The old code scanned the current neighbours and petrified on any
-        // pre-existing contact - so mining a stone beside map-generated water
-        // that touched lava turned the WATER to stone, when genuine wakes the
-        // water and its flow update turns the LAVA to stone.)
+        // BlockStationary.onNeighborBlockChange, synchronous and verbatim:
+        // canFlow scan first (down, -x, +x, -z, +z), then petrify when the block
+        // that just CHANGED is the opposite MATERIAL (early return - petrify
+        // happens INSTEAD of the wake), then the flammable-changed wake (both
+        // liquids, keyed on the changed id), then the wake itself: a genuine
+        // setTileNoUpdate flip to the moving id plus an explicit
+        // scheduleBlockUpdate at the fluid's tickRate.
         static void NotifyNeighbour(LevelPhys lp, Level lvl, int x, int y, int z, ushort changedV) {
             if (!In(lvl, x, y, z)) return;
             ushort b = View(lvl, x, y, z);
@@ -347,53 +359,74 @@ namespace MCGalaxy.Network
             if (b != Block.StillWater && b != Block.StillLava) return;
 
             bool water = b == Block.StillWater;
-            if (water ? IsLavaMat(changedV) : IsWaterMat(changedV)) {
-                SchedulePetrify(lp, Pack(lvl, x, y, z));
-            } else {
-                ScheduleFluid(lp, Pack(lvl, x, y, z), water, true);
+            bool wake  = CanFlowInto(lvl, water, x, y - 1, z) ||
+                         CanFlowInto(lvl, water, x - 1, y, z) || CanFlowInto(lvl, water, x + 1, y, z) ||
+                         CanFlowInto(lvl, water, x, y, z - 1) || CanFlowInto(lvl, water, x, y, z + 1);
+
+            if (changedV != Block.Air &&
+                (water ? IsLavaMat(changedV) : IsWaterMat(changedV))) {
+                Set(lvl, x, y, z, Block.Stone);
+                return;
             }
-        }
 
-        // Front-inserted so it runs before any same-tick wake for the cell -
-        // genuine's petrify happens INSTEAD of the wake, never after it.
-        static void SchedulePetrify(LevelPhys lp, int index) {
-            if (lp.Fluid.Count >= FLUID_SCHED_MAX) return;
-            lp.Fluid.Insert(0, new FluidEntry { Index = index, Special = 1 });
-        }
+            if (FireChance(changedV) > 0) wake = true;
 
-        static void ScheduleSourceFill(LevelPhys lp, int index) {
-            if (lp.Fluid.Count >= FLUID_SCHED_MAX) return;
-            lp.Fluid.Add(new FluidEntry { Index = index, Special = 2 });
+            if (wake) {
+                ushort moving = water ? (ushort)Block.Water : (ushort)Block.Lava;
+                Set(lvl, x, y, z, moving); // stateFlip class: notifies nobody
+                ScheduleUpdate(lp, Pack(lvl, x, y, z), moving);
+            }
         }
 
 
         // ==================== per-tick driver ====================
 
-        /// <summary> setTickOnLoad: schedule pre-existing fire + moving fluid the
-        /// first time a level ticks so a loaded/generated map comes alive. </summary>
-        static void EnsureLoaded(LevelPhys lp, Level lvl) {
-            if (lp.Loaded) return;
-            lp.Loaded = true;
-            int w = lvl.Width, h = lvl.Height, d = lvl.Length;
-            for (int y = 0; y < h; y++)
-                for (int z = 0; z < d; z++)
-                    for (int x = 0; x < w; x++)
-                    {
-                        ushort v = View(lvl, x, y, z);
-                        if (v == FIRE) ScheduleFire(lp, Pack(lvl, x, y, z));
-                        else if (v == Block.Water) ScheduleFluid(lp, Pack(lvl, x, y, z), true, false);
-                        else if (v == Block.Lava)  ScheduleFluid(lp, Pack(lvl, x, y, z), false, false);
-                    }
+        // World.scheduleBlockUpdate: delay = tickRate of the SCHEDULED id -
+        // fire 20, moving lava 25, moving water (and every other id) 5. The
+        // entry then costs one pop per tick while counting down, so the
+        // effective period is tickRate+1 (water 6, lava 26, fire 21).
+        static int TickRateOf(ushort id) {
+            if (id == FIRE) return 20;        // BlockFire.tickRate
+            if (id == Block.Lava) return 25;  // BlockFlowing.tickRate (lava)
+            return 5;                          // water + Block default
         }
 
-        /// <summary> One 20 TPS physics tick: process the fire queue (<=200/tick,
-        /// genuine World.tick cap) and the due fluid schedule entries. </summary>
+        static void ScheduleUpdate(LevelPhys lp, int index, ushort blockId) {
+            if (lp.TickList.Count >= TICK_SCHED_MAX) return; // runaway backstop only
+            lp.TickList.Enqueue(new TickEntry { Index = index, BlockId = blockId, Time = TickRateOf(blockId) });
+        }
+
+        /// <summary> One 20 TPS physics tick: genuine World.tick's scheduled pass.
+        /// Snapshot min(size, 200) BEFORE draining, pop the head that many times;
+        /// a counting-down entry decrements and requeues at the tail, a due entry
+        /// runs its block's updateTick only if the recorded id still matches the
+        /// world (stale entries drop silently). Entries scheduled DURING the pass
+        /// land beyond the snapshot and are first touched next tick - that is what
+        /// makes the effective fluid period 6/26, not 5/25. There is no load-time
+        /// scan: a freshly loaded map's fire and suspended moving fluid wake via
+        /// the random tickOnLoad pass (SurvivalGrowth's random ticks), exactly as
+        /// genuine setTickOnLoad works. </summary>
         public static void Tick(Level lvl) {
             LevelPhys lp = Get(lvl, true);
             lock (lp) { // serialize against player-thread Notify (see Notify)
-                EnsureLoaded(lp, lvl);
-                TickFire(lp, lvl);
-                TickFluids(lp, lvl);
+                int n = Math.Min(lp.TickList.Count, 200); // genuine World.tick cap
+                for (int i = 0; i < n; i++)
+                {
+                    TickEntry e = lp.TickList.Dequeue();
+                    if (e.Time > 0) {
+                        e.Time--;
+                        if (lp.TickList.Count < TICK_SCHED_MAX) lp.TickList.Enqueue(e);
+                        continue;
+                    }
+                    int x, y, z; Unpack(lvl, e.Index, out x, out y, out z);
+                    if (!In(lvl, x, y, z)) continue;
+                    ushort b = View(lvl, x, y, z);
+                    if (b != e.BlockId) continue; // genuine stale-id skip
+
+                    if (b == FIRE)                                FireUpdate(lp, lvl, x, y, z);
+                    else if (b == Block.Water || b == Block.Lava) FluidUpdate(lp, lvl, e.Index, b);
+                    else if (b == WATER_SRC || b == LAVA_SRC)     RandomTickSource(lvl, x, y, z, b);
+                }
             }
         }
 
@@ -442,30 +475,9 @@ namespace MCGalaxy.Network
             lock (lp) {
                 if (View(lvl, x, y, z) != FIRE) return;
                 SetAge(lp, lvl, Pack(lvl, x, y, z), age);
-                // EnsureLoaded re-schedules every FIRE cell on the level's first
-                // tick, so the restored fire wakes on its own - only the age was
-                // memory-only.
-            }
-        }
-
-        static void ScheduleFire(LevelPhys lp, int index) {
-            if (lp.FireQueue.Count >= FIRE_QUEUE_MAX) return; // overflow self-heals
-            lp.FireQueue.Enqueue(new FireEntry { Index = index, Time = 20 }); // BlockFire.tickRate
-        }
-
-        static void TickFire(LevelPhys lp, Level lvl) {
-            int n = Math.Min(lp.FireQueue.Count, 200);
-            for (int i = 0; i < n; i++)
-            {
-                FireEntry e = lp.FireQueue.Dequeue();
-                if (e.Time > 0) {
-                    e.Time--;
-                    if (lp.FireQueue.Count < FIRE_QUEUE_MAX) lp.FireQueue.Enqueue(e);
-                } else if (e.Index >= 0 && e.Index < lvl.Width * lvl.Height * lvl.Length &&
-                           View(lvl, e.Index % lvl.Width, e.Index / (lvl.Width * lvl.Length), (e.Index / lvl.Width) % lvl.Length) == FIRE) {
-                    int x, y, z; Unpack(lvl, e.Index, out x, out y, out z);
-                    FireUpdate(lp, lvl, x, y, z);
-                }
+                // Fire is tickOnLoad in genuine: the random pass finds the cell
+                // and its updateTick re-enters the scheduled chain - only the age
+                // was memory-only, so only the age needed restoring.
             }
         }
 
@@ -530,7 +542,7 @@ namespace MCGalaxy.Network
             int index = Pack(lvl, x, y, z);
             int meta = GetAge(lp, lvl, index);
 
-            if (meta < 15) { SetAge(lp, lvl, index, meta + 1); ScheduleFire(lp, index); }
+            if (meta < 15) { SetAge(lp, lvl, index, meta + 1); ScheduleUpdate(lp, index, FIRE); }
 
             if (!CanNeighbourCatch(lvl, x, y, z)) {
                 if (!NormalCube(lvl, x, y - 1, z) || meta > 3) SetFire(lvl, x, y, z, Block.Air);
@@ -594,65 +606,21 @@ namespace MCGalaxy.Network
 
         // ==================== finite fluids ====================
 
-        static void ScheduleFluid(LevelPhys lp, int index, bool water, bool activate) {
-            if (lp.FluidPending.Contains(index)) return;
-            if (lp.Fluid.Count >= FLUID_SCHED_MAX) return; // overflow self-heals
-            int delay = activate ? 0 : (water ? 5 : 25); // BlockFlowing.tickRate
-            lp.Fluid.Add(new FluidEntry { Index = index, Delay = delay, Water = water, Activate = activate });
-            lp.FluidPending.Add(index);
-        }
-
         internal static void RandomTickFluid(Level lvl, int x, int y, int z, ushort v) {
             LevelPhys lp = Get(lvl, true);
             lock (lp) FluidUpdate(lp, lvl, Pack(lvl, x, y, z), v); // vs player-thread Notify
         }
 
-        // BlockSource.updateTick: an infinite spring - fill each of the 4
-        // horizontal air neighbours with the flowing fluid (which then flows via
-        // the fluid physics). The source itself just sits and refills.
+        // BlockSource.updateTick (== the onBlockAdded fill): an infinite spring -
+        // fill each of the 4 horizontal air neighbours with the flowing fluid
+        // (which then flows via the fluid physics). The source itself just sits
+        // and refills; genuine order -x, +x, -z, +z, air cells only.
         internal static void RandomTickSource(Level lvl, int x, int y, int z, ushort v) {
             ushort fluid = v == LAVA_SRC ? (ushort)Block.Lava : (ushort)Block.Water;
             if (In(lvl, x - 1, y, z) && View(lvl, x - 1, y, z) == Block.Air) Set(lvl, x - 1, y, z, fluid);
             if (In(lvl, x + 1, y, z) && View(lvl, x + 1, y, z) == Block.Air) Set(lvl, x + 1, y, z, fluid);
             if (In(lvl, x, y, z - 1) && View(lvl, x, y, z - 1) == Block.Air) Set(lvl, x, y, z - 1, fluid);
             if (In(lvl, x, y, z + 1) && View(lvl, x, y, z + 1) == Block.Air) Set(lvl, x, y, z + 1, fluid);
-        }
-
-        // Genuine World.tick drains AT MOST 200 scheduled entries per tick and
-        // carries the rest - an unbounded list with bounded work. Ours had it
-        // inverted (bounded 8192 list, unbounded work): a blast waking a lake
-        // overflowed the cap and the dropped cells froze as moving-water statues
-        // until a random tick poked them ~10s later ("our water is slower" -
-        // user-reported). The per-tick budget also keeps a lake-sized queue from
-        // spiking the 20 TPS tick.
-        const int FLUID_RUNS_PER_TICK = 200;
-
-        static void TickFluids(LevelPhys lp, Level lvl) {
-            int ran = 0;
-            for (int i = 0; i < lp.Fluid.Count; )
-            {
-                FluidEntry e = lp.Fluid[i];
-                if (e.Delay > 0) { e.Delay--; lp.Fluid[i] = e; i++; continue; }
-                if (ran >= FLUID_RUNS_PER_TICK) { i++; continue; } // due, carries to next tick
-                ran++;
-                // swap-remove BEFORE running (the update may reschedule this cell)
-                lp.Fluid[i] = lp.Fluid[lp.Fluid.Count - 1];
-                lp.Fluid.RemoveAt(lp.Fluid.Count - 1);
-                if (e.Special == 0) lp.FluidPending.Remove(e.Index);
-
-                int x, y, z; Unpack(lvl, e.Index, out x, out y, out z);
-                ushort b = View(lvl, x, y, z);
-                if (e.Special == 1) {
-                    // still still-fluid? the opposite-liquid contact petrifies it
-                    if (b == Block.StillWater || b == Block.StillLava) Set(lvl, x, y, z, Block.Stone);
-                } else if (e.Special == 2) {
-                    if (b == WATER_SRC || b == LAVA_SRC) RandomTickSource(lvl, x, y, z, b);
-                } else if (e.Activate) {
-                    if (b == Block.StillWater || b == Block.StillLava) ActivateStill(lp, lvl, e.Index, b);
-                } else if (b == Block.Water || b == Block.Lava) {
-                    FluidUpdate(lp, lvl, e.Index, b);
-                }
-            }
         }
 
         // BlockFluid.canFlow: target must be air or a non-colliding non-liquid
@@ -753,6 +721,12 @@ namespace MCGalaxy.Network
             for (; y < H; y++)
             {
                 int best = -1, upTop = 0;
+                // genuine resets the source flag PER LAYER (World.fluidFlowCheck:
+                // "var12 = false" tops each do-iteration and only the LAST layer's
+                // value reaches the -9999 return) - a spring buried in a lower
+                // layer does NOT make spreading free; only a spring adjacent to
+                // the topmost walked layer does
+                sourced = false;
                 BumpCounter(lp);
 
                 while (top > 0)
@@ -802,10 +776,16 @@ namespace MCGalaxy.Network
             return sourced ? -9999 : donor;
         }
 
-        // BlockFlowing.liquidSpread: plain (stagnation-retry) spread.
+        // BlockFlowing.liquidSpread: plain (stagnation-retry) spread. Genuine
+        // pairs the setBlockWithNotify with an explicit scheduleBlockUpdate,
+        // ON TOP of the onBlockAdded schedule the write itself runs - a spread
+        // cell genuinely enters the tick list twice (the duplicate is cheap:
+        // whichever runs second either re-runs a still-moving cell or is
+        // dropped by the stale-id check once the cell settles).
         static bool FluidSpread(LevelPhys lp, Level lvl, ushort moving, bool water, int tx, int ty, int tz) {
             if (!CanFlowInto(lvl, water, tx, ty, tz)) return false;
             Set(lvl, tx, ty, tz, moving);
+            ScheduleUpdate(lp, Pack(lvl, tx, ty, tz), moving);
             return true;
         }
 
@@ -827,6 +807,7 @@ namespace MCGalaxy.Network
                 Set(lvl, dx, dy, dz, Block.Air);
             }
             Set(lvl, tx, ty, tz, moving);
+            ScheduleUpdate(lp, Pack(lvl, tx, ty, tz), moving); // genuine explicit schedule (see FluidSpread)
             return true;
         }
 
@@ -850,6 +831,9 @@ namespace MCGalaxy.Network
                            CanFlowInto(lvl, water, x, y, z - 1) || CanFlowInto(lvl, water, x, y, z + 1);
 
             ushort below = y > 0 ? View(lvl, x, y - 1, z) : (ushort)Block.Air;
+            // getBlockMaterial(below) == this.material: for water this includes
+            // BOTH springs (each is Material.water - the genuine quirk means a
+            // lava spring below flowing water also selects the equalize path)
             if (canSide && y > 0 && (water ? IsWaterMat(below) : IsLavaMat(below))) {
                 if (FloodFill(lp, lvl, x, y - 1, z, moving, still) == 1) {
                     int r = FlowCheck(lp, lvl, x, y, z, moving, still);
@@ -917,39 +901,10 @@ namespace MCGalaxy.Network
             }
 
             if (!spread) {
-                Set(lvl, x, y, z, still); // settled: become still
+                Set(lvl, x, y, z, still); // settled: become still (setTileNoUpdate)
             } else {
-                ScheduleFluid(lp, index, water, false);
+                ScheduleUpdate(lp, index, block); // keep flowing at tickRate
             }
-        }
-
-        // BlockStationary.onNeighborBlockChange: wake to moving when flow is
-        // possible (or fire encourages, for lava); petrify on contact with the
-        // opposite fluid.
-        static readonly int[] NX = { -1, 1, 0, 0, 0, 0 };
-        static readonly int[] NY = { 0, 0, -1, 1, 0, 0 };
-        static readonly int[] NZ = { 0, 0, 0, 0, -1, 1 };
-        // Wake only: the petrify half of onNeighborBlockChange rides the CHANGED
-        // block id through NotifyNeighbour/SchedulePetrify. A woken fluid meeting
-        // pre-existing lava resolves through its own flow update (WaterContact:
-        // the LAVA turns to stone), exactly as genuine does.
-        static void ActivateStill(LevelPhys lp, Level lvl, int index, ushort block) {
-            int x, y, z; Unpack(lvl, index, out x, out y, out z);
-            bool water = block == Block.StillWater;
-
-            bool wake = CanFlowInto(lvl, water, x, y - 1, z) ||
-                        CanFlowInto(lvl, water, x - 1, y, z) || CanFlowInto(lvl, water, x + 1, y, z) ||
-                        CanFlowInto(lvl, water, x, y, z - 1) || CanFlowInto(lvl, water, x, y, z + 1);
-            if (!wake && !water) {
-                for (int n = 0; n < 6; n++)
-                {
-                    int nx = x + NX[n], ny = y + NY[n], nz = z + NZ[n];
-                    if (In(lvl, nx, ny, nz) && CanCatch(View(lvl, nx, ny, nz))) { wake = true; break; }
-                }
-            }
-            if (!wake) return;
-
-            Set(lvl, x, y, z, water ? (ushort)Block.Water : (ushort)Block.Lava);
         }
     }
 }

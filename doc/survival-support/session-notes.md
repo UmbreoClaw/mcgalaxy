@@ -1539,16 +1539,19 @@ handler in SurvivalGrowth, all ticked from the survival mob loop (Indev only,
 under lock(lm.Mobs)) and pruned on unload. Every change streams as an ordinary
 SetBlock (no new wire).
 
-Notify model (the key server adaptation): the client drives fire/fluids by inline
-recursion through its block-change hook; the server can't (a waking lake or a
-collapsing fire field would blow the stack). Instead SurvivalGrowth.SetView
-announces every server-authored change to SurvivalPhysics.Notify, which ONLY
-ENQUEUES work (schedule fire, schedule/activate fluid, re-check neighbours) -
-never sets a block inline. TickFire/TickFluids drain the queues next tick, which
-IS the genuine scheduled-update model, so cascades spread over ticks instead of
-recursing. Player edits reach the same Notify via OnBlockChangedEvent
-(registered in CorePlugin); a map-load scan (setTickOnLoad) schedules pre-existing
-fire + moving fluid the first time a level ticks.
+Notify model: SurvivalGrowth.SetView announces every server-authored change to
+SurvivalPhysics.Notify, which runs the genuine onBlockAdded /
+onNeighborBlockChange reactions SYNCHRONOUSLY (fire support checks, still-fluid
+petrify/wake, spring floods, sponge handling) exactly like genuine's notify
+recursion - recursion is bounded because wake flips early-return and petrified
+stone triggers nothing further. Only the fluid/fire updateTicks themselves ride
+the ONE shared tick list (genuine World.tickList: no dedup, per-entry block id
+with stale-skip, <=200 pops per tick shared between count-downs and runs,
+tickRate delays fire 20 / lava 25 / water 5 = effective periods 21/26/6).
+Player edits reach the same Notify via OnBlockChangedEvent (registered in
+CorePlugin) flagged as full setBlockWithNotify-class writes. There is NO
+map-load scheduling scan - genuine setTickOnLoad only gates the random pass,
+which revives dormant fire/suspended moving fluid at ~10s mean per cell.
 
  * Leaf decay (SurvivalGrowth.TickLeaves): a leaf with a non-solid block below
    and no log within x+-2,y-1..y,z+-2 decays, dropping a sapling on a 1-in-10
@@ -1570,7 +1573,7 @@ fire + moving fluid the first time a level ticks.
 
 Client (ClassiCube): the whole local Indev world sim is now gated off under
 server drive - Physics_Tick returns early when SurvivalNet_ServerDriven() before
-IndevFire_Tick/IndevTest_TickFluids/IndevTest_TickRandomBlocks, so nothing runs
+IndevTest_TickFluids (the shared fire+fluid tick list)/IndevTest_TickRandomBlocks, so nothing runs
 twice or diverges. Ambient display ticks (fire crackle, lava embers, water foam)
 are a separate path (IndevTest_RandomDisplayTicks) and keep running. The earlier
 per-block growth gate inside TickRandomBlocks was removed in favour of this one
