@@ -16,8 +16,8 @@
     permissions and limitations under the Licenses.
  */
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using MCGalaxy.Util;
 
 namespace MCGalaxy.Util.Imaging
@@ -61,23 +61,36 @@ namespace MCGalaxy.Util.Imaging
         }
         
         
-        public static Bitmap2D DecodeFrom(byte[] src) {
-            ImageDecoder decoder = DetectFrom(src);
-            if (decoder != null) return decoder.Decode(src);
-            
-            throw new UnknownImageFormatException();
-        }
-        
-        static ImageDecoder DetectFrom(byte[] src) {
-            if ( PngDecoder.DetectHeader(src)) return new PngDecoder();
-            if ( GifDecoder.DetectHeader(src)) return new GifDecoder();
-            if (JpegDecoder.DetectHeader(src)) return new JpegDecoder();
-            
-            return null;
-        }
-        
         public abstract Bitmap2D Decode(byte[] src);
     }
+        
+    public delegate ImageDecoder ImageDecoderConstructor();
     
-    public sealed class UnknownImageFormatException : Exception { }
+    public sealed class ImageFormat 
+    {
+        public Predicate<byte[]> DetectHeader;
+        public ImageDecoderConstructor CreateDecoder;
+        
+        public ImageFormat(Predicate<byte[]> detector, ImageDecoderConstructor decoder) {
+            DetectHeader  = detector;
+            CreateDecoder = decoder;
+        }
+        
+        
+        public static List<ImageFormat> KnownFormats = new List<ImageFormat>() {
+            new ImageFormat( PngDecoder.DetectHeader, () => new  PngDecoder()),
+            new ImageFormat(JpegDecoder.DetectHeader, () => new JpegDecoder()),
+            new ImageFormat( GifDecoder.DetectHeader, () => new  GifDecoder()),
+        };
+                
+        public static ImageDecoder DetectFrom(byte[] src) {
+            foreach (var format in ImageFormat.KnownFormats)
+            {
+                if (!format.DetectHeader(src)) continue;
+                
+                return format.CreateDecoder();
+            }
+            return null;
+        }
+    }
 }

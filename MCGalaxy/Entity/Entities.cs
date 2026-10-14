@@ -34,12 +34,12 @@ namespace MCGalaxy
         }
         
         /// <summary> Spawns this player to all other players that can see the player in the current world. </summary>
-        public static void GlobalSpawn(Player p, bool self, string possession = "") {
-            GlobalSpawn(p, p.Pos, p.Rot, self, possession);
+        public static void GlobalSpawn(Player p, bool self) {
+            GlobalSpawn(p, p.Pos, p.Rot, self);
         }
         
         /// <summary> Spawns this player to all other players that can see the player in the current world. </summary>
-        public static void GlobalSpawn(Player p, Position pos, Orientation rot, bool self, string possession = "") {
+        public static void GlobalSpawn(Player p, Position pos, Orientation rot, bool self) {
             Player[] players = PlayerInfo.Online.Items;
             TabList.Update(p, self);
             
@@ -47,11 +47,11 @@ namespace MCGalaxy
                 if ((other.Loading && p != other) || p.level != other.level) continue;
                 
                 if (p != other && other.CanSeeEntity(p)) {
-                    Spawn(other, p, pos, rot, possession);
+                    Spawn(other, p, pos, rot);
                 } else if (p == other && self) {
                     other.Pos = pos; other.SetYawPitch(rot.RotY, rot.HeadX);
                     other._lastPos = other.Pos; other._lastRot = other.Rot;
-                    Spawn(other, p, pos, rot, possession);
+                    Spawn(other, p, pos, rot);
                 }
             }
         }
@@ -77,22 +77,16 @@ namespace MCGalaxy
         }
 
 
-        /// <summary>
-        /// Spawns p to dst and calls OnEntitySpawnedEvent
-        /// </summary>
-        public static void Spawn(Player dst, Player p) { Spawn(dst, p, p.Pos, p.Rot); }
-        /// <summary>
-        /// Spawns p to dst at the given pos and rot and calls OnEntitySpawnedEvent
-        /// </summary>
-        public static void Spawn(Player dst, Player p, Position pos,
-                                 Orientation rot, string possession = "") {
-
-            string name = p.color + p.truename + possession;
-            string skin = p.SkinName, model = p.Model;
-            OnEntitySpawnedEvent.Call(p, ref name, ref skin, ref model, dst);
-
-            SpawnRaw(dst, p, pos, rot, skin, name, model);
+        public static void Spawn(Player dst, Entity e) { Spawn(dst, e, e.Pos, e.Rot); }
+        
+        public static void Spawn(Player dst, Entity e, Position pos, Orientation rot) {
+            dst.EntityList.Add(e, pos, rot, true);
         }
+        
+        public static void Despawn(Player dst, Entity e) {
+            dst.EntityList.Remove(e, true);
+        }
+        
         
         /// <summary> Spawns this player to all other players, and spawns all others players to this player. </summary>
         internal static void SpawnEntities(Player p, bool bots = true) { SpawnEntities(p, p.Pos, p.Rot, bots); }
@@ -123,38 +117,6 @@ namespace MCGalaxy
             PlayerBot[] botsList = p.level.Bots.Items;
             foreach (PlayerBot b in botsList) { Despawn(p, b); }
         }
-        
-        public static void Spawn(Player dst, PlayerBot b) {
-            string name  = Chat.Format(b.color + b.DisplayName, dst, true, false);
-            if (b.DisplayName.CaselessEq("empty")) name = "";
-            string skin  = Chat.Format(b.SkinName, dst, true, false);
-            string model = Chat.Format(b.Model, dst, true, false);
-            
-            OnEntitySpawnedEvent.Call(b, ref name, ref skin, ref model, dst);
-            SpawnRaw(dst, b, b.Pos, b.Rot, skin, name, model);
-        }
-        
-        /// <summary>
-        /// Attempts to spawn and add an entity to p's tab list.
-        /// </summary>
-        static void SpawnRaw(Player p, Entity e, Position pos, Orientation rot,
-                             string skin, string name, string model) {
-
-            p.EntityList.Add(e, pos, rot, skin, name, model, true);
-        }
-        
-        /// <summary>
-        /// Despawns other to dst and calls OnEntityDespawnedEvent
-        /// </summary>
-        public static void Despawn(Player dst, Player other) {
-            OnEntityDespawnedEvent.Call(other, dst);
-            dst.EntityList.Remove(other, true);
-        }
-        
-        public static void Despawn(Player dst, PlayerBot b) {
-            OnEntityDespawnedEvent.Call(b, dst);
-            dst.EntityList.Remove(b, true);
-        }
 
         #endregion
         
@@ -175,18 +137,15 @@ namespace MCGalaxy
         /// <summary>
         /// Broadcasts the current model and scales for e to everyone who can see it.
         /// </summary>
-        internal static void BroadcastModel(Entity e, string m) {
+        internal static void BroadcastModel(Entity e) {
             Player[] players = PlayerInfo.Online.Items;
             Level lvl = e.Level;
 
-            foreach (Player pl in players) {
-                if (pl.level != lvl || !pl.hasChangeModel) continue;
-                if (!pl.CanSeeEntity(e)) continue;
+            foreach (Player pl in players) 
+            {
+                if (pl.level != lvl) continue;
 
-                string model = Chat.Format(m, pl, true, false);
-
-                pl.EntityList.SendModel(e, model);
-                pl.EntityList.SendScales(e);
+                pl.EntityList.UpdateModel(e, e.GetSpawnModel(pl));
             }
         }
 
@@ -212,6 +171,7 @@ namespace MCGalaxy
 
             BroadcastEntityProp(e, prop, degrees);
         }
+        
         /// <summary>
         /// Broadcasts the given prop for this entity for everyone who can see it. Does not update any server-side fields for the given entity.
         /// </summary>
@@ -219,9 +179,9 @@ namespace MCGalaxy
             Player[] players = PlayerInfo.Online.Items;
             Level lvl = e.Level;
 
-            foreach (Player pl in players) {
-                if (pl.level != lvl || !pl.Supports(CpeExt.EntityProperty)) continue;
-                if (!pl.CanSeeEntity(e)) continue;
+            foreach (Player pl in players) 
+            {
+                if (pl.level != lvl) continue;
                 pl.EntityList.SendProp(e, prop, value);
             }
         }

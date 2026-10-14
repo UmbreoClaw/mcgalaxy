@@ -33,41 +33,17 @@ namespace MCGalaxy {
         class VisibleEntity {
             public readonly Entity e;
             public readonly byte id;
-            public readonly string displayName;
 
-            public VisibleEntity(Entity e, byte id, string displayName) {
+            public VisibleEntity(Entity e, byte id) {
                 this.e = e;
                 this.id = id;
-                this.displayName = displayName;
             }
         }
-        class TabObject {
-            public readonly object o;
-            public readonly byte id;
-            public string name;
-            public string nick;
-            public string group;
-            public byte groupRank;
-
-            public TabObject(object o, byte id, string name, string nick, string group, byte groupRank) {
-                this.o = o;
-                this.id = id;
-                this.name = name;
-                this.nick = nick;
-                this.group = group;
-                this.groupRank = groupRank;
-            }
-            public void UpdateFields(string name, string nick, string group, byte groupRank) {
-                this.name = name;
-                this.nick = nick;
-                this.group = group;
-                this.groupRank = groupRank;
-            }
-        }
-        class WaitingEntity : VisibleEntity {
-
+        
+        class WaitingEntity : VisibleEntity
+        {
             public readonly bool tabList;
-            public WaitingEntity(Entity e, byte id, string displayName, bool tabList) : base(e, id, displayName) {
+            public WaitingEntity(Entity e, byte id, bool tabList) : base(e, id) {
                 this.tabList = tabList;
             }
         }
@@ -88,97 +64,85 @@ namespace MCGalaxy {
         Stack<byte> freeIDs;
         readonly object locker = new object();
 
+        VisibleEntity[] visible_list;
+        int visible_count;
+
 
         #region TabList
-        Dictionary<object, TabObject> tabObjects = new Dictionary<object, TabObject>();
+        Dictionary<ITabListEntry, byte> tabMap = new Dictionary<ITabListEntry, byte>();
         bool[] usedTabIDs;
 
-        void AddTab(Entity e) {
-            if (e is Player) {
-                if (!Server.Config.TablistGlobal) TabList.Add(p, (Player)e);
-            } else if (e is PlayerBot) {
-                if (Server.Config.TablistBots) TabList.Add(p, (PlayerBot)e);
-            }
-        }
-        void RemoveTab(Entity e) {
-            if (e is Player) {
-                if (!Server.Config.TablistGlobal) TabList.Remove(p, (Player)e);
-            } else if (e is PlayerBot) {
-                if (Server.Config.TablistBots) TabList.Remove(p, (PlayerBot)e);
-            }
-        }
-
-        public void SendAddTabEntry(object o, string name, string nick, string group, byte groupRank) {
-            if (!p.hasExtList) return;
-            bool self = o == p;
+        /// <summary> Adds the given entry to that player's tab list (if their client supports it). </summary>
+        public void AddTabEntry(ITabListEntry entry) {
+            if (!p.hasExtList || !entry.SharesTabListWith(p)) return;
+            
+            string name  = entry.GetTabListName();
+            string nick  = entry.GetTabListNick(p);
+            string group = entry.GetTabListGroup();
+            byte   rank  = entry.GetTabListRank();
+            
+            OnTabListEntryAddedEvent.Call(entry, ref nick, ref group, p);
+            string suffix = entry.GetTabListSuffix();
+            if (!string.IsNullOrEmpty(suffix)) nick += suffix;
+            byte id;
 
             lock (locker) {
-                TabObject tabby;
-
-                if (tabObjects.TryGetValue(o, out tabby)) {
-                    tabby.UpdateFields(name, nick, group, groupRank); //Refresh every field other than entity and ID
-                    //p.Message("RETABBING {0}&S with ID {1}", name, tabby.id);
-                } else {
-                    int tentativeID = FindFreeTabID(o, self);
+                if (entry == p) {
+                    id = Entities.SelfID;
+                } else if (!tabMap.TryGetValue(entry, out id)) {
+                    int tentativeID = FindFreeTabID(entry);
                     if (tentativeID == -1) return;
+                    // TODO this doesn't handle tablist reaching capacity..
+                    // maybe handle this by setting tabObjects[e] to 255?
 
-                    byte ID = (byte)tentativeID;
-                    //p.Message("| &a+TAB &S{0}&S with ID {1}", name, ID);
-                    tabby = new TabObject(o, ID, name, nick, group, groupRank);
-                    tabObjects[o] = tabby;
+                    id = (byte)tentativeID;
+                    usedTabIDs[id] = true;
+                    tabMap[entry]  = id;
                 }
 
-                p.Session.SendAddTabEntry(tabby.id, tabby.name, tabby.nick, tabby.group, tabby.groupRank);
+                p.Session.SendAddTabEntry(id, name, nick, group, rank);
             }
         }
-        int FindFreeTabID(object o, bool self) {
-            if (self) return Entities.SelfID;
+        
+        /// <summary> Removes the given entry from player's tab list (if their client supports it). </summary>
+        public void RemoveTabEntry(ITabListEntry e) {
+            if (!p.hasExtList) return;
+            
+            OnTabListEntryRemovedEvent.Call(e, p);
+            byte id;
 
+            lock (locker) {
+                if (!tabMap.TryGetValue(e, out id)) return;
+
+                usedTabIDs[id] = false;
+                tabMap.Remove(e);
+                
+                p.Session.SendRemoveTabEntry(id);
+            }
+        }
+        
+        int FindFreeTabID(ITabListEntry entry) {
             //Try finding a matching visible entity for the ID
-            if (o is Entity) {
+            if (entry is Entity) {
                 VisibleEntity vis;
-                Entity e = (Entity)o;
-                if (visible.TryGetValue(e, out vis) && usedTabIDs[vis.id] != true) {
-                    //We need to match the tablist ID to the matching entity in the level if possible,
-                    //because a few popular plugins (chatsounds, CEF) rely on this
-
-                    //p.Message("Found {0}&S in level, using ID {1}", vis.displayName, vis.id);
-                    usedTabIDs[vis.id] = true;
+                Entity e = (Entity)entry;
+                
+                if (visible.TryGetValue(e, out vis) && !usedTabIDs[vis.id]) {
+                    // Match tablist ID to corresponding entity in the level if possible,
+                    // because a few popular plugins (chatsounds, CEF) rely on this
                     return vis.id;
                 }
             }
 
-            //In this case, it's an entry for an Entity not on your level (or one that hasn't spawned yet)
-            //Since visible entities are assigned starting from 0 and going up,
-            //we'll find tab list IDs going from 254 down so there's less chance of
-            //an entity from another level sharing an ID with an entity on your level
-            for (int i = maxEntityID; i >= 0; i--) {
-                if (usedTabIDs[i] == false) {
-                    usedTabIDs[i] = true;
-                    //p.Message("Tab ID {0} is now used.", i);
-                    return i;
-                }
+            // In this case, it's not an entity on the player's level (or entity that hasn't spawned yet)
+            // Since visible entities are assigned starting from 0 and going up,
+            //  assign tab list IDs going from 254 down so there's less chance
+            //  of colliding with the ID of an entity on the player's level
+            for (int i = maxEntityID; i >= 0; i--)
+            {
+                if (!usedTabIDs[i]) return i;
             }
-
-            //p.Message("No IDS left :(");
-            return -1; //No IDs left :(
-        }
-        public void SendRemoveTabEntry(object o) {
-            if (!p.hasExtList) return;
-
-            lock (locker) {
-                TabObject tabby;
-                if (tabObjects.TryGetValue(o, out tabby)) {
-                    tabby = tabObjects[o];
-                    if (o != p) usedTabIDs[tabby.id] = false;
-                    //p.Message("| &c-TAB &S{0}&S with ID {1}", tabby.name, tabby.id);
-                    tabObjects.Remove(o);
-                    p.Session.SendRemoveTabEntry(tabby.id);
-                } else {
-                    //Seems to happen when reconnecting
-                    //Logger.Log(LogType.Warning, "{0}'s entitymap: Tried removing Tablist ({0}) that wasn't in the collection...", p.name, e.SkinName);
-                }
-            }
+            return -1;
         }
         #endregion
 
@@ -188,67 +152,66 @@ namespace MCGalaxy {
             this.p = p;
             this.maxEntityID = maxEntityID;
 
-            lock (locker) {
-                freeIDs = new Stack<byte>(maxEntityID);
-                for (int i = maxEntityID; i >= 0; i--) {
-                    freeIDs.Push((byte)i);
-                }
-
-                usedTabIDs = new bool[maxEntityID + 1];
+            freeIDs = new Stack<byte>(maxEntityID);
+            for (int i = maxEntityID; i >= 0; i--)
+            {
+                freeIDs.Push((byte)i);
             }
+
+            usedTabIDs   = new bool[maxEntityID + 1];
+            visible_list = new VisibleEntity[maxEntityID + 1];
         }
 
         /// <summary>
-        /// Adds the given entity and calls OnSendingModelEvent. Returns true if an entity was spawned, otherwise false if it could not immediately be spawned (it will spawn later if enough are removed)
+        /// Attempts to spawn the given entity (if cannot be immediately spawned, will spawn later if enough other entities are despawned)
         /// If this returns false and tabList is true, once the entity spawns, it will be added to the tab list.
         /// </summary>
-        public bool Add(Entity e, Position pos, Orientation rot, string skin, string name, string model, bool tabList) {
-            bool self = e == p;
+        public bool Add(Entity e, Position pos, Orientation rot, bool tabList) {
+            string name  = e.GetSpawnName(p);
+            string skin  = e.GetSpawnSkin(p);
+            string model = e.GetSpawnModel(p);
 
+            OnEntitySpawnedEvent.Call(e, ref name, ref skin, ref model, p);
             OnSendingModelEvent.Call(e, ref model, p);
+            byte id;
 
             lock (locker) {
-                if (freeIDs.Count > 0 || self) {
-                    VisibleEntity vis;
-                    if (!visible.TryGetValue(e, out vis)) {
-                        byte ID = self ? Entities.SelfID : freeIDs.Pop();
-                        //p.Message("| &a+ &S{0}&S with ID {1}", name, ID);
-
-                        vis = new VisibleEntity(e, ID, name);
-                        visible[e] = vis;
-                    } else {
-                        //p.Message("RESPAWNING {0}&S with ID {1}", name, vis.id);
-                    }
-                    Spawn(vis, pos, rot, skin, name, model);
-                    if (tabList) AddTab(e);
-
-                    //If this entity has a matching tab entry, we need to make sure the IDs get synced
-                    //because a few popular plugins (chatsounds, CEF) rely on this
-                    TabObject tabby;
-                    if (tabObjects.TryGetValue(vis.e, out tabby) && tabby.id != vis.id) {
-                        //p.Message("%bReadding tab {0} :)", tabby.nick);
-                        SendRemoveTabEntry(vis.e);
-                        SendAddTabEntry(vis.e, tabby.name, tabby.nick, tabby.group, tabby.groupRank);
-                    }
-
-                    return true;
-                }
-
-                //Don't add if it's already queued
-                if (IsWaitingToSpawn(e) == null) {
-                    WaitingEntity waiting = new WaitingEntity(e, 0, name, tabList);
+                if (LookupEntity(e, out id)) {
+                    // nothing to do
+                } else if (freeIDs.Count > 0) {
+                    id = freeIDs.Pop();
+                    visible[e] = new VisibleEntity(e, id);
+                } else {
+                    // Don't add if it's already queued
+                    if (IsWaitingToSpawn(e) != null) return false;
+                    
+                    WaitingEntity waiting = new WaitingEntity(e, 0, tabList);
                     invisible.Add(waiting);
-                    //p.Message("Queuing {0} as invisible.", waiting.displayName);
+                    return false;
                 }
-                return false;
+
+                visible_count = -1;
+                Spawn(id, e, pos, rot, skin, name, model);
+                if (tabList) AddTabEntry(e);
+
+                // If this entity has a matching tab entry, try to ensure IDs are synced
+                // because a few popular plugins (chatsounds, CEF) rely on this
+                byte tabID;
+                if (tabMap.TryGetValue(e, out tabID) && tabID != id) {
+                    //p.Message("%bReadding tab {0} :)", tabby.nick);
+                    RemoveTabEntry(e);
+                    AddTabEntry(e);
+                }
+                return true;
             }
         }
 
-        /// <summary>
-        /// Remove the given entity and despawns it for this player. Returns true if an entity was despawned, otherwise false.
-        /// </summary>
+        /// <summary> Attempts to despawn the given entity </summary>
+        /// <returns> Whether the given entity was previously spawned to the player </returns>
         public bool Remove(Entity e, bool tabList) {
-            bool self = e == p;
+            if (e == p) return false; // TODO still remove tab entry?
+            OnEntityDespawnedEvent.Call(e, p);
+            
             lock (locker) {
 
                 //If we're removing a currently invisible entity...
@@ -260,193 +223,174 @@ namespace MCGalaxy {
                 }
 
                 VisibleEntity vis;
-                if (visible.TryGetValue(e, out vis)) {
-                    vis = visible[e];
-                    if (!self) freeIDs.Push(vis.id);
-                    //p.Message("| &c- &S{0}&S with ID {1}", vis.displayName, vis.id);
+                if (!visible.TryGetValue(e, out vis)) return false;
+                
+                freeIDs.Push(vis.id);
+                visible.Remove(e);
+                visible_count = -1;
+                
+                if (tabList) RemoveTabEntry(e);
+                Despawn(vis.id);
 
-                    visible.Remove(e);
-                    if (tabList) RemoveTab(e);
-                    Despawn(vis);
-
-                    //Now that we've removed a visible entity, try spawning a waiting invisible one
-                    if (invisible.Count > 0 && freeIDs.Count > 0 && !self) {
-                        waiting = invisible[0];
-                        invisible.RemoveAt(0);
-                        //p.Message("Adding {0} who was invisible :)", waiting.displayName);
-                        Add(waiting.e, waiting.e.Pos, waiting.e.Rot, waiting.e.SkinName, waiting.displayName, waiting.e.Model, waiting.tabList);
-                    }
-
-                    return true;
-                } else {
-                    //Seems to happen when reconnecting
-                    //Logger.Log(LogType.Warning, "{0}'s entitymap: Tried removing an entity ({0}) that wasn't in the collection...", p.name, e.SkinName);
-                    return false;
+                //Now that we've removed a visible entity, try spawning a waiting invisible one
+                if (invisible.Count > 0 && freeIDs.Count > 0) {
+                    waiting = invisible[0];
+                    invisible.RemoveAt(0);
+                    //p.Message("Adding {0} who was invisible :)", waiting.displayName);
+                    Add(waiting.e, waiting.e.Pos, waiting.e.Rot, waiting.tabList);
                 }
+
+                return true;
             }
         }
 
-        void Spawn(VisibleEntity vis, Position pos, Orientation rot, string skin, string name, string model) {
-            p.Session.SendSpawnEntity(vis.id, name, skin, pos, rot);
-            _SendModel(vis, model);
-            _SendRot(vis, rot);
-            _SendScales(vis);
+        void Spawn(byte id, Entity e, Position pos, Orientation rot, string skin, string name, string model) {
+            p.Session.SendSpawnEntity(id, name, skin, pos, rot);
+            p.Session.SendChangeModel(id, model);
+            p.Session.SendEntityProperty(id, EntityProp.RotX, Orientation.PackedToDegrees(rot.RotX));
+            p.Session.SendEntityProperty(id, EntityProp.RotZ, Orientation.PackedToDegrees(rot.RotZ));
+            _SendScales(id, e);
         }
-        void Despawn(VisibleEntity vis) {
-            p.Session.SendRemoveEntity(vis.id);
+        
+        void Despawn(byte id) {
+            p.Session.SendRemoveEntity(id);
         }
 
-        /// <summary>
-        /// Calls OnSendingModelEvent and changes the model of the given entity.
-        /// </summary>
-        public void SendModel(Entity e, string model) {
+        /// <summary> Attempts to update the model + scales of the given entity </summary>
+        public void UpdateModel(Entity e, string model) {
             OnSendingModelEvent.Call(e, ref model, p);
+            
             lock (locker) {
-                VisibleEntity vis;
-                if (!visible.TryGetValue(e, out vis)) return;
-                _SendModel(vis, model);
+                byte id;
+                if (!LookupEntity(e, out id)) return;
+                
+                p.Session.SendChangeModel(id, model);
+                _SendScales(id, e);
             }
         }
-        void _SendModel(VisibleEntity vis, string model) {
-            if (p.hasChangeModel) {
-                p.Session.SendChangeModel(vis.id, model);
-            }
-        }
-        void _SendRot(VisibleEntity vis, Orientation rot) {
-            if (p.Supports(CpeExt.EntityProperty)) {
-                p.Session.SendEntityProperty(vis.id, EntityProp.RotX, Orientation.PackedToDegrees(rot.RotX));
-                p.Session.SendEntityProperty(vis.id, EntityProp.RotZ, Orientation.PackedToDegrees(rot.RotZ));
-            }
-        }
-
-
-        public void SendScales(Entity e) {
-            lock (locker) {
-                VisibleEntity vis;
-                if (!visible.TryGetValue(e, out vis)) return;
-                _SendScales(vis);
-            }
-        }
-        void _SendScales(VisibleEntity vis) {
+        
+        void _SendScales(byte id, Entity e) {
             if (!p.Supports(CpeExt.EntityProperty)) return;
 
-            float max = ModelInfo.MaxScale(vis.e, vis.e.Model);
-            _SendScale(vis, EntityProp.ScaleX, vis.e.ScaleX, max);
-            _SendScale(vis, EntityProp.ScaleY, vis.e.ScaleY, max);
-            _SendScale(vis, EntityProp.ScaleZ, vis.e.ScaleZ, max);
+            float max = ModelInfo.MaxScale(e, e.Model);
+            _SendScale(id, EntityProp.ScaleX, e.ScaleX, max);
+            _SendScale(id, EntityProp.ScaleY, e.ScaleY, max);
+            _SendScale(id, EntityProp.ScaleZ, e.ScaleZ, max);
         }
-        void _SendScale(VisibleEntity vis, EntityProp axis, float value, float max) {
+        
+        void _SendScale(byte id, EntityProp axis, float value, float max) {
             if (value == 0) return;
             value = Math.Min(value, max);
 
             int packed = (int)(value * 1000);
             if (packed == 0) return;
-            p.Session.SendEntityProperty(vis.id, axis, packed);
+            p.Session.SendEntityProperty(id, axis, packed);
         }
 
         public void SendProp(Entity e, EntityProp prop, int value) {
             if (!p.Supports(CpeExt.EntityProperty)) return;
+            
             lock (locker) {
-                VisibleEntity vis;
-                if (!visible.TryGetValue(e, out vis)) return;
-                p.Session.SendEntityProperty(vis.id, prop, value);
+                byte id;
+                if (!LookupEntity(e, out id)) return;
+                
+                p.Session.SendEntityProperty(id, prop, value);
             }
         }
 
         public bool GetID(Entity e, out byte id) {
-            lock (locker) {
-                VisibleEntity vis;
-                if (visible.TryGetValue(e, out vis)) {
-                    id = vis.id;
-                    return true;
-                }
-            }
-            id = 0;
-            return false;
+        	lock (locker) { return LookupEntity(e, out id); }
+        }
+        
+        bool LookupEntity(Entity e, out byte id) {
+        	if (e == p) { id = Entities.SelfID; return true; }
+        	
+        	VisibleEntity vis;
+        	bool found = visible.TryGetValue(e, out vis);
+        	
+        	id = found ? vis.id : (byte)0;
+        	return found;
         }
 
-        /// <summary>
-        /// For plugins. Unused in base MCGalaxy.
-        /// </summary>
-        public void SendTeleport(Entity e, Position pos, Orientation rot, Packet.TeleportMoveMode mode) {
+        /// <summary> Performs an action while holding lock on entity list </summary>
+        /// <remarks> Because callback is called while holding lock on entity list,
+        /// it should be a very simple function (e.g. just sending one or two packets) </remarks>
+        public bool PerformAction(Entity e, Action<byte> callback) {
             lock (locker) {
-                VisibleEntity vis;
-                if (!visible.TryGetValue(e, out vis)) return;
-                if (!p.Session.SendTeleport(vis.id, pos, rot, mode)) {
-                    p.Session.SendTeleport(vis.id, pos, rot);
-                }
+                byte id;
+                if (!LookupEntity(e, out id)) return false;
+                
+                callback(id);
             }
-        }
-        /// <summary>
-        /// For plugins. Unused in base MCGalaxy.
-        /// </summary>
-        public void SendTeleport(Entity e, Position pos, Orientation rot) {
-            lock (locker) {
-                VisibleEntity vis;
-                if (!visible.TryGetValue(e, out vis)) return;
-                p.Session.SendTeleport(vis.id, pos, rot);
-            }
+            return true;
         }
 
-        readonly Dictionary<Entity, VisibleEntity> cachedVisible = new Dictionary<Entity, VisibleEntity>(32);
+        int UpdateVisibleList() {
+            VisibleEntity[] list = visible_list;
+            // check if list hasn't changed since last iteration
+            if (visible_count >= 0) return visible_count;
+            int i = 0;
+
+            foreach (KeyValuePair<Entity, VisibleEntity> pair in visible)
+            {
+                if (!pair.Key.autoBroadcastPosition) continue;
+                list[i++] = pair.Value;
+            }
+
+            visible_count = i;
+            return i;
+        }
+
         internal unsafe void BroadcastEntityPositions() {
 
             byte* src = stackalloc byte[16 * 256]; // 16 = size of absolute update, with extended positions
             byte* ptr = src;
             Player dst = p;
 
+            int count;
+            VisibleEntity[] list = visible_list;
 
             lock (locker) {
-                cachedVisible.Clear();
+                count = UpdateVisibleList();
                 //We want to avoid locking during the entire enumeration of position sending
                 //We need a cached collection to prevent the collection from changing while being enumerated over.
                 //Also, ignore entities that we don't want to automatically update the position of.
-                foreach (KeyValuePair<Entity, VisibleEntity> pair in visible) {
-                    if (!pair.Key.autoBroadcastPosition) continue;
-
-                    cachedVisible[pair.Key] = pair.Value;
-                    if (pair.Key.untracked) {
-                        pair.Key._positionUpdatePos = pair.Key.Pos;
+                for (int i = 0; i < count; i++)
+                {
+                    Entity entity = list[i].e;
+                    if (entity.untracked) {
+                        entity._positionUpdatePos = entity.Pos;
                     }
                 }
             }
 
-            foreach (KeyValuePair<Entity, VisibleEntity> pair in cachedVisible) {
-                Entity e = pair.Key;
-                byte id = pair.Value.id;
+            for (int i = 0; i < count; i++)
+            {
+                Entity e = list[i].e;
+                byte id  = list[i].id;
 
-                if (dst == e || dst.level != e.Level || !dst.CanSeeEntity(e)) continue;
-
-                Orientation rot = e.Rot; byte pitch = rot.HeadX;
-                //CODE REVIEW: How should this be done? We could maybe have the visible pitch be a virtual getter in Entity and player implements its own logic
-                if (e is Player) {
-                    Player pl = (Player)e; //No pattern matching because we're ancient C#
-                    if (Server.flipHead || pl.flipHead) pitch = FlippedPitch(pitch);
-                    // flip head when infected in ZS, but doesn't support model
-                    if (!dst.hasChangeModel && pl.infected)
-                        pitch = FlippedPitch(pitch);
+                Orientation rot = e.Rot;
+                if (e.ShouldFlipPitch(dst)) {
+                    byte pitch = rot.HeadX;
+                    rot.HeadX  = FlippedPitch(pitch);
                 }
 
-                rot.HeadX = pitch;
-                p.Session.GetPositionPacket(ref ptr, id, e.hasExtPositions, dst.hasExtPositions,
-                                           e._positionUpdatePos, e._lastPos, rot, e._lastRot);
-
-                //bool rotChanged = rot.RotY != e._lastRot.RotY || rot.HeadX != e._lastRot.HeadX;
-                //if (pair.Value.displayName.CaselessContains("temp") && (e._lastPos != e._positionUpdatePos || rotChanged)) {
-                //    p.Message("Moving {0} to {1}", pair.Value.displayName, e._positionUpdatePos.ToVec3F32().ToString());
-                //}
+                ptr = p.Session.GetPositionPacket(ptr, id, e.hasExtPositions, dst.hasExtPositions,
+                                                    e._positionUpdatePos, e._lastPos, rot, e._lastRot);
             }
 
-            int count = (int)(ptr - src);
-            if (count == 0) return;
+            int size = (int)(ptr - src);
+            if (size == 0) return;
 
-            byte[] packet = new byte[count];
+            byte[] packet = new byte[size];
             for (int i = 0; i < packet.Length; i++) { packet[i] = src[i]; }
             dst.Send(packet);
 
-            foreach (KeyValuePair<Entity, VisibleEntity> pair in cachedVisible) {
-                if (pair.Key.untracked) {
-                    pair.Key._lastPos = pair.Key._positionUpdatePos; pair.Key._lastRot = pair.Key.Rot;
+            for (int i = 0; i < count; i++)
+            {
+                Entity entity = list[i].e;
+                if (entity.untracked) {
+                    entity._lastPos = entity._positionUpdatePos; entity._lastRot = entity.Rot;
                 }
             }
         }

@@ -88,7 +88,8 @@ namespace MCGalaxy.Network
         public abstract void SendTeleport(byte id, Position pos, Orientation rot);
         /// <summary> Sends an ext entity teleport with more control over behavior </summary>
         public virtual bool SendTeleport(byte id, Position pos, Orientation rot,
-                                         Packet.TeleportMoveMode moveMode, bool usePos = true, bool interpolateOri = false, bool useOri = true) { return false; }
+                                         Packet.TeleportMoveMode moveMode, 
+                                         bool usePos = true, bool interpolateOri = false, bool useOri = true) { return false; }
         /// <summary> Sends a spawn/add entity packet to the client </summary>
         public abstract void SendSpawnEntity(byte id, string name, string skin, Position pos, Orientation rot);
         /// <summary> Sends a despawn/remove entity to the client </summary>
@@ -103,9 +104,9 @@ namespace MCGalaxy.Network
         public abstract bool SendHoldThis(BlockID block, bool locked);
         /// <summary> Sends an update environment color packet to the client </summary>
         public abstract bool SendSetEnvColor(byte type, string hex);
-        public abstract void SendChangeModel(byte id, string model);
+        public abstract bool SendChangeModel(byte id, string model);
 
-        public abstract void SendEntityProperty(byte id, EntityProp prop, int value);
+        public abstract bool SendEntityProperty(byte id, EntityProp prop, int value);
         /// <summary> Sends an update weather packet </summary>
         public abstract bool SendSetWeather(byte weather);
         /// <summary> Sends an update text color code packet to the client </summary>
@@ -130,7 +131,7 @@ namespace MCGalaxy.Network
         /// <summary> Gets the name of the software the client is using </summary>
         /// <example> ClassiCube, Classic 0.0.16, etc </example>
         public abstract string ClientName();
-        public abstract unsafe void GetPositionPacket(ref byte* ptr, byte id, bool srcExtPos, bool extPos,
+        public abstract unsafe byte* GetPositionPacket(byte* ptr, byte id, bool srcExtPos, bool extPos,
                                                             Position pos, Position oldPos, Orientation rot, Orientation oldRot);
 
         /// <summary> Converts the given block ID into a raw block ID that the client supports </summary>

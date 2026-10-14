@@ -21,7 +21,7 @@ using MCGalaxy.Maths;
 
 namespace MCGalaxy 
 {
-    public abstract class Entity 
+    public abstract class Entity : ITabListEntry
     {
         // Raw orientation/position - access must be threadsafe
         volatile uint _rot;
@@ -80,7 +80,9 @@ namespace MCGalaxy
         public abstract Level Level { get; }
         /// <summary> Whether maximum model scale is limited. </summary>
         public abstract bool RestrictsScale { get; }
-        
+
+        public virtual bool ShouldFlipPitch(Player dst) { return false; }
+
         protected virtual void OnSetPos() { }
         
         protected virtual void OnSetRot() { }
@@ -95,7 +97,29 @@ namespace MCGalaxy
         /// <summary> Calls SetModel, then broadcasts the new model to players. Broadcasts current scales as well. </summary>
         public void UpdateModel(string model) {
             SetModel(model);
-            Entities.BroadcastModel(this, model);
+            Entities.BroadcastModel(this);
         }
+                
+        
+        #region ITabListEntry
+        public abstract bool SharesTabListWith(Player target);
+        
+        public abstract string GetTabListName();
+        
+        public abstract string GetTabListNick(Player target);
+        
+        public abstract string GetTabListSuffix();
+        
+        public abstract string GetTabListGroup();
+        
+        public abstract byte GetTabListRank();
+        #endregion
+        
+        
+        #region Spawning
+        public abstract string GetSpawnModel(Player target);
+        public abstract string GetSpawnSkin (Player target);
+        public abstract string GetSpawnName (Player target);
+        #endregion
     }
 }

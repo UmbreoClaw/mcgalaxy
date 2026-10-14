@@ -47,7 +47,7 @@ namespace MCGalaxy {
         }
     }
     
-    public partial class Player : Entity, IDisposable {
+    public partial class Player : Entity, IDisposable, ITabListEntry {
 
         static int sessionCounter;
         public static Player Console = new ConsolePlayer();
@@ -84,7 +84,16 @@ namespace MCGalaxy {
 
         public override Level Level { get { return level; } }
         public override bool RestrictsScale { get { return true; } }
-        
+
+        public override bool ShouldFlipPitch(Player dst) {
+            if (Server.flipHead || flipHead) return true;
+
+            // flip head when infected in ZS, but doesn't support model
+            if (!dst.hasChangeModel && infected) return true;
+
+            return false;
+        }
+
         /// <summary> Whether this player can see the given player. </summary>
         public bool CanSee(Player target) { return CanSee(target, Rank); }
         /// <summary> Whether this player can see the given player, as if they were the given rank. </summary>
@@ -196,18 +205,6 @@ namespace MCGalaxy {
         public bool CanUse(string cmdName) {
             Command cmd = Command.Find(cmdName);
             return cmd != null && CanUse(cmd);
-        }
-
-        public bool MarkPossessed(string marker = "") {
-            if (marker.Length > 0) {
-                Player controller = PlayerInfo.FindExact(marker);
-                if (controller == null) return false;
-                marker = " (" + controller.color + controller.name + color + ")";
-            }
-            
-            Entities.GlobalDespawn(this, true);
-            Entities.GlobalSpawn(this, true, marker);
-            return true;
         }
 
         #region == DISCONNECTING ==
@@ -513,6 +510,66 @@ namespace MCGalaxy {
             SendCpeMessage(CpeMessageType.BottomRight3, "");
             SendCpeMessage(CpeMessageType.BottomRight2, "");
             SendCpeMessage(CpeMessageType.BottomRight1, "");
+        }   
+
+        
+        #region ITabListEntry
+        public override bool SharesTabListWith(Player target) {
+            return (level == target.level || Server.Config.TablistGlobal) 
+                && target.CanSee(this);
+        }
+        
+        public override string GetTabListName() { return truename; }
+        
+        public override string GetTabListNick(Player target) { 
+            string name = target.Ignores.Nicks ? color + truename : ColoredName;
+            return Colors.Escape(name);
+        }
+        
+        public override string GetTabListSuffix() { 
+            if (hidden && IsAfk) return " &f(Hid, &7AFK)";
+            if (hidden) return " &f(Hid)";
+            if (IsAfk)  return " &7(AFK)";
+            return null;
+        }
+        
+        public override string GetTabListGroup() {
+            if (!Server.Config.TablistGlobal) return "&fPlayers";
+            
+            string map = level.name;
+            if (!level.SeesServerWideChat) map += " &S<Local chat>";
+            return "On " + map;
+        }
+        
+        public override byte GetTabListRank() {
+            if (!Server.Config.TablistRankSorted) return 1;
+            
+            // Want higher ranks at top of tab list, banned at bottom of tab list
+            const LevelPermission offset = LevelPermission.Console;
+            return (byte)(offset - Rank);
         }        
+        #endregion
+        
+        
+        #region Spawning
+        public override string GetSpawnModel(Player target) {
+            return Model;    
+        }
+        
+        public override string GetSpawnSkin (Player target) {
+            return SkinName;            
+        }
+        
+        public override string GetSpawnName (Player target) {
+            //return p.color + p.truename + possession;
+            string nametag = color + truename;
+            if (!possessed) return nametag;
+            
+            Player controller = PlayerInfo.FindExact(following);
+            if (controller == null || possessedSkin) return nametag;
+            
+            return nametag + " (" + controller.color + controller.name + color + ")";
+        }       
+        #endregion
     }
 }

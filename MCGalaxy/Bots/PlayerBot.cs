@@ -23,11 +23,11 @@ using MCGalaxy.Maths;
 using MCGalaxy.Network;
 using MCGalaxy.Commands;
 
-namespace MCGalaxy {
-    
-    public sealed class PlayerBot : Entity {
-
-        public bool hunt = false, kill = false;
+namespace MCGalaxy 
+{    
+    public sealed class PlayerBot : Entity, ITabListEntry 
+    {
+        public bool hunt, kill;
 
         public string AIName = "", color;
         public string name, DisplayName;
@@ -296,5 +296,37 @@ namespace MCGalaxy {
                         pos[1] = (ushort)(pos[1] + (Math.Sign(foundPos[1] - pos[1])));
                     }
                 }*/
+        
+        
+        #region ITabListEntry
+        public override bool SharesTabListWith(Player target) {
+            return level == target.level && Server.Config.TablistBots;
+        }
+        
+        public override string GetTabListName() { return name; }
+        
+        public override string GetTabListNick(Player target) { return color + name; }
+        public override string GetTabListSuffix() { return null; }
+        
+        public override string GetTabListGroup() { return "Bots"; }
+        public override byte   GetTabListRank () { return 0; }        
+        #endregion
+        
+        
+        #region Spawning
+        public override string GetSpawnModel(Player target) {
+            return Chat.Format(Model, target, true, false);
+        }
+        
+        public override string GetSpawnSkin (Player target) {
+            return Chat.Format(SkinName, target, true, false);
+        }
+        
+        public override string GetSpawnName (Player target) {
+            if (DisplayName.CaselessEq("empty")) return "";
+            
+            return Chat.Format(color + DisplayName, target, true, false);
+        }       
+        #endregion
     }
 }
