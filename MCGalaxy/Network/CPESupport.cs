@@ -160,7 +160,9 @@ namespace MCGalaxy
             new CpeExtension(CpeExt.CinematicGui,        "Allows changing the visibility of some GUI components"),
             new CpeExtension(CpeExt.NotifyAction,        "Allows server to be notified of certain client events"),
             new CpeExtension(CpeExt.AmpersandSupport,    "Allows literal '&' in chat messages without escaping to '%'"),
-            #if TEN_BIT_BLOCKS
+            #if TWELVE_BIT_BLOCKS
+            new CpeExtension(CpeExt.ExtBlocks,           "Allows using block IDs over 255 in block definitions", 2),
+            #elif TEN_BIT_BLOCKS
             new CpeExtension(CpeExt.ExtBlocks,           "Allows using block IDs over 255 in block definitions"),
             #endif
         };

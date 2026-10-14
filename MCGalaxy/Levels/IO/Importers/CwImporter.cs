@@ -76,6 +76,8 @@ namespace MCGalaxy.Levels.IO {
                 
                 lvl.IntToPos(i, out x, out y, out z);
                 int b = ((hi[i] << 8) | lo[i]) + Block.Extended;
+                // Map may have been saved by software supporting more blocks than this build
+                if (b >= Block.SUPPORTED_COUNT) b = Block.Air;
                 lvl.SetBlock(x, y, z, (BlockID)b);
             }
         }

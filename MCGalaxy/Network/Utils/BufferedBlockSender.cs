@@ -70,54 +70,62 @@ namespace MCGalaxy.Network
         }
         
         void SendLevel() {
-            byte[] bulk = null, normal = null, classic = null, ext = null, extBulk = null;
-            Player[] players = PlayerInfo.Online.Items;
+            PacketCache cache = new PacketCache();
+            Player[] players  = PlayerInfo.Online.Items;
             foreach (Player p in players) 
             {
                 if (p.level != level) continue;
                 
-                byte[] packet = MakePacket(p, ref bulk, ref normal,
-                                           ref classic, ref ext, ref extBulk);
+                byte[] packet = MakePacket(p, cache);
                 p.Socket.Send(packet, SendFlags.LowPriority);
             }
         }
         
         void SendPlayer() {
-            byte[] bulk = null, normal = null,classic = null, ext = null, extBulk = null;
-            byte[] packet = MakePacket(player, ref bulk, ref normal,
-                                       ref classic, ref ext, ref extBulk);
+            byte[] packet = MakePacket(player, new PacketCache());
             player.Socket.Send(packet, SendFlags.LowPriority);
         }
         
         #region Packet construction
         
-        byte[] MakePacket(Player p, ref byte[] bulk, ref byte[] normal,
-                          ref byte[] classic, ref byte[] ext, ref byte[] extBulk) {
+        /// <summary> Packets already constructed for this batch of block changes </summary>
+        /// <remarks> Most players share the same packet format, so avoid constructing the same packet repeatedly </remarks>
+        sealed class PacketCache 
+        {
+            public byte[] bulk, normal, classic;
+            // [0] = for clients supporting all blocks, [1] = for clients that need fallback for some blocks
+            public byte[][] ext = new byte[2][], extBulk = new byte[2][];
+        }
+        
+        byte[] MakePacket(Player p, PacketCache cache) {
             IGameSession s = p.Session;
             #if TEN_BIT_BLOCKS
             if (s.hasExtBlocks) {
+                // Clients may only support ExtendedBlocks v1 (i.e. up to 767), even if server supports more
+                int i = s.MaxRawBlock >= Block.MaxRaw ? 0 : 1;
+                
                 if (s.hasBulkBlockUpdate && count >= 150) {
-                    if (extBulk == null) extBulk = MakeBulkExt();
-                    return extBulk;
+                    if (cache.extBulk[i] == null) cache.extBulk[i] = MakeBulkExt(s.MaxRawBlock);
+                    return cache.extBulk[i];
                 } else {
-                    if (ext == null) ext = MakeExt();
-                    return ext;
+                    if (cache.ext[i] == null) cache.ext[i] = MakeExt(s.MaxRawBlock);
+                    return cache.ext[i];
                 }
             }
             #endif
             
             // Different clients support varying types of blocks
             if (s.hasBulkBlockUpdate && s.hasBlockDefs && count >= 160) {
-                if (bulk == null) bulk = MakeBulk();
-                return bulk;
+                if (cache.bulk == null) cache.bulk = MakeBulk();
+                return cache.bulk;
             } else if (s.hasBlockDefs) {
                 // supports all 255 blocks (classicube enhanced client)
-                if (normal == null) normal = MakeNormal();
-                return normal;
+                if (cache.normal == null) cache.normal = MakeNormal();
+                return cache.normal;
             } else if (!s.hasCustomBlocks && s.ProtocolVersion == Server.VERSION_0030) {
                 // supports original 45 blocks (classic client)
-                if (classic == null) classic = MakeLimited(s.fallback);
-                return classic;
+                if (cache.classic == null) cache.classic = MakeLimited(s.fallback);
+                return cache.classic;
             } else {
                 // other support combination (CPE only, preclassic, etc)
                 //  don't bother trying to optimise for this case
@@ -126,8 +134,15 @@ namespace MCGalaxy.Network
         }
 
         #if TEN_BIT_BLOCKS
-        byte[] MakeBulkExt() {
-            byte[] data = new byte[2 + 256 * 5 + (256 / 4)];
+        BlockID ToExtRaw(BlockID block, BlockID maxRaw) {
+            BlockID raw = Block.ToRaw(block);
+            return raw <= maxRaw ? raw : level.GetFallback(block);
+        }
+        
+        byte[] MakeBulkExt(BlockID maxRaw) {
+            // ExtendedBlocks v1 sends upper 2 bits of each block id, v2 sends upper 4 bits
+            bool v2 = maxRaw > 1023;
+            byte[] data = new byte[2 + 256 * 5 + (v2 ? 256 / 2 : 256 / 4)];
             data[0] = Opcode.CpeBulkBlockUpdate;
             data[1] = (byte)(count - 1);
             
@@ -138,23 +153,22 @@ namespace MCGalaxy.Network
                 data[j++] = (byte)(index >> 8);  data[j++] = (byte)index;
             }
             
-            for (int i = 0, j = 2 + 256 * sizeof(int); i < count; i++) 
+            int lo = 2 + 256 * sizeof(int), hi = lo + 256;
+            for (int i = 0; i < count; i++) 
             {
-                data[j++] = (BlockRaw)blocks[i];
-            }
-            
-            for (int i = 0, j = 2 + 256 * (sizeof(int) + 1); i < count; i += 4) {
-                int flags = 0;
-                flags |= (Block.ToRaw(blocks[i    ]) >> 8) & 0x03;
-                flags |= (Block.ToRaw(blocks[i + 1]) >> 6) & 0x0C;
-                flags |= (Block.ToRaw(blocks[i + 2]) >> 4) & 0x30;
-                flags |= (Block.ToRaw(blocks[i + 3]) >> 2) & 0xC0;
-                data[j++] = (byte)flags;
+                BlockID raw = ToExtRaw(blocks[i], maxRaw);
+                data[lo + i] = (BlockRaw)raw;
+                
+                if (v2) {
+                    data[hi + (i >> 1)] |= (byte)(((raw >> 8) & 0x0F) << ((i & 1) * 4));
+                } else {
+                    data[hi + (i >> 2)] |= (byte)(((raw >> 8) & 0x03) << ((i & 3) * 2));
+                }
             }
             return data;
         }
         
-        byte[] MakeExt() {
+        byte[] MakeExt(BlockID maxRaw) {
             byte[] data = new byte[count * 9];
             for (int i = 0, j = 0; i < count; i++) 
             {
@@ -167,7 +181,7 @@ namespace MCGalaxy.Network
                 data[j++] = (byte)(x >> 8); data[j++] = (byte)x;
                 data[j++] = (byte)(y >> 8); data[j++] = (byte)y;
                 data[j++] = (byte)(z >> 8); data[j++] = (byte)z;
-                BlockID raw = Block.ToRaw(blocks[i]);
+                BlockID raw = ToExtRaw(blocks[i], maxRaw);
                 data[j++] = (byte)(raw >> 8);
                 data[j++] = (byte)raw;
             }

@@ -206,6 +206,12 @@ namespace MCGalaxy.Network
         }
         
         bool TrySendAsync(byte[] buffer) {
+            // Some packets (e.g. bulk block permissions with many blocks) are larger than the default buffer
+            if (buffer.Length > sendBuffer.Length) {
+                sendBuffer = new byte[buffer.Length];
+                sendArgs.SetBuffer(sendBuffer, 0, sendBuffer.Length);
+            }
+            
             // BlockCopy has some overhead, not worth it for very small data
             if (buffer.Length <= 16) {
                 for (int i = 0; i < buffer.Length; i++) {
@@ -406,6 +412,9 @@ namespace MCGalaxy.Network
         }
         
         void TrySendAsync(byte[] buffer) {
+            // Some packets (e.g. bulk block permissions with many blocks) are larger than the default buffer
+            if (buffer.Length > sendBuffer.Length) sendBuffer = new byte[buffer.Length];
+            
             // BlockCopy has some overhead, not worth it for very small data
             if (buffer.Length <= 16) {
                 for (int i = 0; i < buffer.Length; i++) {

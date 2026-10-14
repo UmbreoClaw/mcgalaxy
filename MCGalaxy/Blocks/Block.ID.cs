@@ -46,22 +46,39 @@ namespace MCGalaxy
         //
         // E.g. 0x080 = class 00, value 128 = physics block 128
         // E.g. 0x180 = class 01, value 128 =  custom block 128
+        //
+        // 12 bit block ids (TWELVE_BIT_BLOCKS) extend this to 4 bits of class,
+        //  with classes 0100 to 1111 being custom blocks 768 to 3839
+        // In a level's blocks array, each class N > 0 is stored as the marker block ExtendedClass[N],
+        //  with the lower 8 bits of the block id stored in the level's CustomBlocks array
         
-        #if TEN_BIT_BLOCKS
+        #if TWELVE_BIT_BLOCKS
+        // NOTE: Not 4095, as raw block ids are server block ids minus 256 (see FromRaw/ToRaw)
+        public const ushort MaxRaw = 3839;
+        internal const int SUPPORTED_COUNT = 256 * 16;
+        #elif TEN_BIT_BLOCKS
         public const ushort MaxRaw = 767;
         internal const int SUPPORTED_COUNT = 256 * 4;
+        #endif
+        
+        #if TEN_BIT_BLOCKS
+        /// <summary> Highest raw block ID supported by clients using version 1 of ExtendedBlocks </summary>
+        public const ushort MaxRawExtBlocksV1 = 767;
         internal static ushort[] ExtendedBase = new ushort[CORE_COUNT];
-        internal static byte[] ExtendedClass  = new byte[4];
+        internal static byte[] ExtendedClass  = new byte[] {
+            Air, custom_block, custom_block_2, custom_block_3,
+            #if TWELVE_BIT_BLOCKS
+            custom_block_4,  custom_block_5,  custom_block_6,  custom_block_7,
+            custom_block_8,  custom_block_9,  custom_block_10, custom_block_11,
+            custom_block_12, custom_block_13, custom_block_14, custom_block_15,
+            #endif
+        };
         
         static Block() {
-            ExtendedBase[custom_block]   = Extended;
-            ExtendedBase[custom_block_2] = Extended * 2;
-            ExtendedBase[custom_block_3] = Extended * 3;
-            
-            ExtendedClass[0] = Air;
-            ExtendedClass[1] = custom_block;
-            ExtendedClass[2] = custom_block_2;
-            ExtendedClass[3] = custom_block_3;
+            for (int i = 1; i < ExtendedClass.Length; i++)
+            {
+                ExtendedBase[ExtendedClass[i]] = (ushort)(Extended * i);
+            }
         }
         #else
         public const ushort MaxRaw = 255;
@@ -155,7 +172,7 @@ namespace MCGalaxy
 
         public const byte C4 = 74;
         public const byte C4Detonator = 75;
-        // 76, 77, 78, 79 free
+        // 76, 77, 78, 79 free (used as custom block classes when TWELVE_BIT_BLOCKS)
 
         public const byte Door_Cobblestone = 80;
         //public const byte Door_Cobblestone_air = 81;// unused in core
@@ -308,6 +325,22 @@ namespace MCGalaxy
         #if TEN_BIT_BLOCKS
         public const byte custom_block_2 = 198;
         public const byte custom_block_3 = 199;
+        #endif
+        #if TWELVE_BIT_BLOCKS
+        // Picked from IDs never assigned to any block (not even old *_air door or season blocks),
+        //  so that levels saved by older versions can't accidentally contain these
+        public const byte custom_block_4  = 76;
+        public const byte custom_block_5  = 77;
+        public const byte custom_block_6  = 78;
+        public const byte custom_block_7  = 79;
+        public const byte custom_block_8  = 82;
+        public const byte custom_block_9  = 88;
+        public const byte custom_block_10 = 99;
+        public const byte custom_block_11 = 142;
+        public const byte custom_block_12 = 218;
+        public const byte custom_block_13 = 219;
+        public const byte custom_block_14 = 234;
+        public const byte custom_block_15 = 241;
         #endif
         
         // Air type blocks

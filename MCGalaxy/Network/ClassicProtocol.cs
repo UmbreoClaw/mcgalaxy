@@ -360,7 +360,9 @@ namespace MCGalaxy.Network
             #if TEN_BIT_BLOCKS
             else if (ext.Name == CpeExt.ExtBlocks) {
                 hasExtBlocks = true;
-                if (MaxRawBlock < 767) MaxRawBlock = 767;
+                // Version 1 only supports up to 767, version 2 supports up to 3839
+                BlockID maxRaw = version >= 2 ? Block.MaxRaw : Block.MaxRawExtBlocksV1;
+                if (MaxRawBlock < maxRaw) MaxRawBlock = maxRaw;
             }
             #endif
         }

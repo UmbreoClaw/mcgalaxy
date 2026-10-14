@@ -151,109 +151,72 @@ namespace MCGalaxy.Network
             byte[] blocks     = lvl.blocks;
             float progScale   = 100.0f / blocks.Length;
 
+            #if TEN_BIT_BLOCKS
+            // Store on stack instead of performing function call for every block in map
+            // NOTE: Converted IDs may be over 255 for clients supporting ExtendedBlocks
+            ushort* conv = stackalloc ushort[Block.SUPPORTED_COUNT];
+            for (int j = 0; j < Block.SUPPORTED_COUNT; j++) {
+                conv[j] = s.ConvertBlock((BlockID)j);
+            }
+            
+            // Initially assume all converted blocks are <= 255
+            int i;
+            for (i = 0; i < blocks.Length; i++) 
+            {
+                BlockID raw = conv[lvl.FastGetBlock(i)];
+                // NOTE: Non ExtendedBlocks clients always have MaxRawBlock <= 255
+                if (raw > 0xFF && s.hasExtBlocks) break;
+                buffer[bIndex] = (byte)raw;
+                
+                bIndex++;
+                if (bIndex == bufferSize) {
+                    // '0' to indicate this chunk has lower 8 bits of block ids
+                    dst.chunkValue = s.hasExtBlocks ? (byte)0 : (byte)(i * progScale);
+                    stream.Write(buffer, 0, bufferSize); bIndex = 0;
+                }
+            }
+            
+            // Check if map only used blocks <= 255
+            if (bIndex > 0) stream.Write(buffer, 0, bIndex);
+            if (i == blocks.Length) return;
+            bIndex = 0;
+            
+            // Nope - have to also send upper 8 bits of block ids
+            using (LevelChunkStream dst2 = new LevelChunkStream(s))
+                using (Stream stream2 = dst2.CompressMapHeader(blocks.Length))
+            {
+                dst2.chunkValue = 1; // 'extended' blocks
+                byte[] buffer2 = new byte[bufferSize];
+                
+                // Need to fill in all the upper 8 bits of blocks before this one with 0
+                for (int j = 0; j < i; j += bufferSize) {
+                    int len = Math.Min(bufferSize, i - j);
+                    stream2.Write(buffer2, 0, len);
+                }
+                
+                for (; i < blocks.Length; i++) 
+                {
+                    BlockID raw = conv[lvl.FastGetBlock(i)];
+                    buffer[bIndex]  = (byte)raw;
+                    buffer2[bIndex] = (byte)(raw >> 8);
+                    
+                    bIndex++;
+                    if (bIndex == bufferSize) {
+                        stream.Write(buffer,   0, bufferSize);
+                        stream2.Write(buffer2, 0, bufferSize);
+                        bIndex = 0;
+                    }
+                }
+                if (bIndex > 0) stream2.Write(buffer2, 0, bIndex);
+            }
+            #else
             // Store on stack instead of performing function call for every block in map
             byte* conv = stackalloc byte[Block.SUPPORTED_COUNT];
-            byte* convExt  = conv + 256; // 256 blocks per group/class
-            #if TEN_BIT_BLOCKS
-            byte* convExt2 = conv + 256 * 2;
-            byte* convExt3 = conv + 256 * 3;
-            #endif
-
+            byte* convExt = conv + 256; // 256 blocks per group/class
             for (int j = 0; j < Block.SUPPORTED_COUNT; j++) {
                 conv[j] = (byte)s.ConvertBlock((BlockID)j);
             }
             
-            // compress the map data in 64 kb chunks
-            #if TEN_BIT_BLOCKS
-            if (s.hasExtBlocks) {
-                // Initially assume all custom blocks are <= 255
-                int i;
-                for (i = 0; i < blocks.Length; i++) 
-                {
-                    byte block = blocks[i];
-                    if (block == Block.custom_block) {
-                        buffer[bIndex] = lvl.GetExtTile(i);
-                    } else if (block == Block.custom_block_2) {
-                        break;
-                    } else if (block == Block.custom_block_3) {
-                        break;
-                    } else {
-                        buffer[bIndex] = conv[block];
-                    }
-                    
-                    bIndex++;
-                    if (bIndex == bufferSize) {
-                        stream.Write(buffer, 0, bufferSize);
-                        bIndex = 0;
-                    }
-                }
-                
-                // Check if map only used custom blocks <= 255
-                if (bIndex > 0) stream.Write(buffer, 0, bIndex);                
-                if (i == blocks.Length) return;
-                bIndex = 0;
-                
-                // Nope - have to go slower path now                
-                using (LevelChunkStream dst2 = new LevelChunkStream(s))
-                    using (Stream stream2 = dst2.CompressMapHeader(blocks.Length))
-                {
-                    dst2.chunkValue = 1; // 'extended' blocks
-                    byte[] buffer2 = new byte[bufferSize];
-                    
-                    // Need to fill in all the upper 8 bits of blocks before this one with 0
-                    for (int j = 0; j < i; j += bufferSize) {
-                        int len = Math.Min(bufferSize, i - j);
-                        stream2.Write(buffer2, 0, len);
-                    }
-                    
-                    for (; i < blocks.Length; i++) 
-                    {
-                        byte block = blocks[i];
-                        if (block == Block.custom_block) {
-                            buffer[bIndex]  = lvl.GetExtTile(i);
-                            buffer2[bIndex] = 0;
-                        } else if (block == Block.custom_block_2) {
-                            buffer[bIndex]  = lvl.GetExtTile(i);
-                            buffer2[bIndex] = 1;
-                        } else if (block == Block.custom_block_3) {
-                            buffer[bIndex]  = lvl.GetExtTile(i);
-                            buffer2[bIndex] = 2;
-                        } else {
-                            buffer[bIndex]  = conv[block];
-                            buffer2[bIndex] = 0;
-                        }
-                        
-                        bIndex++;
-                        if (bIndex == bufferSize) {
-                            stream.Write(buffer,   0, bufferSize);
-                            stream2.Write(buffer2, 0, bufferSize);
-                            bIndex = 0;
-                        }
-                    }
-                    if (bIndex > 0) stream2.Write(buffer2, 0, bIndex);
-                }
-            } else {
-                for (int i = 0; i < blocks.Length; i++) 
-                {
-                    byte block = blocks[i];
-                    if (block == Block.custom_block) {
-                        buffer[bIndex] = convExt[lvl.GetExtTile(i)];
-                    } else if (block == Block.custom_block_2) {
-                        buffer[bIndex] = convExt2[lvl.GetExtTile(i)];
-                    } else if (block == Block.custom_block_3) {
-                        buffer[bIndex] = convExt3[lvl.GetExtTile(i)];
-                    } else {
-                        buffer[bIndex] = conv[block];
-                    }
-                    
-                    bIndex++;
-                    if (bIndex == bufferSize) {
-                        dst.chunkValue = (byte)(i * progScale);
-                        stream.Write(buffer, 0, bufferSize); bIndex = 0;
-                    }
-                }
-            }
-            #else
             if (s.hasBlockDefs) {
                 for (int i = 0; i < blocks.Length; i++) 
                 {
